@@ -50,9 +50,9 @@ class Settings(BaseSettings):
 
     # Security
     approved_directory: Path = Field(..., description="Base directory for projects")
-    allowed_users: Optional[List[int]] = Field(
-        None, description="Allowed Telegram user IDs"
-    )
+    # allowed_users: Optional[List[int]] = Field(
+    #     default=None, description="Allowed Telegram user IDs"
+    # )
     enable_token_auth: bool = Field(
         False, description="Enable token-based authentication"
     )
@@ -171,13 +171,22 @@ class Settings(BaseSettings):
         env_file=".env", env_file_encoding="utf-8", case_sensitive=False, extra="ignore"
     )
 
-    @field_validator("allowed_users", mode="before")
-    @classmethod
-    def parse_allowed_users(cls, v: Any) -> Optional[List[int]]:
-        """Parse comma-separated user IDs."""
-        if isinstance(v, str):
-            return [int(uid.strip()) for uid in v.split(",") if uid.strip()]
-        return v  # type: ignore[no-any-return]
+    # @field_validator("allowed_users", mode="before")
+    # @classmethod
+    # def parse_allowed_users(cls, v: Any) -> Optional[List[int]]:
+    #     """Parse comma-separated user IDs."""
+    #     if v is None:
+    #         return None
+    #     if isinstance(v, str):
+    #         if not v.strip():
+    #             return None
+    #         return [int(uid.strip()) for uid in v.split(",") if uid.strip()]
+    #     if isinstance(v, int):
+    #         return [v]  # Convert single int to list
+    #     if isinstance(v, list):
+    #         return v  # Already a list
+    #     # If we can't parse it, return None instead of failing
+    #     return None
 
     @field_validator("approved_directory")
     @classmethod

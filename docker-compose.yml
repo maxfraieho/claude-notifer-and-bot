@@ -12,10 +12,10 @@ services:
       # Mount the Claude CLI authentication directory from the host
       # For Linux/macOS: ~/.claude
       # For Windows: ${USERPROFILE}/.claude
-      - ~/.claude:/home/claudebot/.claude
+      # - ~/.claude:/home/claudebot/.claude  # Disable for debugging
       - ./target_project:/app/target_project  # ✅ New volume for target project
     working_dir: /app
-    user: "1001:1001"
+    # user: "1001:1001"  # Disable user override for debugging
     healthcheck:
       test: ["CMD", "python", "-c", "import sys; sys.exit(0) if __import__('src.main') else sys.exit(1)"]
       interval: 60s

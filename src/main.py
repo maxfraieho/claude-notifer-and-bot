@@ -102,8 +102,8 @@ async def create_application(config: Settings) -> Dict[str, Any]:
     providers = []
 
     # Add whitelist provider if users are configured
-    if config.allowed_users:
-        providers.append(WhitelistAuthProvider(config.allowed_users))
+    # if config.allowed_users:
+    #     providers.append(WhitelistAuthProvider(config.allowed_users))
 
     # Add token provider if enabled
     if config.enable_token_auth:
