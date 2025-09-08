@@ -13,34 +13,37 @@ RUN apt-get update && apt-get install -y \
 # Create non-root user
 RUN useradd -m -u 1001 -s /bin/bash claudebot
 
-# Create target project directory and set permissions
-# Creating directory under root, then changing owner
+# Create target project directory and set permissions (under root)
 RUN mkdir -p /app/target_project && chown claudebot:claudebot /app/target_project
+
+# Set HOME environment variable - critical for Claude CLI to find ~/.claude
+ENV HOME=/home/claudebot
 
 # Switch to user
 USER claudebot
 WORKDIR /home/claudebot
 
-# Set HOME environment variable - critical for Claude CLI to find ~/.claude
-ENV HOME=/home/claudebot
-
-# ✅ Create target project directory and set permissions
-RUN mkdir -p /app/target_project && chown claudebot:claudebot /app/target_project
-
-# Copy dependency files
+# Copy dependency files for Poetry
 COPY --chown=claudebot:claudebot pyproject.toml poetry.lock ./
 
 # Install Poetry and Python dependencies
 RUN curl -sSL https://install.python-poetry.org | python3 -
 ENV PATH="/home/claudebot/.local/bin:${PATH}"
-RUN poetry config virtualenvs.create false && poetry install --only=main
+RUN poetry config virtualenvs.create false && poetry install --only=main --no-root
 
-# Install Claude CLI globally via npm
-# (Uses token from ~/.claude which is mounted from the host)
-RUN npm install -g @anthropic-ai/claude-code
+# Install Claude CLI locally for the user (not globally)
+RUN mkdir -p ~/.local/bin && \
+    npm install @anthropic-ai/claude-code && \
+    ln -s "$(pwd)/node_modules/.bin/claude" ~/.local/bin/claude
 
-# Copy the rest of the bot code
-COPY --chown=claudebot:claudebot . .
+# Ensure ~/.local/bin is in PATH (should already be, but double-check)
+ENV PATH="/home/claudebot/.local/bin:${PATH}"
+
+# ✅ Ключова зміна: Копіюємо ВЕСЬ код проєкту у /app, а не в /home/claudebot
+COPY --chown=claudebot:claudebot . /app/
+
+# ✅ Ключова зміна: Встановлюємо робочу директорію на /app
+WORKDIR /app
 
 # Entry point
 ENTRYPOINT ["python", "-m", "src.main"]
