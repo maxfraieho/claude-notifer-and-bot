@@ -6,7 +6,7 @@
 
 ## 🐳 **1. Dockerfile**
 
-Створіть файл `Dockerfile` у корені проєкту:
+Створіть файл [Dockerfile](file://c:\Users\tukro\OneDrive\Документы\GitHub\claude-notifer-and-bot\Dockerfile) у корені проєкту:
 
 ```dockerfile
 # Dockerfile
@@ -33,6 +33,9 @@ WORKDIR /home/claudebot
 # Встановлюємо змінну HOME — критично для пошуку ~/.claude
 ENV HOME=/home/claudebot
 
+# ✅ Створюємо директорію для цільового проєкту та встановлюємо права
+RUN mkdir -p /app/target_project && chown claudebot:claudebot /app/target_project
+
 # Копіюємо файли залежностей
 COPY --chown=claudebot:claudebot pyproject.toml poetry.lock ./
 
@@ -58,7 +61,7 @@ ENTRYPOINT ["python", "-m", "src.main"]
 
 ## 🐋 **2. docker-compose.yml**
 
-Створіть файл `docker-compose.yml`:
+Створіть файл [docker-compose.yml](file://c:\Users\tukro\OneDrive\Документы\GitHub\claude-notifer-and-bot\docker-compose.yml):
 
 ```yaml
 # docker-compose.yml
@@ -78,6 +81,7 @@ services:
       - ./data:/app/data
       # Монтуємо директорію з токеном автентифікації Claude CLI з хосту у контейнер
       - ~/.claude:/home/claudebot/.claude
+      - ./target_project:/app/target_project  # ✅ Новий том для цільового проєкту
     working_dir: /app
     user: "1001:1001"
     healthcheck:
@@ -97,7 +101,7 @@ volumes:
 ```
 
 > **Для Windows користувачів**:  
-> Замість `~/.claude` використовуйте `${USERPROFILE}/.claude` у `docker-compose.yml`.
+> Замість `~/.claude` використовуйте `${USERPROFILE}/.claude` у [docker-compose.yml](file://c:\Users\tukro\OneDrive\Документы\GitHub\claude-notifer-and-bot\docker-compose.yml).
 
 ---
 
@@ -130,14 +134,14 @@ claude auth login
 
 #### 4. Монтування у контейнер
 
-Директорія `~/.claude` монтується у контейнер у `docker-compose.yml`:
+Директорія `~/.claude` монтується у контейнер у [docker-compose.yml](file://c:\Users\tukro\OneDrive\Документы\GitHub\claude-notifer-and-bot\docker-compose.yml):
 
 ```yaml
 volumes:
   - ~/.claude:/home/claudebot/.claude
 ```
 
-> **Для Windows**: Замініть `~/.claude` на `${USERPROFILE}/.claude` у `docker-compose.yml`.
+> **Для Windows**: Замініть `~/.claude` на `${USERPROFILE}/.claude` у [docker-compose.yml](file://c:\Users\tukro\OneDrive\Документы\GitHub\claude-notifer-and-bot\docker-compose.yml).
 
 #### 5. Перезапустіть контейнер
 
@@ -178,7 +182,7 @@ docker-compose up -d --build
 
 ## ⚙️ **3. .env файл (приклад)**
 
-Створіть файл `.env` у корені проєкту:
+Створіть файл [.env](file://c:\Users\tukro\OneDrive\Документы\GitHub\claude-notifer-and-bot\.env) у корені проєкту:
 
 ```
 # .env
@@ -202,6 +206,9 @@ CLAUDE_AVAILABILITY_DND_END=08:00
 # Кількість послідовних успішних перевірок для підтвердження доступності
 CLAUDE_AVAILABILITY_DEBOUNCE_OK_COUNT=2
 
+# Шлях до цільового проєкту всередині контейнера
+TARGET_PROJECT_PATH=/app/target_project
+
 # Додаткові налаштування (опціонально)
 DEBUG=false
 LOG_LEVEL=INFO
@@ -212,6 +219,83 @@ LOG_LEVEL=INFO
 
 > 📌 **Як отримати `chat_id`?**  
 > Надішліть повідомлення у чат → використайте бота [@userinfobot](https://t.me/userinfobot) або зробіть запит до `https://api.telegram.org/bot<TOKEN>/getUpdates`.
+
+---
+
+## 📁 **Робота з цільовим проєктом**
+
+Ви можете монтувати будь-який локальний проєкт у контейнер, щоб Claude CLI міг з ним працювати.
+
+### Кроки:
+
+#### 1. Клонуйте або скопіюйте ваш проєкт у директорію `target_project`
+
+```bash
+# Приклад: клонування репозиторію
+git clone https://github.com/your-username/your-project.git target_project
+
+# Або просто скопіюйте існуючу директорію
+cp -r /path/to/your/project ./target_project
+```
+
+#### 2. Переконайтеся, що [docker-compose.yml](file://c:\Users\tukro\OneDrive\Документы\GitHub\claude-notifer-and-bot\docker-compose.yml) монтує `./target_project:/app/target_project`
+
+#### 3. Запустіть або перезапустіть контейнер
+
+```bash
+docker-compose up -d --build
+```
+
+---
+
+### 🔄 Як це працює?
+
+- Директорія `./target_project` на хості синхронізується з `/app/target_project` у контейнері.
+- **Будь-які зміни на хості** (редагування, додавання файлів) **миттєво відображаються** у контейнері.
+- Claude CLI може виконувати команди безпосередньо над цією директорією.
+
+---
+
+### 🛠️ Приклади команд Claude CLI
+
+Після монтування ви можете виконувати такі команди (вручну або через бота):
+
+```bash
+# Перегляд та аналіз репозиторію
+claude repo review /app/target_project
+
+# Аудит безпеки
+claude audit /app/target_project
+
+# Рефакторинг конкретного файлу
+claude refactor /app/target_project/src/main.py --goal "Improve readability"
+
+# Генерація документації
+claude document /app/target_project --output /app/target_project/README.md
+
+# Запуск тестів (якщо підтримується)
+claude test /app/target_project
+```
+
+> 💡 **Інтеграція з ботом**: У майбутніх версіях бота ви зможете відправляти команди типу `/review`, `/audit`, `/refactor` — вони будуть виконуватися над `TARGET_PROJECT_PATH`.
+
+---
+
+### 🚨 **Troubleshooting**
+
+**Проблема**: Claude CLI не має доступу до файлів у `/app/target_project`.
+
+**Рішення**:
+
+- Переконайтеся, що директорія існує на хості: `ls -la ./target_project`
+- Перевірте права: `sudo chown -R 1001:1001 ./target_project` (Linux/macOS)
+- Увійдіть у контейнер і перевірте вручну:
+
+  ```bash
+  docker-compose exec claude_bot bash
+  ls -la /app/target_project
+  whoami  # має бути claudebot
+  ```
 
 ---
 
@@ -226,9 +310,9 @@ git clone https://github.com/your-username/claude-code-telegram-main.git
 cd claude-code-telegram-main
 ```
 
-### Крок 2: Створити `.env` файл
+### Крок 2: Створити [.env](file://c:\Users\tukro\OneDrive\Документы\GitHub\claude-notifer-and-bot\.env) файл
 
-Скопіюйте вміст прикладу вище у файл `.env` та підставте свої значення, особливо `TELEGRAM_BOT_TOKEN` та `CLAUDE_AVAILABILITY_NOTIFY_CHAT_IDS`.
+Скопіюйте вміст прикладу вище у файл [.env](file://c:\Users\tukro\OneDrive\Документы\GitHub\claude-notifer-and-bot\.env) та підставте свої значення, особливо `TELEGRAM_BOT_TOKEN` та `CLAUDE_AVAILABILITY_NOTIFY_CHAT_IDS`.
 
 ### Крок 3: Створити директорію для даних
 
@@ -292,7 +376,7 @@ docker-compose up -d --build
 
 ### Зміна чатів для сповіщень
 
-Відредагуйте `.env`:
+Відредагуйте [.env](file://c:\Users\tukro\OneDrive\Документы\GitHub\claude-notifer-and-bot\.env):
 
 ```
 CLAUDE_AVAILABILITY_NOTIFY_CHAT_IDS=111111111,-1002222222222,333333333
@@ -306,7 +390,7 @@ docker-compose up -d
 
 ### Зміна DND вікна
 
-Відредагуйте `.env`:
+Відредагуйте [.env](file://c:\Users\tukro\OneDrive\Документы\GitHub\claude-notifer-and-bot\.env):
 
 ```
 CLAUDE_AVAILABILITY_DND_START=00:00
@@ -328,7 +412,7 @@ Claude CLI недоступний: [Errno 2] No such file or directory: 'claude'
 
 **Рішення:**
 
-1. Переконайтеся, що `claude` встановлено у контейнері. Перевірте `Dockerfile` — має бути рядок:
+1. Переконайтеся, що `claude` встановлено у контейнері. Перевірте [Dockerfile](file://c:\Users\tukro\OneDrive\Документы\GitHub\claude-notifer-and-bot\Dockerfile) — має бути рядок:
    ```dockerfile
    RUN npm install -g @anthropic-ai/claude-code
    ```
@@ -340,7 +424,7 @@ Claude CLI недоступний: [Errno 2] No such file or directory: 'claude'
    claude --version
    ```
 
-3. Якщо `claude` не знайдено, оновіть `Dockerfile`, додавши встановлення `nodejs` та `npm`:
+3. Якщо `claude` не знайдено, оновіть [Dockerfile](file://c:\Users\tukro\OneDrive\Документы\GitHub\claude-notifer-and-bot\Dockerfile), додавши встановлення `nodejs` та `npm`:
 
    ```dockerfile
    RUN apt-get update && apt-get install -y \
@@ -395,9 +479,8 @@ sudo chmod -R 755 ./data
 
 ✅ **Готово!**  
 Ваш бот розгорнуто, налаштовано та готовий до роботи. Він автоматично стежитиме за доступністю Claude CLI та надсилатиме сповіщення у Telegram з урахуванням DND.
-```
 
-```
+---
 
 ## 🐳 **Розгортання (Linux/macOS)**
 
@@ -445,3 +528,4 @@ mkdir data
 
 # 6. Запустити
 docker-compose up -d --build
+```

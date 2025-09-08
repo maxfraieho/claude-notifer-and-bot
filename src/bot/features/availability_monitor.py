@@ -48,9 +48,11 @@ class ClaudeAvailabilityMonitor:
     async def health_check(self) -> bool:
         """Perform health check by running `claude --version`, return True if available.
         
-        ⚠️ For Claude CLI to work inside the container, authentication must be done on the host
-        and the ~/.claude directory must be mounted to /home/claudebot/.claude in the container.
-        See README.md for instructions.
+        ⚠️ For Claude CLI to work inside the container:
+        - Authentication must be done on the host and the ~/.claude directory must be mounted
+          to /home/claudebot/.claude in the container.
+        - The target project directory must be mounted to /app/target_project.
+        - See README.md for instructions.
         """
         try:
             # Replace subprocess.run with async call

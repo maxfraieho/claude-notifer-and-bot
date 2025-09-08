@@ -160,6 +160,12 @@ class Settings(BaseSettings):
     webhook_url: Optional[str] = Field(None, description="Webhook URL for bot")
     webhook_port: int = Field(8443, description="Webhook port")
     webhook_path: str = Field("/webhook", description="Webhook path")
+    
+    # ✅ New field: path to target project
+    target_project_path: Path = Field(
+        default=Path("/app/target_project"),
+        description="Path to target project for Claude CLI operations"
+    )
 
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", case_sensitive=False, extra="ignore"

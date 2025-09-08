@@ -20,6 +20,9 @@ WORKDIR /home/claudebot
 # Set HOME environment variable - critical for Claude CLI to find ~/.claude
 ENV HOME=/home/claudebot
 
+# ✅ Create target project directory and set permissions
+RUN mkdir -p /app/target_project && chown claudebot:claudebot /app/target_project
+
 # Copy dependency files
 COPY --chown=claudebot:claudebot pyproject.toml poetry.lock ./
 
