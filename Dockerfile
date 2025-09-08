@@ -13,6 +13,10 @@ RUN apt-get update && apt-get install -y \
 # Create non-root user
 RUN useradd -m -u 1001 -s /bin/bash claudebot
 
+# Create target project directory and set permissions
+# Creating directory under root, then changing owner
+RUN mkdir -p /app/target_project && chown claudebot:claudebot /app/target_project
+
 # Switch to user
 USER claudebot
 WORKDIR /home/claudebot
