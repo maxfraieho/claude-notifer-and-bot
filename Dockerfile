@@ -1,49 +1,87 @@
-FROM python:3.11-slim AS builder
+# Production-ready Dockerfile for Claude Telegram Bot
+# Built for remote server deployment with user: kroschu
+# Image: kroschu/claude-code-telegram:latest
 
-# Install OS dependencies, including nodejs/npm for Claude CLI
-RUN apt-get update && apt-get install -y \
+FROM python:3.11-slim
+
+# Build arguments for flexibility
+ARG USER_UID=1001
+ARG USER_GID=1001
+ARG USERNAME=claudebot
+
+# Install system dependencies including Node.js for Claude CLI
+RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     git \
     jq \
     gcc \
-    nodejs \
-    npm \
-    && rm -rf /var/lib/apt/lists/*
+    g++ \
+    ca-certificates \
+    gnupg \
+    && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
+    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends nodejs \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /tmp/* /var/tmp/*
 
-# Create non-root user
-RUN useradd -m -u 1001 -s /bin/bash claudebot
+# Create non-root user with consistent UID/GID for volume mounting
+RUN groupadd -g ${USER_GID} ${USERNAME} \
+    && useradd -m -u ${USER_UID} -g ${USER_GID} -s /bin/bash ${USERNAME}
 
-# Create target project directory and set permissions (under root)
-RUN mkdir -p /app/target_project && chown claudebot:claudebot /app/target_project
+# Create application and data directories with proper ownership
+RUN mkdir -p /app/data /app/target_project \
+    && chown -R ${USERNAME}:${USERNAME} /app
 
-# Set HOME environment variable - critical for Claude CLI to find ~/.claude
-ENV HOME=/home/claudebot
+# Set environment variables
+ENV HOME=/home/${USERNAME}
+ENV PATH="/home/${USERNAME}/.local/bin:$PATH"
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV TZ=Europe/Kiev
 
-# Switch to user
-USER claudebot
-WORKDIR /home/claudebot
+# Switch to non-root user
+USER ${USERNAME}
+WORKDIR /home/${USERNAME}
+
+# Install Poetry
+RUN curl -sSL https://install.python-poetry.org | python3 -
+ENV PATH="/home/${USERNAME}/.local/bin:${PATH}"
 
 # Copy dependency files for Poetry
-COPY --chown=claudebot:claudebot pyproject.toml poetry.lock ./
+COPY --chown=${USERNAME}:${USERNAME} pyproject.toml poetry.lock ./
 
-# Install Poetry and Python dependencies
-RUN curl -sSL https://install.python-poetry.org | python3 -
-ENV PATH="/home/claudebot/.local/bin:${PATH}"
-RUN poetry config virtualenvs.create false && poetry install --only=main --no-root
+# Configure Poetry and install Python dependencies
+RUN poetry config virtualenvs.create false \
+    && poetry config virtualenvs.in-project false \
+    && poetry install --only=main --no-root --no-cache
 
-# Install Claude CLI locally for the user (not globally)
-RUN mkdir -p ~/.local/bin ~/.claude/plugins/repos && \
-    npm install @anthropic-ai/claude-code && \
-    ln -s "$(pwd)/node_modules/.bin/claude" ~/.local/bin/claude
+# Install Claude CLI and create necessary directories
+RUN mkdir -p ~/.local/bin ~/.claude/plugins/repos \
+    && npm install @anthropic-ai/claude-code \
+    && ln -s "$(pwd)/node_modules/.bin/claude" ~/.local/bin/claude
 
-# Ensure ~/.local/bin is in PATH (should already be, but double-check)
-ENV PATH="/home/claudebot/.local/bin:${PATH}"
+# Copy application code to /app
+COPY --chown=${USERNAME}:${USERNAME} src/ /app/src/
+COPY --chown=${USERNAME}:${USERNAME} CLAUDE.md /app/
 
-# ✅ Ключова зміна: Копіюємо ВЕСЬ код проєкту у /app, а не в /home/claudebot
-COPY --chown=claudebot:claudebot . /app/
-
-# ✅ Ключова зміна: Встановлюємо робочу директорію на /app
+# Set working directory to /app
 WORKDIR /app
 
-# Entry point
+# Install the application as a package
+RUN cd /home/${USERNAME} && poetry install --only-root --no-cache
+
+# Health check with comprehensive validation
+HEALTHCHECK --interval=60s --timeout=15s --start-period=45s --retries=3 \
+    CMD python -c "try: import src.main; from src.config.settings import Settings; Settings(); print('✓ Health check passed'); exit(0)\nexcept Exception as e: print(f'✗ Health check failed: {e}'); exit(1)"
+
+# Labels for container management
+LABEL maintainer="kroschu" \
+      version="0.1.1" \
+      description="Claude Code Telegram Bot - Remote access to Claude CLI via Telegram" \
+      org.label-schema.vcs-url="https://github.com/maxfraieho/claude-notifer-and-bot"
+
+# Default command
 ENTRYPOINT ["python", "-m", "src.main"]
