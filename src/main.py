@@ -40,28 +40,34 @@ def setup_logging(debug: bool = False) -> None:
     """Configure structured logging."""
     level = logging.DEBUG if debug else logging.INFO
 
-    # Configure standard logging
+    # Clear any existing handlers to prevent duplication
+    root_logger = logging.getLogger()
+    for handler in root_logger.handlers[:]:
+        root_logger.removeHandler(handler)
+
+    # Configure standard logging with single handler
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(logging.Formatter("%(message)s"))
+    
     logging.basicConfig(
         level=level,
-        format="%(message)s",
-        stream=sys.stdout,
+        handlers=[handler],
+        force=True,
     )
 
     # Configure structlog
     structlog.configure(
         processors=[
             structlog.stdlib.filter_by_level,
-            structlog.stdlib.add_logger_name,
             structlog.stdlib.add_log_level,
-            structlog.stdlib.PositionalArgumentsFormatter(),
             structlog.processors.TimeStamper(fmt="iso"),
             structlog.processors.StackInfoRenderer(),
             structlog.processors.format_exc_info,
             structlog.processors.UnicodeDecoder(),
             (
-                structlog.processors.JSONRenderer()
-                if not debug
-                else structlog.dev.ConsoleRenderer()
+                structlog.dev.ConsoleRenderer(colors=True)
+                if debug
+                else structlog.processors.JSONRenderer()
             ),
         ],
         context_class=dict,

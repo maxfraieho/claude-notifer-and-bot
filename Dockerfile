@@ -32,7 +32,7 @@ ENV PATH="/home/claudebot/.local/bin:${PATH}"
 RUN poetry config virtualenvs.create false && poetry install --only=main --no-root
 
 # Install Claude CLI locally for the user (not globally)
-RUN mkdir -p ~/.local/bin && \
+RUN mkdir -p ~/.local/bin ~/.claude/plugins/repos && \
     npm install @anthropic-ai/claude-code && \
     ln -s "$(pwd)/node_modules/.bin/claude" ~/.local/bin/claude
 

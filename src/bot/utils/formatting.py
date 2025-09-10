@@ -436,27 +436,38 @@ class ResponseFormatter:
 
     def _escape_markdown_outside_code(self, text: str) -> str:
         """Escape Markdown characters outside of code blocks."""
-        # This is a simplified approach - in practice, you might want more sophisticated parsing
+        # More robust markdown escaping
         parts = []
         in_code_block = False
-        in_inline_code = False
-
+        
         lines = text.split("\n")
         for line in lines:
-            if line.strip() == "```":
+            if line.strip().startswith("```"):
                 in_code_block = not in_code_block
                 parts.append(line)
             elif in_code_block:
+                # Inside code block - don't escape anything
                 parts.append(line)
             else:
-                # Handle inline code
-                line_parts = line.split("`")
-                for i, part in enumerate(line_parts):
+                # Outside code blocks - escape problematic characters more carefully
+                # Split by backticks to handle inline code
+                line_parts = []
+                segments = line.split("`")
+                
+                for i, segment in enumerate(segments):
                     if i % 2 == 0:  # Outside inline code
-                        # Escape special characters
-                        part = part.replace("_", r"\_").replace("*", r"\*")
-                    line_parts[i] = part
-                parts.append("`".join(line_parts))
+                        # Escape only truly problematic characters for Telegram
+                        segment = (segment
+                                  .replace("\\", "\\\\")  # Escape backslashes first
+                                  .replace("[", r"\[")    # Escape square brackets
+                                  .replace("]", r"\]")
+                                  )
+                        # Don't escape * and _ as they're commonly used intentionally
+                    line_parts.append(segment)
+                
+                # Rejoin with backticks
+                processed_line = "`".join(line_parts)
+                parts.append(processed_line)
 
         return "\n".join(parts)
 
