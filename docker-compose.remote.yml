@@ -1,0 +1,101 @@
+# Production Docker Compose for Claude Telegram Bot
+# Deploy this on your remote server with:
+# docker-compose -f docker-compose.remote.yml up -d
+
+services:
+  claude_bot:
+    image: kroschu/claude-notifer-chat-amd64:latest
+    container_name: claude-code-bot-prod
+    restart: unless-stopped
+    
+    # Environment configuration
+    env_file:
+      - .env
+    
+    # Volume mounts
+    volumes:
+      # Data persistence (SQLite database, logs, cache)
+      - ./data:/app/data
+      # Target project for Claude operations
+      - ./target_project:/app/target_project
+      # Claude CLI authentication (critical for functionality)
+      # Mount as read-only for security
+      - ~/.claude:/home/claudebot/.claude:ro
+      # Optional: Mount additional workspace if needed
+      # - ./workspace:/app/workspace
+    
+    # Working directory
+    working_dir: /app
+    
+    # Health check with comprehensive validation
+    healthcheck:
+      test: |
+        python -c "
+        try:
+            import src.main
+            from src.config.settings import Settings
+            settings = Settings()
+            print('✓ Bot configuration valid')
+            exit(0)
+        except Exception as e:
+            print(f'✗ Health check failed: {e}')
+            exit(1)
+        "
+      interval: 60s
+      timeout: 15s
+      retries: 3
+      start_period: 45s
+    
+    # Logging configuration for production
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+        labels: "service=claude-bot,environment=production"
+    
+    # Security: Run as non-root user (matches Dockerfile user)
+    user: "1001:1001"
+    
+    # Resource limits (adjust based on server capacity)
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    
+    # Network configuration (if needed for webhooks)
+    # ports:
+    #   - "8443:8443"  # Uncomment if using webhook mode
+    
+    # Environment overrides for production
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - TZ=Europe/Kiev
+      
+    # Labels for container management
+    labels:
+      - "traefik.enable=false"  # Disable if using Traefik
+      - "com.docker.compose.service=claude-bot"
+      - "environment=production"
+
+# Named volumes for explicit data management
+volumes:
+  data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data
+
+# Network configuration (optional)
+networks:
+  default:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

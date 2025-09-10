@@ -1,0 +1,59 @@
+# Simple production Dockerfile for Claude Telegram Bot
+FROM python:3.11-slim
+
+# Install system dependencies and Node.js for Claude CLI
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    git \
+    gcc \
+    g++ \
+    ca-certificates \
+    gnupg \
+    && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
+    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends nodejs \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /tmp/* /var/tmp/*
+
+# Install Poetry and Claude CLI as root
+RUN pip install --no-cache-dir poetry==1.8.4
+RUN npm install -g @anthropic-ai/claude-code
+
+# Copy dependency files first (as root)
+COPY pyproject.toml poetry.lock ./
+
+# Install Python dependencies as root
+RUN poetry config virtualenvs.create false \
+    && poetry install --only=main --no-root --no-cache
+
+# Create non-root user
+RUN groupadd -g 1001 claudebot \
+    && useradd -m -u 1001 -g 1001 -s /bin/bash claudebot
+
+# Create application directories and set permissions
+RUN mkdir -p /app/data /app/target_project \
+    && chown -R claudebot:claudebot /app
+
+# Set environment variables
+ENV HOME=/home/claudebot
+ENV PATH="/home/claudebot/.local/bin:$PATH"
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Copy application source code and set ownership
+COPY --chown=claudebot:claudebot src/ /app/src/
+COPY --chown=claudebot:claudebot CLAUDE.md /app/
+
+# Switch to non-root user and set working directory
+USER claudebot
+WORKDIR /app
+
+# Health check
+HEALTHCHECK --interval=60s --timeout=10s --start-period=30s --retries=3 \
+    CMD python -c "import sys; __import__('src.main'); sys.exit(0)" || exit 1
+
+# Run as non-root
+ENTRYPOINT ["python", "-m", "src.main"]
