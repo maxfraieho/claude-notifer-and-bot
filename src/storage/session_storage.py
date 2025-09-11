@@ -165,6 +165,33 @@ class SQLiteSessionStorage(SessionStorage):
 
         logger.debug("Session marked as inactive", session_id=session_id)
 
+    async def update_session_id(self, old_session_id: str, new_session_id: str) -> None:
+        """Update session ID when it changes from temporary to Claude session ID."""
+        async with self.db_manager.get_connection() as conn:
+            # Update session_id in sessions table
+            await conn.execute(
+                "UPDATE sessions SET session_id = ? WHERE session_id = ?",
+                (new_session_id, old_session_id)
+            )
+            
+            # Update foreign key references in other tables
+            await conn.execute(
+                "UPDATE messages SET session_id = ? WHERE session_id = ?", 
+                (new_session_id, old_session_id)
+            )
+            await conn.execute(
+                "UPDATE tool_usage SET session_id = ? WHERE session_id = ?",
+                (new_session_id, old_session_id)  
+            )
+            
+            await conn.commit()
+
+        logger.info(
+            "Session ID updated in database",
+            old_session_id=old_session_id,
+            new_session_id=new_session_id,
+        )
+
     async def get_user_sessions(self, user_id: int) -> List[ClaudeSession]:
         """Get all active sessions for a user."""
         async with self.db_manager.get_connection() as conn:

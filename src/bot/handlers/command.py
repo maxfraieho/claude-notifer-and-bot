@@ -52,7 +52,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     await update.message.reply_text(
-        welcome_message, parse_mode="Markdown", reply_markup=reply_markup
+        welcome_message, parse_mode=None, reply_markup=reply_markup
     )
 
     # Log command
@@ -102,7 +102,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "Need more help? Contact your administrator."
     )
 
-    await update.message.reply_text(help_text, parse_mode="Markdown")
+    await update.message.reply_text(help_text, parse_mode=None)
 
 
 async def new_session(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -144,7 +144,7 @@ async def new_session(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         f"🆕 **New Claude Code Session**\n\n"
         f"📂 Working directory: `{relative_path}/`\n\n"
         f"Ready to help you code! Send me a message to get started, or use the buttons below:",
-        parse_mode="Markdown",
+        parse_mode=None,
         reply_markup=reply_markup,
     )
 
@@ -181,7 +181,7 @@ async def continue_session(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 f"Session ID: `{claude_session_id[:8]}...`\n"
                 f"Directory: `{current_dir.relative_to(settings.approved_directory)}/`\n\n"
                 f"{'Processing your message...' if prompt else 'Continuing where you left off...'}",
-                parse_mode="Markdown",
+                parse_mode=None,
             )
 
             # Continue with the existing session
@@ -196,7 +196,7 @@ async def continue_session(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             status_msg = await update.message.reply_text(
                 "🔍 **Looking for Recent Session**\n\n"
                 "Searching for your most recent session in this directory...",
-                parse_mode="Markdown",
+                parse_mode=None,
             )
 
             claude_response = await claude_integration.continue_session(
@@ -221,7 +221,7 @@ async def continue_session(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             for msg in formatted_messages:
                 await update.message.reply_text(
                     msg.content,
-                    parse_mode="Markdown",
+                    parse_mode=None,
                     reply_markup=msg.reply_markup,
                 )
 
@@ -244,7 +244,7 @@ async def continue_session(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 f"• Use `/new` to start a fresh session\n"
                 f"• Use `/status` to check your sessions\n"
                 f"• Navigate to a different directory with `/cd`",
-                parse_mode="Markdown",
+                parse_mode=None,
                 reply_markup=InlineKeyboardMarkup(
                     [
                         [
@@ -279,7 +279,7 @@ async def continue_session(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             f"• Try starting a new session with `/new`\n"
             f"• Check your session status with `/status`\n"
             f"• Contact support if the issue persists",
-            parse_mode="Markdown",
+            parse_mode=None,
         )
 
         # Log failed continue
@@ -366,7 +366,7 @@ async def list_files(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         reply_markup = InlineKeyboardMarkup(keyboard) if keyboard else None
 
         await update.message.reply_text(
-            message, parse_mode="Markdown", reply_markup=reply_markup
+            message, parse_mode=None, reply_markup=reply_markup
         )
 
         # Log successful command
@@ -402,7 +402,7 @@ async def change_directory(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             "**Tips:**\n"
             "• Use `/ls` to see available directories\n"
             "• Use `/projects` to see all projects",
-            parse_mode="Markdown",
+            parse_mode=None,
         )
         return
 
@@ -467,7 +467,7 @@ async def change_directory(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             f"✅ **Directory Changed**\n\n"
             f"📂 Current directory: `{relative_path}/`\n\n"
             f"🔄 Claude session cleared. Send a message to start coding in this directory.",
-            parse_mode="Markdown",
+            parse_mode=None,
         )
 
         # Log successful command
@@ -476,7 +476,7 @@ async def change_directory(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     except Exception as e:
         error_msg = f"❌ **Error changing directory**\n\n{str(e)}"
-        await update.message.reply_text(error_msg, parse_mode="Markdown")
+        await update.message.reply_text(error_msg, parse_mode=None)
 
         # Log failed command
         if audit_logger:
@@ -510,7 +510,7 @@ async def print_working_directory(
         f"📍 **Current Directory**\n\n"
         f"Relative: `{relative_path}/`\n"
         f"Absolute: `{absolute_path}`",
-        parse_mode="Markdown",
+        parse_mode=None,
         reply_markup=reply_markup,
     )
 
@@ -566,7 +566,7 @@ async def show_projects(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             f"📁 **Available Projects**\n\n"
             f"{project_list}\n\n"
             f"Click a project below to navigate to it:",
-            parse_mode="Markdown",
+            parse_mode=None,
             reply_markup=reply_markup,
         )
 
@@ -645,7 +645,7 @@ async def session_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     await update.message.reply_text(
-        "\n".join(status_lines), parse_mode="Markdown", reply_markup=reply_markup
+        "\n".join(status_lines), parse_mode=None, reply_markup=reply_markup
     )
 
 
@@ -700,7 +700,7 @@ async def export_session(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         "📤 **Export Session**\n\n"
         f"Ready to export session: `{claude_session_id[:8]}...`\n\n"
         "**Choose export format:**",
-        parse_mode="Markdown",
+        parse_mode=None,
         reply_markup=reply_markup,
     )
 
@@ -761,7 +761,7 @@ async def end_session(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         f"• Start a new session with `/new`\n"
         f"• Check status with `/status`\n"
         f"• Send any message to begin a new conversation",
-        parse_mode="Markdown",
+        parse_mode=None,
         reply_markup=reply_markup,
     )
 
@@ -820,7 +820,7 @@ async def quick_actions(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             f"⚡ **Quick Actions**\n\n"
             f"📂 Context: `{relative_path}/`\n\n"
             f"Select an action to execute:",
-            parse_mode="Markdown",
+            parse_mode=None,
             reply_markup=keyboard,
         )
 
@@ -912,7 +912,7 @@ async def git_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         reply_markup = InlineKeyboardMarkup(keyboard)
 
         await update.message.reply_text(
-            status_message, parse_mode="Markdown", reply_markup=reply_markup
+            status_message, parse_mode=None, reply_markup=reply_markup
         )
 
     except Exception as e:

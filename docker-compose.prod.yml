@@ -27,15 +27,15 @@ services:
       - ./target_project:/app/target_project
       # Claude CLI authentication (CRITICAL: mount as read-only for security)
       # Must contain your ~/.claude directory from the host with authentication
-      - ~/.claude:/home/claudebot/.claude:ro
+      - ./claude-config:/home/claudebot/.claude
       # Optional: Additional workspace if needed
       # - ./workspace:/app/workspace
     
     # Working directory
     working_dir: /app
     
-    # Security: Run as non-root user (matches Dockerfile UID/GID)
-    user: "1001:1001"
+    # Security: Run as root to avoid permission issues with Claude CLI
+    # user: "1001:1001"
     
     # Comprehensive health check with detailed validation
     healthcheck:

@@ -234,7 +234,7 @@ class ClaudeAvailabilityMonitor:
 
         for chat_id in chat_ids:
             try:
-                await self.bot.send_message(chat_id=chat_id, text=message, parse_mode="Markdown")
+                await self.bot.send_message(chat_id=chat_id, text=message, parse_mode=None)
                 logger.info(f"Availability notification sent to chat {chat_id}")
             except Exception as e:
                 logger.error(f"Failed to send message to {chat_id}: {e}")

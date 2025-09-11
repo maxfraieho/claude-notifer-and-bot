@@ -173,7 +173,7 @@ async def handle_text_message(
                 "❌ **Claude integration not available**\n\n"
                 "The Claude Code integration is not properly configured. "
                 "Please contact the administrator.",
-                parse_mode="Markdown",
+                parse_mode=None,
             )
             return
 
@@ -244,14 +244,14 @@ async def handle_text_message(
             # Error message already formatted, create FormattedMessage
             from ..utils.formatting import FormattedMessage
 
-            formatted_messages = [FormattedMessage(str(e), parse_mode="Markdown")]
+            formatted_messages = [FormattedMessage(str(e), parse_mode=None)]
         except Exception as e:
             logger.error("Claude integration failed", error=str(e), user_id=user_id)
             # Format error and create FormattedMessage
             from ..utils.formatting import FormattedMessage
 
             formatted_messages = [
-                FormattedMessage(_format_error_message(str(e)), parse_mode="Markdown")
+                FormattedMessage(_format_error_message(str(e)), parse_mode=None)
             ]
 
         # Delete progress message
@@ -273,7 +273,11 @@ async def handle_text_message(
 
             except Exception as e:
                 logger.error(
-                    "Failed to send response message", error=str(e), message_index=i
+                    "Failed to send response message", 
+                    error=str(e), 
+                    message_index=i,
+                    message_text=message.text[:200],
+                    parse_mode=message.parse_mode
                 )
                 # Try to send error message
                 await update.message.reply_text(
@@ -293,13 +297,7 @@ async def handle_text_message(
         if conversation_enhancer and claude_response:
             try:
                 # Update conversation context
-                conversation_context = conversation_enhancer.update_context(
-                    session_id=claude_response.session_id,
-                    user_id=user_id,
-                    working_directory=str(current_dir),
-                    tools_used=claude_response.tools_used or [],
-                    response_content=claude_response.content,
-                )
+                conversation_enhancer.update_context(user_id, claude_response)
 
                 # Check if we should show follow-up suggestions
                 if conversation_enhancer.should_show_suggestions(
@@ -321,7 +319,7 @@ async def handle_text_message(
                         # Send follow-up suggestions
                         await update.message.reply_text(
                             "💡 **What would you like to do next?**",
-                            parse_mode="Markdown",
+                            parse_mode=None,
                             reply_markup=suggestion_keyboard,
                         )
 
@@ -349,7 +347,7 @@ async def handle_text_message(
             pass
 
         error_msg = f"❌ **Error processing message**\n\n{str(e)}"
-        await update.message.reply_text(error_msg, parse_mode="Markdown")
+        await update.message.reply_text(error_msg, parse_mode=None)
 
         # Log failed processing
         if audit_logger:
@@ -426,7 +424,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         await update.message.chat.send_action("upload_document")
 
         progress_msg = await update.message.reply_text(
-            f"📄 Processing file: `{document.file_name}`...", parse_mode="Markdown"
+            f"📄 Processing file: `{document.file_name}`...", parse_mode=None
         )
 
         # Check if enhanced file handler is available
@@ -446,7 +444,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 # Update progress message with file type info
                 await progress_msg.edit_text(
                     f"📄 Processing {processed_file.type} file: `{document.file_name}`...",
-                    parse_mode="Markdown",
+                    parse_mode=None,
                 )
 
             except Exception as e:
@@ -494,7 +492,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         # Create a new progress message for Claude processing
         claude_progress_msg = await update.message.reply_text(
-            "🤖 Processing file with Claude...", parse_mode="Markdown"
+            "🤖 Processing file with Claude...", parse_mode=None
         )
 
         # Get Claude integration from context
@@ -504,7 +502,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             await claude_progress_msg.edit_text(
                 "❌ **Claude integration not available**\n\n"
                 "The Claude Code integration is not properly configured.",
-                parse_mode="Markdown",
+                parse_mode=None,
             )
             return
 
@@ -556,7 +554,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         except Exception as e:
             await claude_progress_msg.edit_text(
-                _format_error_message(str(e)), parse_mode="Markdown"
+                _format_error_message(str(e)), parse_mode=None
             )
             logger.error("Claude file processing failed", error=str(e), user_id=user_id)
 
@@ -577,7 +575,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             pass
 
         error_msg = f"❌ **Error processing file**\n\n{str(e)}"
-        await update.message.reply_text(error_msg, parse_mode="Markdown")
+        await update.message.reply_text(error_msg, parse_mode=None)
 
         # Log failed file processing
         if audit_logger:
@@ -605,7 +603,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         try:
             # Send processing indicator
             progress_msg = await update.message.reply_text(
-                "📸 Processing image...", parse_mode="Markdown"
+                "📸 Processing image...", parse_mode=None
             )
 
             # Get the largest photo size
@@ -621,7 +619,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
             # Create Claude progress message
             claude_progress_msg = await update.message.reply_text(
-                "🤖 Analyzing image with Claude...", parse_mode="Markdown"
+                "🤖 Analyzing image with Claude...", parse_mode=None
             )
 
             # Get Claude integration
@@ -631,7 +629,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                 await claude_progress_msg.edit_text(
                     "❌ **Claude integration not available**\n\n"
                     "The Claude Code integration is not properly configured.",
-                    parse_mode="Markdown",
+                    parse_mode=None,
                 )
                 return
 
@@ -680,7 +678,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
             except Exception as e:
                 await claude_progress_msg.edit_text(
-                    _format_error_message(str(e)), parse_mode="Markdown"
+                    _format_error_message(str(e)), parse_mode=None
                 )
                 logger.error(
                     "Claude image processing failed", error=str(e), user_id=user_id
@@ -689,7 +687,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         except Exception as e:
             logger.error("Image processing failed", error=str(e), user_id=user_id)
             await update.message.reply_text(
-                f"❌ **Error processing image**\n\n{str(e)}", parse_mode="Markdown"
+                f"❌ **Error processing image**\n\n{str(e)}", parse_mode=None
             )
     else:
         # Fall back to unsupported message

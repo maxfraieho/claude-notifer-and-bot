@@ -239,9 +239,15 @@ class SessionManager:
                 and session.is_new_session
                 and response.session_id
             ):
-                # Remove old temporary session
+                # Remove old temporary session from memory
                 del self.active_sessions[old_session_id]
-                await self.storage.delete_session(old_session_id)
+                
+                # Update session ID in database instead of deleting
+                if hasattr(self.storage, 'update_session_id'):
+                    await self.storage.update_session_id(old_session_id, response.session_id)
+                else:
+                    # Fallback to delete for storage implementations that don't support update
+                    await self.storage.delete_session(old_session_id)
 
                 # Update session with Claude's session ID
                 session.session_id = response.session_id

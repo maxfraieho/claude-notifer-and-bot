@@ -14,7 +14,7 @@ class FormattedMessage:
     """Represents a formatted message for Telegram."""
 
     text: str
-    parse_mode: str = "Markdown"
+    parse_mode: Optional[str] = None
     reply_markup: Optional[InlineKeyboardMarkup] = None
 
     def __len__(self) -> int:
@@ -93,21 +93,21 @@ class ResponseFormatter:
 
         text = f"{icon} **{error_type}**\n\n{error}"
 
-        return FormattedMessage(text, parse_mode="Markdown")
+        return FormattedMessage(text, parse_mode=None)
 
     def format_success_message(
         self, message: str, title: str = "Success"
     ) -> FormattedMessage:
         """Format success message with appropriate styling."""
         text = f"✅ **{title}**\n\n{message}"
-        return FormattedMessage(text, parse_mode="Markdown")
+        return FormattedMessage(text, parse_mode=None)
 
     def format_info_message(
         self, message: str, title: str = "Info"
     ) -> FormattedMessage:
         """Format info message with appropriate styling."""
         text = f"ℹ️ **{title}**\n\n{message}"
-        return FormattedMessage(text, parse_mode="Markdown")
+        return FormattedMessage(text, parse_mode=None)
 
     def format_code_output(
         self, output: str, language: str = "", title: str = "Output"
@@ -151,7 +151,7 @@ class ResponseFormatter:
 
             text = f"📂 **{directory}**\n\n{file_text}"
 
-        return FormattedMessage(text, parse_mode="Markdown")
+        return FormattedMessage(text, parse_mode=None)
 
     def format_progress_message(
         self, message: str, percentage: Optional[float] = None
@@ -166,7 +166,7 @@ class ResponseFormatter:
         else:
             text = f"🔄 **{message}**"
 
-        return FormattedMessage(text, parse_mode="Markdown")
+        return FormattedMessage(text, parse_mode=None)
 
     def _semantic_chunk(self, text: str, context: Optional[dict]) -> List[dict]:
         """Split text into semantic chunks based on content type."""

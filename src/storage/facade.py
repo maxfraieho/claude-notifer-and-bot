@@ -245,6 +245,10 @@ class Storage:
             "projects": list(set(s.project_path for s in sessions)),
         }
 
+    async def update_session_id(self, old_session_id: str, new_session_id: str):
+        """Update session ID when it changes from temporary to Claude session ID."""
+        await self.sessions.update_session_id(old_session_id, new_session_id)
+
     async def get_session_history(
         self, session_id: str, limit: int = 50
     ) -> Dict[str, Any]:

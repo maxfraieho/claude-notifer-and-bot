@@ -148,7 +148,7 @@ async def handle_cd_callback(
             f"✅ **Directory Changed**\n\n"
             f"📂 Current directory: `{relative_path}/`\n\n"
             f"🔄 Claude session cleared. You can now start coding in this directory!",
-            parse_mode="Markdown",
+            parse_mode=None,
             reply_markup=reply_markup,
         )
 
@@ -238,7 +238,7 @@ async def _handle_help_action(query, context: ContextTypes.DEFAULT_TYPE) -> None
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     await query.edit_message_text(
-        help_text, parse_mode="Markdown", reply_markup=reply_markup
+        help_text, parse_mode=None, reply_markup=reply_markup
     )
 
 
@@ -294,7 +294,7 @@ async def _handle_show_projects_action(
             f"📁 **Available Projects**\n\n"
             f"{project_list}\n\n"
             f"Click a project to navigate to it:",
-            parse_mode="Markdown",
+            parse_mode=None,
             reply_markup=reply_markup,
         )
 
@@ -337,7 +337,7 @@ async def _handle_new_session_action(query, context: ContextTypes.DEFAULT_TYPE) 
         f"🆕 **New Claude Code Session**\n\n"
         f"📂 Working directory: `{relative_path}/`\n\n"
         f"Ready to help you code! Send me a message to get started:",
-        parse_mode="Markdown",
+        parse_mode=None,
         reply_markup=reply_markup,
     )
 
@@ -407,7 +407,7 @@ async def _handle_end_session_action(query, context: ContextTypes.DEFAULT_TYPE) 
         f"• Start a new session\n"
         f"• Check status\n"
         f"• Send any message to begin a new conversation",
-        parse_mode="Markdown",
+        parse_mode=None,
         reply_markup=reply_markup,
     )
 
@@ -440,7 +440,7 @@ async def _handle_continue_action(query, context: ContextTypes.DEFAULT_TYPE) -> 
                 f"Session ID: `{claude_session_id[:8]}...`\n"
                 f"Directory: `{current_dir.relative_to(settings.approved_directory)}/`\n\n"
                 f"Continuing where you left off...",
-                parse_mode="Markdown",
+                parse_mode=None,
             )
 
             claude_response = await claude_integration.run_command(
@@ -454,7 +454,7 @@ async def _handle_continue_action(query, context: ContextTypes.DEFAULT_TYPE) -> 
             await query.edit_message_text(
                 "🔍 **Looking for Recent Session**\n\n"
                 "Searching for your most recent session in this directory...",
-                parse_mode="Markdown",
+                parse_mode=None,
             )
 
             claude_response = await claude_integration.continue_session(
@@ -471,7 +471,7 @@ async def _handle_continue_action(query, context: ContextTypes.DEFAULT_TYPE) -> 
             await query.message.reply_text(
                 f"✅ **Session Continued**\n\n"
                 f"{claude_response.content[:500]}{'...' if len(claude_response.content) > 500 else ''}",
-                parse_mode="Markdown",
+                parse_mode=None,
             )
         else:
             # No session found to continue
@@ -483,7 +483,7 @@ async def _handle_continue_action(query, context: ContextTypes.DEFAULT_TYPE) -> 
                 f"• Use the button below to start a fresh session\n"
                 f"• Check your session status\n"
                 f"• Navigate to a different directory",
-                parse_mode="Markdown",
+                parse_mode=None,
                 reply_markup=InlineKeyboardMarkup(
                     [
                         [
@@ -504,7 +504,7 @@ async def _handle_continue_action(query, context: ContextTypes.DEFAULT_TYPE) -> 
             f"❌ **Error Continuing Session**\n\n"
             f"An error occurred: `{str(e)}`\n\n"
             f"Try starting a new session instead.",
-            parse_mode="Markdown",
+            parse_mode=None,
             reply_markup=InlineKeyboardMarkup(
                 [
                     [
@@ -592,7 +592,7 @@ async def _handle_status_action(query, context: ContextTypes.DEFAULT_TYPE) -> No
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     await query.edit_message_text(
-        "\n".join(status_lines), parse_mode="Markdown", reply_markup=reply_markup
+        "\n".join(status_lines), parse_mode=None, reply_markup=reply_markup
     )
 
 
@@ -660,7 +660,7 @@ async def _handle_ls_action(query, context: ContextTypes.DEFAULT_TYPE) -> None:
         reply_markup = InlineKeyboardMarkup(keyboard)
 
         await query.edit_message_text(
-            message, parse_mode="Markdown", reply_markup=reply_markup
+            message, parse_mode=None, reply_markup=reply_markup
         )
 
     except Exception as e:
@@ -712,7 +712,7 @@ async def _handle_quick_actions_action(
         "🛠️ **Quick Actions**\n\n"
         "Choose a common development task:\n\n"
         "_Note: These will be fully functional once Claude Code integration is complete._",
-        parse_mode="Markdown",
+        parse_mode=None,
         reply_markup=reply_markup,
     )
 
@@ -788,7 +788,7 @@ async def handle_quick_action_callback(
             f"🚀 **Executing {action.icon} {action.name}**\n\n"
             f"Running quick action in directory: `{current_dir.relative_to(settings.approved_directory)}/`\n\n"
             f"Please wait...",
-            parse_mode="Markdown",
+            parse_mode=None,
         )
 
         # Run the action through Claude
@@ -804,7 +804,7 @@ async def handle_quick_action_callback(
 
             await query.message.reply_text(
                 f"✅ **{action.icon} {action.name} Complete**\n\n{response_text}",
-                parse_mode="Markdown",
+                parse_mode=None,
             )
         else:
             await query.edit_message_text(
@@ -933,7 +933,7 @@ async def handle_conversation_callback(
             f"• Start a new session\n"
             f"• Check status\n"
             f"• Send any message to begin a new conversation",
-            parse_mode="Markdown",
+            parse_mode=None,
             reply_markup=reply_markup,
         )
 
@@ -992,7 +992,7 @@ async def handle_git_callback(
             reply_markup = InlineKeyboardMarkup(keyboard)
 
             await query.edit_message_text(
-                status_message, parse_mode="Markdown", reply_markup=reply_markup
+                status_message, parse_mode=None, reply_markup=reply_markup
             )
 
         elif git_action == "diff":
@@ -1024,7 +1024,7 @@ async def handle_git_callback(
             reply_markup = InlineKeyboardMarkup(keyboard)
 
             await query.edit_message_text(
-                diff_message, parse_mode="Markdown", reply_markup=reply_markup
+                diff_message, parse_mode=None, reply_markup=reply_markup
             )
 
         elif git_action == "log":
@@ -1051,7 +1051,7 @@ async def handle_git_callback(
             reply_markup = InlineKeyboardMarkup(keyboard)
 
             await query.edit_message_text(
-                log_message, parse_mode="Markdown", reply_markup=reply_markup
+                log_message, parse_mode=None, reply_markup=reply_markup
             )
 
         else:
@@ -1103,7 +1103,7 @@ async def handle_export_callback(
         await query.edit_message_text(
             f"📤 **Exporting Session**\n\n"
             f"Generating {export_format.upper()} export...",
-            parse_mode="Markdown",
+            parse_mode=None,
         )
 
         # Export session
@@ -1126,7 +1126,7 @@ async def handle_export_callback(
                 f"Size: {exported_session.size_bytes:,} bytes\n"
                 f"Created: {exported_session.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
             ),
-            parse_mode="Markdown",
+            parse_mode=None,
         )
 
         # Update the original message
@@ -1134,7 +1134,7 @@ async def handle_export_callback(
             f"✅ **Export Complete**\n\n"
             f"Your session has been exported as {exported_session.filename}.\n"
             f"Check the file above for your complete conversation history.",
-            parse_mode="Markdown",
+            parse_mode=None,
         )
 
     except Exception as e:
