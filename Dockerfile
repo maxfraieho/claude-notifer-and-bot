@@ -5,8 +5,8 @@
 FROM python:3.11-slim
 
 # Build arguments for flexibility
-ARG USER_UID=1001
-ARG USER_GID=1001
+ARG USER_UID=1000
+ARG USER_GID=1000
 ARG USERNAME=claudebot
 
 # Install system dependencies including Node.js for Claude CLI
@@ -51,7 +51,7 @@ RUN curl -sSL https://install.python-poetry.org | python3 -
 ENV PATH="/home/${USERNAME}/.local/bin:${PATH}"
 
 # Copy dependency files for Poetry
-COPY --chown=${USERNAME}:${USERNAME} pyproject.toml poetry.lock ./
+COPY --chown=${USERNAME}:${USERNAME} pyproject.toml poetry.lock README.md ./
 
 # Configure Poetry and install Python dependencies
 RUN poetry config virtualenvs.create false \
@@ -70,8 +70,18 @@ COPY --chown=${USERNAME}:${USERNAME} CLAUDE.md /app/
 # Set working directory to /app
 WORKDIR /app
 
-# Install the application as a package
-RUN cd /home/${USERNAME} && poetry install --only-root --no-cache
+# Create startup script for Claude CLI authentication
+RUN echo '#!/bin/bash\n\
+# Claude CLI Authentication Setup\n\
+if [ ! -z "$ANTHROPIC_API_KEY" ] && [ ! -f ~/.claude/.credentials.json ]; then\n\
+  echo "Setting up Claude CLI with provided API key..."\n\
+  mkdir -p ~/.claude\n\
+  echo "{\"sessionKey\":\"$ANTHROPIC_API_KEY\"}" > ~/.claude/.credentials.json\n\
+fi\n\
+\n\
+# Start the application\n\
+exec python -m src.main "$@"\n' > /home/${USERNAME}/entrypoint.sh \
+    && chmod +x /home/${USERNAME}/entrypoint.sh
 
 # Health check with comprehensive validation
 HEALTHCHECK --interval=60s --timeout=15s --start-period=45s --retries=3 \
@@ -79,9 +89,9 @@ HEALTHCHECK --interval=60s --timeout=15s --start-period=45s --retries=3 \
 
 # Labels for container management
 LABEL maintainer="kroschu" \
-      version="0.1.1" \
+      version="1.0.4-standalone" \
       description="Claude Code Telegram Bot - Remote access to Claude CLI via Telegram" \
       org.label-schema.vcs-url="https://github.com/maxfraieho/claude-notifer-and-bot"
 
-# Default command
-ENTRYPOINT ["python", "-m", "src.main"]
+# Default command with authentication setup
+ENTRYPOINT ["/home/claudebot/entrypoint.sh"]
