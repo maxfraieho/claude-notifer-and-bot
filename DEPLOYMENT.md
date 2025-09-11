@@ -9,7 +9,7 @@ This guide will help you deploy the working Claude Telegram Bot on a new server.
 - Docker and Docker Compose installed
 - Telegram Bot Token from @BotFather
 - Your Telegram User ID (get from @userinfobot)
-- Claude CLI authenticated on your local machine
+- **ВАЖЛИВО**: Автентифікований Claude CLI (папка ~/.claude з вашої робочої машини)
 
 ## Step 1: Prepare Claude CLI Authentication
 
@@ -76,6 +76,8 @@ ALLOWED_USERS=123456789
 
 # OPTIONAL - Chat ID for notifications
 CLAUDE_AVAILABILITY_NOTIFY_CHAT_IDS=123456789
+
+# NOTE: No Claude API tokens needed! Bot uses your mounted ~/.claude directory
 ```
 
 ## Step 4: Set Up Claude Authentication
