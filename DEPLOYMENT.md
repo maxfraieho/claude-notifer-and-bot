@@ -1,369 +1,216 @@
-# 🚀 Production Deployment Guide
+# Claude Telegram Bot - Deployment Guide
 
-## Server Requirements
+## Quick Deployment on New Server
 
-### System Requirements
-- **OS**: Ubuntu 20.04+ / Debian 11+ / CentOS 8+
-- **RAM**: Minimum 2GB, Recommended 4GB+
-- **CPU**: 2+ cores
-- **Storage**: 10GB+ free space
-- **Network**: Stable internet connection
+This guide will help you deploy the working Claude Telegram Bot on a new server.
 
-### Software Requirements
-- Docker 20.10+
-- Docker Compose 2.0+
-- Node.js 18+ (for Claude CLI)
-- git (for updates)
+## Prerequisites
 
-## Quick Deployment Commands
+- Docker and Docker Compose installed
+- Telegram Bot Token from @BotFather
+- Your Telegram User ID (get from @userinfobot)
+- Claude CLI authenticated on your local machine
 
-After pushing your image, run these commands on your server:
+## Step 1: Prepare Claude CLI Authentication
+
+**On your current working machine** (where Claude CLI is authenticated):
 
 ```bash
-# 1. Install Docker and Docker Compose (if not installed)
-curl -fsSL https://get.docker.com -o get-docker.sh && sudo sh get-docker.sh
-sudo usermod -aG docker $USER
-sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
-
-# 2. Login to Docker Hub
-docker login
-
-# 3. Create project directory
-mkdir -p ~/claude-bot-prod && cd ~/claude-bot-prod
-
-# 4. Create required directories
-mkdir -p data target_project
-chmod 755 data target_project
-
-# 5. Install and authenticate Claude CLI (CRITICAL STEP)
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-sudo apt-get install -y nodejs
-sudo npm install -g @anthropic-ai/claude-code
-
-# Authenticate Claude CLI
-claude auth login
-
-# Verify authentication
-claude auth status
-
-# 6. Pull the image
-docker pull kroschu/claude-notifer-chat-amd64:latest
-
-# 7. Copy your config files to server:
-# - docker-compose.remote.yml
-# - .env (with production settings)
-
-# 8. Deploy the bot
-docker-compose -f docker-compose.remote.yml up -d
-
-# 9. Verify deployment
-docker-compose -f docker-compose.remote.yml ps
-docker-compose -f docker-compose.remote.yml logs -f
+# Copy your authenticated Claude config
+tar -czf claude-config.tar.gz ~/.claude
 ```
 
-## Detailed Step-by-Step Instructions
+Transfer this file to your new server.
 
-### 1. Server Preparation
+## Step 2: Server Setup
 
-#### Install Docker & Docker Compose:
+**On your new server:**
+
+1. **Install Docker and Docker Compose:**
 ```bash
+# Update system
+sudo apt update && sudo apt upgrade -y
+
 # Install Docker
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
 sudo usermod -aG docker $USER
 
 # Install Docker Compose
-sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
+sudo apt install docker-compose-plugin
 
 # Logout and login again for group changes to take effect
 ```
 
-#### Install Node.js and Claude CLI:
+2. **Create project directory:**
 ```bash
-# Install Node.js 18+
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-sudo apt-get install -y nodejs
-
-# Install Claude CLI globally
-sudo npm install -g @anthropic-ai/claude-code
-
-# Verify installation
-claude --version
+mkdir claude-telegram-bot
+cd claude-telegram-bot
 ```
 
-### 2. Claude CLI Authentication (CRITICAL)
-
+3. **Download deployment files:**
 ```bash
-# Login to Claude CLI (this creates ~/.claude directory)
-claude auth login
-
-# Follow the prompts to authenticate with your Anthropic account
-# This step is MANDATORY - the bot cannot function without Claude CLI auth
-
-# Verify authentication
-claude auth status
-# Should show: ✓ Authenticated as your@email.com
-
-# Check that ~/.claude directory exists
-ls -la ~/.claude
+# Download the deployment configuration
+curl -o docker-compose.yml https://raw.githubusercontent.com/maxfraieho/claude-notifer-and-bot/main/docker-compose.deploy.yml
+curl -o .env.template https://raw.githubusercontent.com/maxfraieho/claude-notifer-and-bot/main/.env.template
 ```
 
-### 3. Project Setup
+## Step 3: Configure Environment
 
+1. **Create environment file:**
 ```bash
-# Create project directory
-mkdir -p ~/claude-bot-prod
-cd ~/claude-bot-prod
+cp .env.template .env
+nano .env
+```
 
-# Create required directories with proper permissions
+2. **Fill in required values in .env:**
+```bash
+# REQUIRED - Get from @BotFather
+TELEGRAM_BOT_TOKEN=1234567890:ABCdefGHIjklMNOpqrsTUVwxyz
+
+# REQUIRED - Your bot username (without @)
+TELEGRAM_BOT_USERNAME=YourBotName_bot
+
+# REQUIRED - Your Telegram user ID (get from @userinfobot)
+ALLOWED_USERS=123456789
+
+# OPTIONAL - Chat ID for notifications
+CLAUDE_AVAILABILITY_NOTIFY_CHAT_IDS=123456789
+```
+
+## Step 4: Set Up Claude Authentication
+
+1. **Extract Claude config:**
+```bash
+# Extract the claude-config.tar.gz you transferred from working machine
+tar -xzf claude-config.tar.gz
+mv .claude claude-config
+```
+
+2. **Create required directories:**
+```bash
 mkdir -p data target_project
-chmod 755 data target_project
-
-# The data directory will store:
-# - SQLite database (bot.db)
-# - Session files
-# - Logs and cache
 ```
 
-### 4. Configuration Files
+## Step 5: Deploy
 
-Transfer these files to your server's `~/claude-bot-prod/` directory:
-
-1. **docker-compose.remote.yml** - Production compose configuration
-2. **.env** - Environment variables (update for production)
-
-#### Production .env Template:
+1. **Start the bot:**
 ```bash
-# Telegram Configuration
-TELEGRAM_BOT_TOKEN=your_production_bot_token
-TELEGRAM_BOT_USERNAME=your_bot_username
-
-# Security (IMPORTANT: Set for production)
-ALLOWED_USERS=123456789,987654321  # Your Telegram user IDs
-ENABLE_TOKEN_AUTH=false            # Or true with token secret
-
-# Paths (use container paths)
-APPROVED_DIRECTORY=/app/target_project
-TARGET_PROJECT_PATH=/app/target_project
-
-# Claude Settings
-USE_SDK=true
-CLAUDE_MODEL=claude-3-5-sonnet-20241022
-ANTHROPIC_API_KEY=your_api_key_if_needed
-
-# Monitoring
-CLAUDE_AVAILABILITY_MONITOR=true
-CLAUDE_AVAILABILITY_NOTIFY_CHAT_IDS=-1001234567890
-CLAUDE_AVAILABILITY_CHECK_INTERVAL=300  # 5 minutes
-
-# Production Settings
-DEBUG=false
-LOG_LEVEL=INFO
-DEVELOPMENT_MODE=false
-
-# Database
-DATABASE_URL=sqlite:////app/data/bot.db
+docker-compose up -d
 ```
 
-### 5. Docker Hub Authentication
-
+2. **Check logs:**
 ```bash
-# Login to Docker Hub
-docker login
-# Enter your Docker Hub username and password/token
+docker-compose logs -f claude_bot
 ```
 
-### 6. Deployment
+3. **Test the bot:**
+Send a message to your Telegram bot to verify it's working.
 
+## Directory Structure
+
+After setup, your directory should look like:
+
+```
+claude-telegram-bot/
+├── docker-compose.yml
+├── .env
+├── claude-config/           # Claude CLI authentication
+│   ├── .credentials.json
+│   └── ...
+├── data/                    # Bot data persistence
+├── target_project/         # Your project files
+└── claude-config.tar.gz    # Original backup
+```
+
+## Managing the Bot
+
+### Start/Stop
 ```bash
-# Pull the latest image
-docker pull kroschu/claude-notifer-chat-amd64:latest
+# Start
+docker-compose up -d
 
-# Start the bot
-docker-compose -f docker-compose.remote.yml up -d
+# Stop
+docker-compose down
 
-# Verify container is running
-docker-compose -f docker-compose.remote.yml ps
+# Restart
+docker-compose restart
 ```
 
-### 7. Verification and Monitoring
-
+### View Logs
 ```bash
-# Check container status
-docker-compose -f docker-compose.remote.yml ps
+# Follow logs
+docker-compose logs -f claude_bot
 
-# View logs
-docker-compose -f docker-compose.remote.yml logs -f claude_bot
-
-# Check health status
-docker-compose -f docker-compose.remote.yml exec claude_bot python -c "
-try:
-    from src.config.settings import Settings
-    settings = Settings()
-    print('✓ Configuration loaded successfully')
-    print(f'✓ Bot: {settings.telegram_bot_username}')
-    print(f'✓ Database: {settings.database_url}')
-except Exception as e:
-    print(f'✗ Error: {e}')
-"
-
-# Test Telegram bot response (send /start to your bot)
+# View recent logs
+docker-compose logs --tail=100 claude_bot
 ```
 
-## Management Commands
-
-### Update Deployment:
+### Update Bot
 ```bash
 # Pull latest image
-docker-compose -f docker-compose.remote.yml pull
+docker-compose pull
 
-# Recreate containers with new image
-docker-compose -f docker-compose.remote.yml up -d
-
-# Remove old images
-docker image prune -f
-```
-
-### View Logs:
-```bash
-# Real-time logs
-docker-compose -f docker-compose.remote.yml logs -f
-
-# Last 100 lines
-docker-compose -f docker-compose.remote.yml logs --tail=100
-
-# Logs for specific service
-docker-compose -f docker-compose.remote.yml logs claude_bot
-```
-
-### Restart Services:
-```bash
-# Restart bot
-docker-compose -f docker-compose.remote.yml restart claude_bot
-
-# Restart all services
-docker-compose -f docker-compose.remote.yml restart
-```
-
-### Stop Services:
-```bash
-# Stop but keep containers
-docker-compose -f docker-compose.remote.yml stop
-
-# Stop and remove containers
-docker-compose -f docker-compose.remote.yml down
-
-# Stop and remove containers + volumes
-docker-compose -f docker-compose.remote.yml down -v
+# Restart with new image
+docker-compose up -d
 ```
 
 ## Troubleshooting
 
-### Common Issues:
+### Bot shows "Claude Code exited with code 1"
 
-1. **Bot not responding to commands:**
-   ```bash
-   # Check if container is running
-   docker-compose -f docker-compose.remote.yml ps
-   
-   # Check logs for errors
-   docker-compose -f docker-compose.remote.yml logs claude_bot
-   
-   # Verify .env configuration
-   docker-compose -f docker-compose.remote.yml exec claude_bot env | grep TELEGRAM
-   ```
-
-2. **Claude CLI authentication issues:**
-   ```bash
-   # Re-authenticate Claude CLI on host
-   claude auth login
-   claude auth status
-   
-   # Verify ~/.claude directory permissions
-   ls -la ~/.claude
-   
-   # Restart container after re-auth
-   docker-compose -f docker-compose.remote.yml restart
-   ```
-
-3. **Database connection errors:**
-   ```bash
-   # Check if data directory exists and is writable
-   ls -la ./data/
-   
-   # Check container permissions
-   docker-compose -f docker-compose.remote.yml exec claude_bot ls -la /app/data/
-   ```
-
-4. **Memory/CPU issues:**
-   ```bash
-   # Monitor resource usage
-   docker stats
-   
-   # Adjust limits in docker-compose.remote.yml if needed
-   ```
-
-### Logs Location:
-- **Container logs**: `docker-compose logs`
-- **Application logs**: `./data/` directory
-- **System logs**: `/var/log/` on host
-
-## Security Checklist
-
-- [ ] Claude CLI properly authenticated
-- [ ] .env file contains production tokens
-- [ ] ALLOWED_USERS configured with your Telegram ID
-- [ ] Container running as non-root user (1001:1001)
-- [ ] ~/.claude directory mounted read-only
-- [ ] Firewall configured (only necessary ports open)
-- [ ] Docker daemon secured
-- [ ] Regular backups configured
-
-## Backup Strategy
-
-### Manual Backup:
+1. Check Claude authentication:
 ```bash
-# Create backup of critical data
-tar -czf "claude-bot-backup-$(date +%Y%m%d-%H%M).tar.gz" \
-    data/ \
-    target_project/ \
-    ~/.claude/ \
-    .env \
-    docker-compose.remote.yml
+docker exec claude-code-bot-prod claude auth status
 ```
 
-### Automated Backup Script:
+2. If authentication failed, fix permissions:
 ```bash
-#!/bin/bash
-# backup.sh - Add to crontab for automated backups
-
-BACKUP_DIR="/var/backups/claude-bot"
-DATE=$(date +%Y%m%d-%H%M)
-
-mkdir -p "$BACKUP_DIR"
-
-# Backup application data
-tar -czf "$BACKUP_DIR/claude-bot-$DATE.tar.gz" \
-    -C ~/claude-bot-prod \
-    data/ target_project/ .env docker-compose.remote.yml
-
-# Backup Claude CLI auth
-tar -czf "$BACKUP_DIR/claude-auth-$DATE.tar.gz" \
-    -C ~/ .claude/
-
-# Keep only last 7 days of backups
-find "$BACKUP_DIR" -name "*.tar.gz" -mtime +7 -delete
-
-echo "Backup completed: $BACKUP_DIR/claude-bot-$DATE.tar.gz"
+docker exec -u root claude-code-bot-prod chown claudebot:claudebot /home/claudebot/.claude/.credentials.json
+docker-compose restart
 ```
 
-### Add to Crontab:
-```bash
-# Edit crontab
-crontab -e
+### Bot not responding to messages
 
-# Add daily backup at 2 AM
-0 2 * * * /path/to/backup.sh >> /var/log/claude-bot-backup.log 2>&1
+1. Check bot is running:
+```bash
+docker-compose ps
 ```
+
+2. Check logs for errors:
+```bash
+docker-compose logs claude_bot
+```
+
+3. Verify your user ID is in ALLOWED_USERS
+
+### Performance Issues
+
+1. Check resource usage:
+```bash
+docker stats claude-code-bot-prod
+```
+
+2. Adjust resource limits in docker-compose.yml if needed
+
+## Security Notes
+
+- Keep your `.env` file secure and never commit it to version control
+- The `claude-config` directory contains sensitive authentication data
+- Consider setting up firewall rules if the server is public-facing
+- Regularly update the Docker image for security patches
+
+## Support
+
+If you encounter issues:
+1. Check the troubleshooting section above
+2. Review logs for specific error messages
+3. Ensure all environment variables are correctly set
+4. Verify Claude CLI authentication is working
+
+## Image Versions
+
+- **Production**: `kroschu/claude-code-telegram:v0.1.2-working`
+- **Latest**: `kroschu/claude-code-telegram:latest`
+
+The `v0.1.2-working` tag contains the tested and verified working version.
