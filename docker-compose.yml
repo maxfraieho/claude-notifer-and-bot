@@ -1,21 +1,20 @@
 services:
   claude_bot:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: kroschu/claude-code-telegram:1.0.4-standalone
     container_name: claude-code-bot
     restart: unless-stopped
     env_file:
       - .env
     volumes:
       - ./data:/app/data
-      # Mount the Claude CLI authentication directory from the host
+      # Optional: Mount the Claude CLI authentication directory from the host
+      # Uncomment if you want to use existing host Claude CLI authentication
       # For Linux/macOS: ~/.claude
       # For Windows: ${USERPROFILE}/.claude
-      # - ~/.claude:/home/claudebot/.claude  # Disable for debugging
+      # - ~/.claude:/home/claudebot/.claude  # Standalone mode - no mounting needed
       - ./target_project:/app/target_project  # ✅ New volume for target project
     working_dir: /app
-    # user: "1001:1001"  # Disable user override for debugging
+    user: "1000:1000"
     healthcheck:
       test: ["CMD", "python", "-c", "import sys; sys.exit(0) if __import__('src.main') else sys.exit(1)"]
       interval: 60s
