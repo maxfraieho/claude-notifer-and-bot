@@ -2,7 +2,7 @@
 
 ## Quick Deployment (Standalone Mode)
 
-**NEW**: For easy deployment on any server without volume mounting complexity.
+**NEW**: For easy deployment on any server. Two authentication modes supported.
 
 ### Using Docker Compose (Recommended)
 
@@ -59,10 +59,10 @@ docker run -d \
 
 ## Authentication Options
 
-### 1. Standalone Mode (Default - Recommended)
-- ✅ No volume mounting required
-- ✅ Uses `ANTHROPIC_API_KEY` environment variable
-- ✅ Container handles Claude CLI authentication internally
+### 1. Container Authentication Mode (Recommended)
+- ✅ No volume mounting required  
+- ✅ Uses `USE_SDK=false` for Claude CLI subprocess mode
+- ✅ Setup Claude CLI authentication inside container after first run
 - ✅ Perfect for clean deployments on new servers
 - ✅ No permission issues
 

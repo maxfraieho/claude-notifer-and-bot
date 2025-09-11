@@ -70,14 +70,10 @@ COPY --chown=${USERNAME}:${USERNAME} CLAUDE.md /app/
 # Set working directory to /app
 WORKDIR /app
 
-# Create startup script for Claude CLI authentication
+# Create simple entrypoint script (relies on mounted .claude directory)
 RUN echo '#!/bin/bash\n\
-# Claude CLI Authentication Setup\n\
-if [ ! -z "$ANTHROPIC_API_KEY" ] && [ ! -f ~/.claude/.credentials.json ]; then\n\
-  echo "Setting up Claude CLI with provided API key..."\n\
-  mkdir -p ~/.claude\n\
-  echo "{\"sessionKey\":\"$ANTHROPIC_API_KEY\"}" > ~/.claude/.credentials.json\n\
-fi\n\
+# Create Claude CLI directory structure if not mounted\n\
+mkdir -p ~/.claude/plugins/repos\n\
 \n\
 # Start the application\n\
 exec python -m src.main "$@"\n' > /home/${USERNAME}/entrypoint.sh \

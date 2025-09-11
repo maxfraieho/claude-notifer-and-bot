@@ -1,8 +1,6 @@
 services:
   claude_bot:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: kroschu/claude-code-telegram:1.0.4-standalone
     container_name: claude-code-bot
     restart: unless-stopped
     env_file:
@@ -13,7 +11,7 @@ services:
       # Uncomment if you want to use existing host Claude CLI authentication
       # For Linux/macOS: ~/.claude
       # For Windows: ${USERPROFILE}/.claude
-      # - ~/.claude:/home/claudebot/.claude
+      # - ~/.claude:/home/claudebot/.claude  # Standalone mode - no mounting needed
       - ./target_project:/app/target_project  # ✅ New volume for target project
     working_dir: /app
     user: "1000:1000"
