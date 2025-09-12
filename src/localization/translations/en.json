@@ -1,0 +1,76 @@
+{
+  "_meta": {
+    "name": "English",
+    "code": "en"
+  },
+  "commands": {
+    "start": {
+      "welcome": "👋 Welcome to Claude Code Telegram Bot, {name}!",
+      "description": "🤖 I help you access Claude Code remotely through Telegram.",
+      "available_commands": "**Available Commands:**",
+      "help_cmd": "Show detailed help",
+      "new_cmd": "Start a new Claude session",
+      "ls_cmd": "List files in current directory",
+      "cd_cmd": "Change directory",
+      "projects_cmd": "Show available projects",
+      "status_cmd": "Show session status",
+      "actions_cmd": "Show quick actions",
+      "git_cmd": "Git repository commands",
+      "quick_start": "**Quick Start:**",
+      "quick_start_1": "Use `/projects` to see available projects",
+      "quick_start_2": "Use `/cd <project>` to navigate to a project",
+      "quick_start_3": "Send any message to start coding with Claude!",
+      "security_note": "🔒 Your access is secured and all actions are logged.",
+      "usage_note": "📊 Use `/status` to check your usage limits."
+    },
+    "help": {
+      "title": "🤖 **Claude Code Telegram Bot Help**",
+      "navigation_title": "**Navigation Commands:**",
+      "ls_desc": "List files and directories",
+      "cd_desc": "Change to directory",
+      "pwd_desc": "Show current directory",
+      "projects_desc": "Show available projects",
+      "session_title": "**Session Commands:**",
+      "new_desc": "Start new Claude session",
+      "continue_desc": "Continue last session (optionally with message)",
+      "end_desc": "End current session",
+      "status_desc": "Show session and usage status",
+      "export_desc": "Export session history",
+      "actions_desc": "Show context-aware quick actions",
+      "git_desc": "Git repository information",
+      "usage_title": "**Usage Examples:**",
+      "usage_cd": "Enter project directory",
+      "usage_ls": "See what's in current directory",
+      "usage_code": "Ask Claude to code",
+      "usage_file": "Send a file to have Claude review it",
+      "file_ops_title": "**File Operations:**",
+      "file_ops_send": "Send text files (.py, .js, .md, etc.) for review",
+      "file_ops_modify": "Claude can read, modify, and create files",
+      "file_ops_security": "All file operations are within your approved directory",
+      "security_title": "**Security Features:**",
+      "security_path": "🔒 Path traversal protection",
+      "security_rate": "⏱️ Rate limiting to prevent abuse",
+      "security_usage": "📊 Usage tracking and limits",
+      "security_validation": "🛡️ Input validation and sanitization",
+      "tips_title": "**Tips:**",
+      "tips_specific": "Use specific, clear requests for best results",
+      "tips_status": "Check `/status` to monitor your usage",
+      "tips_buttons": "Use quick action buttons when available"
+    }
+  },
+  "buttons": {
+    "show_projects": "📁 Show Projects",
+    "get_help": "❓ Get Help",
+    "new_session": "🆕 New Session",
+    "check_status": "📊 Check Status",
+    "language_settings": "🌐 Language",
+    "back": "⬅️ Back",
+    "select_language": "Select Language"
+  },
+  "messages": {
+    "language_select": "🌐 **Language Selection**\n\nPlease choose your preferred language:",
+    "language_changed": "✅ Language changed to {language}",
+    "language_not_available": "❌ Language not available: {language}",
+    "error_occurred": "❌ An error occurred: {error}"
+  }
+}
