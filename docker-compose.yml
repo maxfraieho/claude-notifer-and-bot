@@ -1,18 +1,13 @@
 services:
   claude_bot:
-    image: kroschu/claude-code-telegram:1.0.4-standalone
+    build: .
     container_name: claude-code-bot
     restart: unless-stopped
     env_file:
       - .env
     volumes:
       - ./data:/app/data
-      # Optional: Mount the Claude CLI authentication directory from the host
-      # Uncomment if you want to use existing host Claude CLI authentication
-      # For Linux/macOS: ~/.claude
-      # For Windows: ${USERPROFILE}/.claude
-      # - ~/.claude:/home/claudebot/.claude  # Standalone mode - no mounting needed
-      - ./target_project:/app/target_project  # ✅ New volume for target project
+      - ./target_project:/app/target_project
     working_dir: /app
     user: "1000:1000"
     healthcheck:

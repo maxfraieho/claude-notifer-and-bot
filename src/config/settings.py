@@ -50,6 +50,9 @@ class Settings(BaseSettings):
 
     # Security
     approved_directory: Path = Field(..., description="Base directory for projects")
+    security_flexible_mode: bool = Field(
+        False, description="Allow more flexible file operations within project subdirectories"
+    )
     # allowed_users: Optional[List[int]] = Field(
     #     default=None, description="Allowed Telegram user IDs"
     # )

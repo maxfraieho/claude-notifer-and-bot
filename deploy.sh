@@ -1,132 +1,112 @@
 #!/bin/bash
-
-# Claude Telegram Bot - Quick Deployment Script
-# This script prepares everything needed for deployment on a new server
+# 🚀 Claude Telegram Bot - Quick Deploy Script
+# Використовується готовий образ з Docker Hub: kroschu/claude-code-telegram:latest
 
 set -e
 
-echo "🚀 Claude Telegram Bot - Deployment Preparation"
-echo "=============================================="
+echo "🚀 Claude Telegram Bot - Quick Deploy"
+echo "======================================"
 
-# Check if we're in the correct directory
-if [[ ! -f "docker-compose.prod.yml" ]]; then
-    echo "❌ Error: Run this script from the project root directory"
-    exit 1
-fi
-
-# Create deployment package directory
-DEPLOY_DIR="deployment-package"
-echo "📦 Creating deployment package..."
-rm -rf "$DEPLOY_DIR"
-mkdir -p "$DEPLOY_DIR"
-
-# Copy deployment files
-cp docker-compose.deploy.yml "$DEPLOY_DIR/docker-compose.yml"
-cp .env.template "$DEPLOY_DIR/"
-cp DEPLOYMENT.md "$DEPLOY_DIR/"
-
-# Create Claude config archive
-echo "🔐 Creating Claude configuration archive..."
-if [[ -d "claude-config" ]]; then
-    tar -czf "$DEPLOY_DIR/claude-config.tar.gz" -C . claude-config/
-    echo "✅ Claude config archived successfully"
-else
-    echo "⚠️  Warning: claude-config directory not found"
-    echo "   You'll need to transfer your Claude CLI config manually"
-fi
-
-# Create quick setup script
-cat > "$DEPLOY_DIR/quick-setup.sh" << 'EOF'
-#!/bin/bash
-
-# Quick Setup Script for Claude Telegram Bot
-set -e
-
-echo "🚀 Setting up Claude Telegram Bot..."
-
-# Check if Docker is installed
+# Перевірка чи є Docker
 if ! command -v docker &> /dev/null; then
-    echo "❌ Docker not found. Please install Docker first:"
-    echo "   curl -fsSL https://get.docker.com -o get-docker.sh"
-    echo "   sudo sh get-docker.sh"
+    echo "❌ Docker не встановлений! Встановіть Docker та Docker Compose."
     exit 1
 fi
 
-# Check if Docker Compose is available
-if ! docker compose version &> /dev/null; then
-    echo "❌ Docker Compose not found. Please install docker-compose-plugin"
+if ! command -v docker-compose &> /dev/null; then
+    echo "❌ Docker Compose не встановлений! Встановіть Docker Compose."
     exit 1
 fi
 
-# Create required directories
-echo "📁 Creating directories..."
+# Створити директорії
 mkdir -p data target_project
 
-# Extract Claude config if exists
-if [[ -f "claude-config.tar.gz" ]]; then
-    echo "🔐 Extracting Claude configuration..."
-    tar -xzf claude-config.tar.gz
-    echo "✅ Claude config extracted"
-else
-    echo "⚠️  claude-config.tar.gz not found"
-    echo "   Please ensure you have transferred your Claude CLI authentication"
-fi
+# Створити docker-compose.yml з готовим образом
+cat > docker-compose.yml << 'EOF'
+services:
+  claude_bot:
+    image: kroschu/claude-code-telegram:latest
+    container_name: claude-code-bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./target_project:/app/target_project
+    working_dir: /app
+    user: "1000:1000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.exit(0) if __import__('src.main') else sys.exit(1)"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-# Setup environment file
-if [[ ! -f ".env" ]]; then
-    if [[ -f ".env.template" ]]; then
-        cp .env.template .env
-        echo "📝 Environment template copied to .env"
-        echo "⚠️  IMPORTANT: Edit .env file with your configuration before starting!"
-    else
-        echo "❌ .env.template not found"
-        exit 1
-    fi
-fi
-
-echo "✅ Setup completed!"
-echo ""
-echo "Next steps:"
-echo "1. Edit .env file with your Telegram bot token and settings"
-echo "2. Run: docker compose up -d"
-echo "3. Check logs: docker compose logs -f claude_bot"
-echo ""
-echo "See DEPLOYMENT.md for detailed instructions."
+volumes:
+  data:
 EOF
 
-chmod +x "$DEPLOY_DIR/quick-setup.sh"
+# Створити .env файл якщо не існує
+if [ ! -f .env ]; then
+    echo "📝 Створення .env файлу..."
+    cat > .env << 'EOF'
+# ===== ОБОВ'ЯЗКОВІ НАЛАШТУВАННЯ =====
+TELEGRAM_BOT_TOKEN=YOUR_BOT_TOKEN_HERE
+TELEGRAM_BOT_USERNAME=YOUR_BOT_USERNAME
 
-# Create a summary file
-cat > "$DEPLOY_DIR/README.txt" << EOF
-Claude Telegram Bot - Deployment Package
-========================================
+# ===== CLAUDE CLI НАЛАШТУВАННЯ =====
+USE_SDK=false
+CLAUDE_MODEL=claude-3-5-sonnet-20241022
 
-This package contains everything needed to deploy the Claude Telegram Bot on a new server.
+# ===== БЕЗПЕКА =====
+ALLOWED_USERS=YOUR_TELEGRAM_USER_ID
+APPROVED_DIRECTORY=/app/target_project
 
-Files included:
-- docker-compose.yml: Production Docker Compose configuration
-- .env.template: Environment variables template
-- DEPLOYMENT.md: Detailed deployment guide
-- claude-config.tar.gz: Claude CLI authentication (if available)
-- quick-setup.sh: Automated setup script
+# ===== МОНІТОРИНГ ДОСТУПНОСТІ =====
+CLAUDE_AVAILABILITY_MONITOR=true
+CLAUDE_AVAILABILITY_NOTIFY_CHAT_IDS=YOUR_TELEGRAM_USER_ID
+CLAUDE_AVAILABILITY_CHECK_INTERVAL=60
+CLAUDE_AVAILABILITY_DND_START=23:00
+CLAUDE_AVAILABILITY_DND_END=08:00
+CLAUDE_AVAILABILITY_DEBOUNCE_OK_COUNT=2
 
-Quick start:
-1. Transfer this entire directory to your new server
-2. Run: ./quick-setup.sh
-3. Edit .env file with your configuration
-4. Run: docker compose up -d
-
-Docker image: kroschu/claude-code-telegram:v0.1.2-working
-
-For detailed instructions, see DEPLOYMENT.md
+# ===== ЛОГУВАННЯ =====
+DEBUG=false
+LOG_LEVEL=INFO
 EOF
+    
+    echo "⚠️  ВАЖЛИВО: Відредагуйте файл .env з вашими налаштуваннями:"
+    echo "   - TELEGRAM_BOT_TOKEN (від @BotFather)"
+    echo "   - TELEGRAM_BOT_USERNAME (ім'я бота без @)"
+    echo "   - ALLOWED_USERS (ваш Telegram User ID від @userinfobot)"
+    echo ""
+    echo "Після редагування .env запустіть скрипт знову."
+    exit 0
+fi
 
-echo "✅ Deployment package created in '$DEPLOY_DIR/'"
+# Перевірка налаштувань
+if grep -q "YOUR_BOT_TOKEN_HERE" .env; then
+    echo "❌ Будь ласка, відредагуйте .env файл з вашими налаштуваннями!"
+    exit 1
+fi
+
+echo "📦 Завантаження останнього образу..."
+docker-compose pull
+
+echo "🚀 Запуск бота..."
+docker-compose up -d
+
+echo "✅ Бот запущений!"
 echo ""
-echo "📋 Package contents:"
-ls -la "$DEPLOY_DIR/"
+echo "📋 Корисні команди:"
+echo "   docker-compose logs -f claude_bot    # Дивитися логи"
+echo "   docker-compose restart claude_bot    # Перезапустити"
+echo "   docker-compose down                  # Зупинити"
+echo "   docker-compose up -d --pull         # Оновити образ"
 echo ""
-echo "🚀 Ready for deployment!"
-echo "   Transfer the '$DEPLOY_DIR' directory to your new server"
-echo "   ⚠️  ВАЖЛИВО: Потрібна тільки папка ~/.claude (БЕЗ API токенів!)"
-echo "   Follow the instructions in DEPLOYMENT.md"
+echo "🎯 Бот готовий до роботи в Telegram!"

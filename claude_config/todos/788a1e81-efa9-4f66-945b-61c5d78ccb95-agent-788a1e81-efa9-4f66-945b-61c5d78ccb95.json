@@ -1,0 +1,32 @@
+[
+  {
+    "content": "Analyze existing Docker setup and identify duplications",
+    "status": "completed",
+    "activeForm": "Analyzing existing Docker setup and identifying duplications"
+  },
+  {
+    "content": "Create unified production-ready Dockerfile",
+    "status": "completed",
+    "activeForm": "Creating unified production-ready Dockerfile"
+  },
+  {
+    "content": "Create standardized docker-compose.prod.yml",
+    "status": "completed",
+    "activeForm": "Creating standardized docker-compose.prod.yml"
+  },
+  {
+    "content": "Write comprehensive DEPLOY.md documentation",
+    "status": "completed",
+    "activeForm": "Writing comprehensive DEPLOY.md documentation"
+  },
+  {
+    "content": "Clean up repository structure and remove duplicates",
+    "status": "completed",
+    "activeForm": "Cleaning up repository structure and removing duplicates"
+  },
+  {
+    "content": "Update README with unified deployment approach",
+    "status": "in_progress",
+    "activeForm": "Updating README with unified deployment approach"
+  }
+]

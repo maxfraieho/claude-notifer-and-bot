@@ -1,0 +1,27 @@
+[
+  {
+    "content": "Check if ~/.claude directory exists on host",
+    "status": "completed",
+    "activeForm": "Checking if ~/.claude directory exists on host"
+  },
+  {
+    "content": "Copy ~/.claude to project directory",
+    "status": "in_progress",
+    "activeForm": "Copying ~/.claude to project directory"
+  },
+  {
+    "content": "Create .env file from example",
+    "status": "pending",
+    "activeForm": "Creating .env file from example"
+  },
+  {
+    "content": "Build Docker container with copied authentication",
+    "status": "pending",
+    "activeForm": "Building Docker container with copied authentication"
+  },
+  {
+    "content": "Test container startup and authentication",
+    "status": "pending",
+    "activeForm": "Testing container startup and authentication"
+  }
+]

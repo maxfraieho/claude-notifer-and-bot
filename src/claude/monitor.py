@@ -29,6 +29,9 @@ class ToolMonitor:
         self.security_validator = security_validator
         self.tool_usage: Dict[str, int] = defaultdict(int)
         self.security_violations: List[Dict[str, Any]] = []
+        
+        # Enable flexible mode for development environments
+        self.flexible_file_operations = getattr(config, 'development_mode', False)
 
     async def validate_tool_call(
         self,

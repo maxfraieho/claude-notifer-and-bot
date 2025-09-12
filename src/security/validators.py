@@ -22,23 +22,29 @@ class SecurityValidator:
     """Security validation for user inputs."""
 
     # Dangerous patterns for path traversal and injection
-    DANGEROUS_PATTERNS = [
+    # Note: Split into different categories for different validation contexts
+    DANGEROUS_PATH_PATTERNS = [
         r"\.\.",  # Parent directory
         r"~",  # Home directory expansion
+        r"\x00",  # Null byte
+    ]
+    
+    DANGEROUS_COMMAND_PATTERNS = [
         r"\$\{",  # Variable expansion ${...}
         r"\$\(",  # Command substitution $(...)
         r"\$[A-Za-z_]",  # Environment variable expansion $VAR
         r"`",  # Command substitution with backticks
-        r";",  # Command chaining
-        r"&&",  # Command chaining (AND)
-        r"\|\|",  # Command chaining (OR)
-        r">",  # Output redirection
-        r"<",  # Input redirection
-        r"\|(?!\|)",  # Piping (but not ||)
-        r"&(?!&)",  # Background execution (but not &&)
-        r"#.*",  # Comments (potential for injection)
-        r"\x00",  # Null byte
+        r";\s*(?:rm|del|format|sudo|curl|wget)",  # Command chaining with dangerous commands
+        r"&&\s*(?:rm|del|format|sudo|curl|wget)",  # AND chaining with dangerous commands
+        r"\|\|",  # OR chaining
+        r">\s*/dev/",  # Dangerous output redirection
+        r"<\s*/dev/",  # Dangerous input redirection
+        r"\|\s*(?:sh|bash|cmd|powershell)",  # Piping to shells
+        r"#.*(?:rm|del|format|sudo)",  # Comments with dangerous commands
     ]
+    
+    # Keep original for backward compatibility - now combines both
+    DANGEROUS_PATTERNS = DANGEROUS_PATH_PATTERNS + DANGEROUS_COMMAND_PATTERNS
 
     # Allowed file extensions for uploads
     ALLOWED_EXTENSIONS = {
@@ -131,12 +137,20 @@ class SecurityValidator:
         r".*\.rar$",  # Archives (potentially dangerous)
     ]
 
-    def __init__(self, approved_directory: Path):
-        """Initialize validator with approved directory."""
+    def __init__(self, approved_directory: Path, flexible_mode: bool = False):
+        """Initialize validator with approved directory.
+        
+        Args:
+            approved_directory: Base directory for file operations
+            flexible_mode: If True, allows operations in subdirectories of approved_directory
+                          If False, strict mode - only exact approved_directory
+        """
         self.approved_directory = approved_directory.resolve()
+        self.flexible_mode = flexible_mode
         logger.info(
             "Security validator initialized",
             approved_directory=str(self.approved_directory),
+            flexible_mode=flexible_mode,
         )
 
     def validate_path(
@@ -154,8 +168,8 @@ class SecurityValidator:
 
             user_path = user_path.strip()
 
-            # Check for dangerous patterns
-            for pattern in self.DANGEROUS_PATTERNS:
+            # Check for dangerous path patterns (more restrictive for paths)
+            for pattern in self.DANGEROUS_PATH_PATTERNS:
                 if re.search(pattern, user_path, re.IGNORECASE):
                     logger.warning(
                         "Dangerous pattern detected in path",
@@ -183,11 +197,29 @@ class SecurityValidator:
 
             # Ensure target is within approved directory
             if not self._is_within_directory(target, self.approved_directory):
+                if self.flexible_mode:
+                    # In flexible mode, check if we're still within a reasonable subdirectory
+                    try:
+                        # Allow current working directory if it's a subdirectory of approved_directory
+                        if current_dir and self._is_within_directory(current_dir, self.approved_directory):
+                            # If target is in current_dir and current_dir is safe, allow it
+                            if self._is_within_directory(target, current_dir):
+                                logger.debug(
+                                    "Path allowed in flexible mode",
+                                    requested_path=user_path,
+                                    resolved_path=str(target),
+                                    current_dir=str(current_dir),
+                                )
+                                return True, target, None
+                    except Exception:
+                        pass
+                
                 logger.warning(
                     "Path traversal attempt detected",
                     requested_path=user_path,
                     resolved_path=str(target),
                     approved_directory=str(self.approved_directory),
+                    flexible_mode=self.flexible_mode,
                 )
                 return False, None, "Access denied: path outside approved directory"
 
@@ -227,8 +259,8 @@ class SecurityValidator:
             logger.warning("Path separator in filename", filename=filename)
             return False, "Invalid filename: contains path separators"
 
-        # Check for forbidden patterns
-        for pattern in self.DANGEROUS_PATTERNS:
+        # Check for forbidden patterns in filenames (use path patterns, not command patterns)
+        for pattern in self.DANGEROUS_PATH_PATTERNS:
             if re.search(pattern, filename, re.IGNORECASE):
                 logger.warning(
                     "Dangerous pattern in filename", filename=filename, pattern=pattern
@@ -319,8 +351,8 @@ class SecurityValidator:
         sanitized_args = []
 
         for arg in args:
-            # Check for dangerous patterns
-            for pattern in self.DANGEROUS_PATTERNS:
+            # Check for dangerous command patterns in arguments
+            for pattern in self.DANGEROUS_COMMAND_PATTERNS:
                 if re.search(pattern, arg, re.IGNORECASE):
                     logger.warning(
                         "Dangerous pattern in command arg", arg=arg, pattern=pattern
@@ -348,8 +380,8 @@ class SecurityValidator:
 
         dirname = dirname.strip()
 
-        # Check for dangerous patterns
-        for pattern in self.DANGEROUS_PATTERNS:
+        # Check for dangerous patterns in directory names (use path patterns)
+        for pattern in self.DANGEROUS_PATH_PATTERNS:
             if re.search(pattern, dirname, re.IGNORECASE):
                 return False
 

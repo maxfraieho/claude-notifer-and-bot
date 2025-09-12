@@ -63,6 +63,14 @@ RUN mkdir -p ~/.local/bin ~/.claude/plugins/repos \
     && npm install @anthropic-ai/claude-code \
     && ln -s "$(pwd)/node_modules/.bin/claude" ~/.local/bin/claude
 
+# Copy and extract Claude CLI authentication archive
+COPY --chown=${USERNAME}:${USERNAME} claude-auth.tar.gz /tmp/claude-auth.tar.gz
+RUN cd ~/.claude \
+    && tar -xzf /tmp/claude-auth.tar.gz \
+    && rm /tmp/claude-auth.tar.gz \
+    && chmod 600 ~/.claude/.credentials.json 2>/dev/null || true \
+    && ls -la ~/.claude/
+
 # Copy application code to /app
 COPY --chown=${USERNAME}:${USERNAME} src/ /app/src/
 COPY --chown=${USERNAME}:${USERNAME} CLAUDE.md /app/
@@ -70,12 +78,26 @@ COPY --chown=${USERNAME}:${USERNAME} CLAUDE.md /app/
 # Set working directory to /app
 WORKDIR /app
 
-# Create simple entrypoint script (relies on mounted .claude directory)
+# Create simple entrypoint script
 RUN echo '#!/bin/bash\n\
-# Create Claude CLI directory structure if not mounted\n\
-mkdir -p ~/.claude/plugins/repos\n\
+set -e\n\
 \n\
-# Start the application\n\
+echo "🚀 Starting Claude Code Telegram Bot..."\n\
+\n\
+# Ensure Claude CLI directory exists and has proper permissions\n\
+mkdir -p ~/.claude/plugins/repos 2>/dev/null || true\n\
+chmod -R 600 ~/.claude/.credentials.json 2>/dev/null || true\n\
+\n\
+# Verify Claude CLI authentication\n\
+if [ -f ~/.claude/.credentials.json ]; then\n\
+    echo "✅ Claude CLI authentication found"\n\
+    claude auth status || echo "⚠️ Auth status check failed but credentials exist"\n\
+else\n\
+    echo "❌ Claude CLI authentication missing - rebuild with claude-auth.tar.gz"\n\
+    exit 1\n\
+fi\n\
+\n\
+echo "🎯 Starting application..."\n\
 exec python -m src.main "$@"\n' > /home/${USERNAME}/entrypoint.sh \
     && chmod +x /home/${USERNAME}/entrypoint.sh
 

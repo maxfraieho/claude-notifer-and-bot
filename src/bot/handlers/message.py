@@ -195,6 +195,7 @@ async def handle_text_message(
                 logger.warning("Failed to update progress message", error=str(e))
 
         # Run Claude command
+        claude_response = None
         try:
             claude_response = await claude_integration.run_command(
                 prompt=message_text,

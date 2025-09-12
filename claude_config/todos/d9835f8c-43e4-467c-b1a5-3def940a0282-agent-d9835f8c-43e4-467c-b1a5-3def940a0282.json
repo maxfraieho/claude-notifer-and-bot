@@ -1,0 +1,12 @@
+[
+  {
+    "content": "Check if Claude Code session conflict is causing authentication issues",
+    "status": "completed",
+    "activeForm": "Checking Claude session conflicts"
+  },
+  {
+    "content": "Temporarily stop host Claude session to test bot",
+    "status": "in_progress",
+    "activeForm": "Stopping host Claude session"
+  }
+]
