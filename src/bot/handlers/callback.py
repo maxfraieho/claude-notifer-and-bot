@@ -13,6 +13,19 @@ from ...localization.helpers import get_user_text
 logger = structlog.get_logger()
 
 
+async def get_localized_text(context, user_id, key, **kwargs):
+    """Helper to get localized text with fallback."""
+    localization = context.bot_data.get("localization")
+    user_language_storage = context.bot_data.get("user_language_storage")
+    
+    if localization and user_language_storage:
+        return await get_user_text(localization, user_language_storage, user_id, key, **kwargs)
+    elif localization:
+        return localization.get(key, language=None, **kwargs) or f"[{key}]"
+    else:
+        return f"[{key}]"
+
+
 async def handle_callback_query(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ) -> None:
@@ -129,19 +142,20 @@ async def handle_cd_callback(
         # Send confirmation with new directory info
         relative_path = new_path.relative_to(settings.approved_directory)
 
-        # Add navigation buttons
+        # Add navigation buttons with localization
+        list_files_text = await get_localized_text(context, user_id, "buttons.list_files")
+        new_session_text = await get_localized_text(context, user_id, "buttons.new_session")
+        projects_text = await get_localized_text(context, user_id, "buttons.projects")
+        status_text = await get_localized_text(context, user_id, "buttons.status")
+        
         keyboard = [
             [
-                InlineKeyboardButton("📁 List Files", callback_data="action:ls"),
-                InlineKeyboardButton(
-                    "🆕 New Session", callback_data="action:new_session"
-                ),
+                InlineKeyboardButton(list_files_text, callback_data="action:ls"),
+                InlineKeyboardButton(new_session_text, callback_data="action:new_session"),
             ],
             [
-                InlineKeyboardButton(
-                    "📋 Projects", callback_data="action:show_projects"
-                ),
-                InlineKeyboardButton("📊 Status", callback_data="action:status"),
+                InlineKeyboardButton(projects_text, callback_data="action:show_projects"),
+                InlineKeyboardButton(status_text, callback_data="action:status"),
             ],
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -231,10 +245,15 @@ async def _handle_help_action(query, context: ContextTypes.DEFAULT_TYPE) -> None
         "Use `/help` for detailed help."
     )
 
+    # Get localized button text
+    user_id = query.from_user.id
+    full_help_text = await get_localized_text(context, user_id, "buttons.full_help")
+    main_menu_text = await get_localized_text(context, user_id, "buttons.main_menu")
+    
     keyboard = [
         [
-            InlineKeyboardButton("📖 Full Help", callback_data="action:full_help"),
-            InlineKeyboardButton("🏠 Main Menu", callback_data="action:main_menu"),
+            InlineKeyboardButton(full_help_text, callback_data="action:full_help"),
+            InlineKeyboardButton(main_menu_text, callback_data="action:main_menu"),
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -279,13 +298,15 @@ async def _handle_show_projects_action(
                     )
             keyboard.append(row)
 
-        # Add navigation buttons
+        # Add navigation buttons with localization
+        user_id = query.from_user.id
+        root_text = await get_localized_text(context, user_id, "buttons.root")
+        refresh_text = await get_localized_text(context, user_id, "buttons.refresh")
+        
         keyboard.append(
             [
-                InlineKeyboardButton("🏠 Root", callback_data="cd:/"),
-                InlineKeyboardButton(
-                    "🔄 Refresh", callback_data="action:show_projects"
-                ),
+                InlineKeyboardButton(root_text, callback_data="cd:/"),
+                InlineKeyboardButton(refresh_text, callback_data="action:show_projects"),
             ]
         )
 
@@ -317,20 +338,21 @@ async def _handle_new_session_action(query, context: ContextTypes.DEFAULT_TYPE) 
     )
     relative_path = current_dir.relative_to(settings.approved_directory)
 
+    # Get localized button text
+    user_id = query.from_user.id
+    start_coding_text = await get_localized_text(context, user_id, "buttons.start_coding")
+    change_project_text = await get_localized_text(context, user_id, "buttons.change_project")
+    quick_actions_text = await get_localized_text(context, user_id, "buttons.quick_actions")
+    help_text = await get_localized_text(context, user_id, "buttons.help")
+    
     keyboard = [
         [
-            InlineKeyboardButton(
-                "📝 Start Coding", callback_data="action:start_coding"
-            ),
-            InlineKeyboardButton(
-                "📁 Change Project", callback_data="action:show_projects"
-            ),
+            InlineKeyboardButton(start_coding_text, callback_data="action:start_coding"),
+            InlineKeyboardButton(change_project_text, callback_data="action:show_projects"),
         ],
         [
-            InlineKeyboardButton(
-                "📋 Quick Actions", callback_data="action:quick_actions"
-            ),
-            InlineKeyboardButton("❓ Help", callback_data="action:help"),
+            InlineKeyboardButton(quick_actions_text, callback_data="action:quick_actions"),
+            InlineKeyboardButton(help_text, callback_data="action:help"),
         ],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -748,26 +770,26 @@ async def _handle_export_action(query, context: ContextTypes.DEFAULT_TYPE) -> No
 async def handle_quick_action_callback(
     query, action_id: str, context: ContextTypes.DEFAULT_TYPE
 ) -> None:
-    """Handle quick action callbacks."""
+    """Handle quick action callbacks with localization."""
     user_id = query.from_user.id
 
+    # Get localization components
+    localization = context.bot_data.get("localization")
+    user_language_storage = context.bot_data.get("user_language_storage")
+    
     # Get quick actions manager from bot data if available
     quick_actions = context.bot_data.get("quick_actions")
 
     if not quick_actions:
-        await query.edit_message_text(
-            "❌ **Quick Actions Not Available**\n\n"
-            "Quick actions feature is not available."
-        )
+        error_text = await get_localized_text(context, user_id, "errors.quick_actions_unavailable")
+        await query.edit_message_text(error_text, parse_mode=None)
         return
 
     # Get Claude integration
     claude_integration: ClaudeIntegration = context.bot_data.get("claude_integration")
     if not claude_integration:
-        await query.edit_message_text(
-            "❌ **Claude Integration Not Available**\n\n"
-            "Claude integration is not properly configured."
-        )
+        error_text = await get_localized_text(context, user_id, "errors.claude_not_available")
+        await query.edit_message_text(error_text, parse_mode=None)
         return
 
     settings: Settings = context.bot_data["settings"]
@@ -779,47 +801,52 @@ async def handle_quick_action_callback(
         # Get the action from the manager
         action = quick_actions.actions.get(action_id)
         if not action:
-            await query.edit_message_text(
-                f"❌ **Action Not Found**\n\n"
-                f"Quick action '{action_id}' is not available."
-            )
+            error_text = await get_localized_text(context, user_id, "errors.action_not_found", action=action_id)
+            await query.edit_message_text(error_text, parse_mode=None)
+            return
+            
+        # Get localized action name
+        if localization and user_language_storage:
+            user_lang = await user_language_storage.get_language(user_id)
+            action_display_name = localization.get(f"quick_actions.{action.id}.name", language=user_lang) or f"{action.icon} {action.name}"
+        else:
+            action_display_name = f"{action.icon} {action.name}"
+
+        # Check if action is properly implemented
+        if not action.command and not getattr(action, "prompt", None):
+            error_text = await get_localized_text(context, user_id, "errors.action_not_implemented", action=action_display_name)
+            await query.edit_message_text(error_text, parse_mode=None)
             return
 
-        # Execute the action
-        await query.edit_message_text(
-            f"🚀 **Executing {action.icon} {action.name}**\n\n"
-            f"Running quick action in directory: `{current_dir.relative_to(settings.approved_directory)}/`\n\n"
-            f"Please wait...",
-            parse_mode=None,
-        )
+        # Show execution message
+        executing_text = await get_localized_text(context, user_id, "messages.executing_action", action=action_display_name)
+        await query.edit_message_text(executing_text, parse_mode=None)
 
         # Run the action through Claude
+        prompt = getattr(action, "prompt", None) or action.command
         claude_response = await claude_integration.run_command(
-            prompt=action.prompt, working_directory=current_dir, user_id=user_id
+            prompt=prompt, working_directory=current_dir, user_id=user_id
         )
 
         if claude_response:
-            # Format and send the response
+            # Show completion message and format response
+            completed_text = await get_localized_text(context, user_id, "messages.action_completed", action=action_display_name)
             response_text = claude_response.content
             if len(response_text) > 4000:
                 response_text = response_text[:4000] + "...\n\n_(Response truncated)_"
 
             await query.message.reply_text(
-                f"✅ **{action.icon} {action.name} Complete**\n\n{response_text}",
+                f"{completed_text}\n\n{response_text}",
                 parse_mode=None,
             )
         else:
-            await query.edit_message_text(
-                f"❌ **Action Failed**\n\n"
-                f"Failed to execute {action.name}. Please try again."
-            )
+            failed_text = await get_localized_text(context, user_id, "messages.action_failed", action=action_display_name)
+            await query.edit_message_text(failed_text, parse_mode=None)
 
     except Exception as e:
         logger.error("Quick action execution failed", error=str(e), user_id=user_id)
-        await query.edit_message_text(
-            f"❌ **Action Error**\n\n"
-            f"An error occurred while executing {action_id}: {str(e)}"
-        )
+        error_text = await get_localized_text(context, user_id, "errors.action_error", action=action_id, error=str(e))
+        await query.edit_message_text(error_text, parse_mode=None)
 
 
 async def handle_followup_callback(

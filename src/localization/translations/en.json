@@ -65,12 +65,68 @@
     "check_status": "📊 Check Status",
     "language_settings": "🌐 Language",
     "back": "⬅️ Back",
-    "select_language": "Select Language"
+    "select_language": "Select Language",
+    "list_files": "📁 List Files",
+    "full_help": "📖 Full Help",
+    "main_menu": "🏠 Main Menu",
+    "root": "🏠 Root",
+    "help": "❓ Help",
+    "continue": "🔄 Continue",
+    "refresh": "🔄 Refresh",
+    "projects": "📁 Projects",
+    "go_up": "⬆️ Go Up",
+    "start_coding": "📝 Start Coding",
+    "change_project": "📁 Change Project",
+    "quick_actions": "📋 Quick Actions",
+    "status": "📊 Status",
+    "end_session": "🛑 End Session"
   },
   "messages": {
     "language_select": "🌐 **Language Selection**\n\nPlease choose your preferred language:",
     "language_changed": "✅ Language changed to {language_name}",
     "language_not_available": "❌ Language not available: {language}",
-    "error_occurred": "❌ An error occurred: {error}"
+    "error_occurred": "❌ An error occurred: {error}",
+    "working": "Working...",
+    "processing": "🔄 **{content}**",
+    "claude_unavailable": "❌ **Claude Integration Not Available**\n\nThe Claude Code integration is not properly configured. Please contact the administrator.",
+    "executing_action": "🚀 **Executing {action}**\n\nPlease wait...",
+    "action_completed": "✅ **{action} Complete**",
+    "action_failed": "❌ **Action Failed**\n\nFailed to execute {action}. Please try again."
+  },
+  "errors": {
+    "quick_actions_unavailable": "❌ **Quick Actions Not Available**\n\nQuick actions feature is not available.",
+    "claude_not_available": "❌ **Claude Integration Not Available**\n\nClaude integration is not properly configured.",
+    "action_not_found": "❌ **Action Not Found**\n\nQuick action '{action}' is not available.",
+    "action_not_implemented": "⚠️ **Action Not Implemented**\n\nThis action is not fully implemented yet. Please try another action.",
+    "action_error": "❌ **Action Error**\n\nAn error occurred while executing {action}: {error}"
+  },
+  "quick_actions": {
+    "title": "🛠️ **Quick Actions**\n\nChoose a common development task:",
+    "no_actions": "No quick actions available for this context.",
+    "unavailable": "Quick actions are currently unavailable.",
+    "test": {
+      "name": "🧪 Run Tests"
+    },
+    "install": {
+      "name": "📦 Install Deps"
+    },
+    "format": {
+      "name": "🎨 Format Code"
+    },
+    "find_todos": {
+      "name": "🔍 Find TODOs"
+    },
+    "build": {
+      "name": "🔨 Build"
+    },
+    "start": {
+      "name": "🚀 Start Server"
+    },
+    "git_status": {
+      "name": "📊 Git Status"
+    },
+    "lint": {
+      "name": "🔧 Lint Code"
+    }
   }
 }

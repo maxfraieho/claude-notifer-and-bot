@@ -218,13 +218,15 @@ class QuickActionManager:
         return True
 
     def create_inline_keyboard(
-        self, actions: List[QuickAction], columns: int = 2
+        self, actions: List[QuickAction], columns: int = 2, localization=None, user_lang=None
     ) -> InlineKeyboardMarkup:
-        """Create inline keyboard for quick actions.
+        """Create inline keyboard for quick actions with localization support.
 
         Args:
             actions: List of actions to display
             columns: Number of columns in keyboard
+            localization: Localization manager (optional)
+            user_lang: User language code (optional)
 
         Returns:
             Inline keyboard markup
@@ -233,8 +235,16 @@ class QuickActionManager:
         row = []
 
         for i, action in enumerate(actions):
+            # Try to get localized action name, fallback to default
+            if localization and user_lang:
+                action_text = localization.get(f"quick_actions.{action.id}.name", language=user_lang)
+                if not action_text:
+                    action_text = f"{action.icon} {action.name}"
+            else:
+                action_text = f"{action.icon} {action.name}"
+                
             button = InlineKeyboardButton(
-                text=f"{action.icon} {action.name}",
+                text=action_text,
                 callback_data=f"quick_action:{action.id}",
             )
             row.append(button)

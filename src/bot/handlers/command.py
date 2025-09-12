@@ -13,6 +13,19 @@ from ...localization.helpers import get_user_text
 logger = structlog.get_logger()
 
 
+async def get_localized_text(context, user_id, key, **kwargs):
+    """Helper to get localized text with fallback."""
+    localization = context.bot_data.get("localization")
+    user_language_storage = context.bot_data.get("user_language_storage")
+    
+    if localization and user_language_storage:
+        return await get_user_text(localization, user_language_storage, user_id, key, **kwargs)
+    elif localization:
+        return localization.get(key, language=None, **kwargs) or f"[{key}]"
+    else:
+        return f"[{key}]"
+
+
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /start command."""
     user = update.effective_user
@@ -132,43 +145,80 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle /help command."""
-    help_text = (
-        "🤖 **Claude Code Telegram Bot Help**\n\n"
-        "**Navigation Commands:**\n"
-        "• `/ls` - List files and directories\n"
-        "• `/cd <directory>` - Change to directory\n"
-        "• `/pwd` - Show current directory\n"
-        "• `/projects` - Show available projects\n\n"
-        "**Session Commands:**\n"
-        "• `/new` - Start new Claude session\n"
-        "• `/continue [message]` - Continue last session (optionally with message)\n"
-        "• `/end` - End current session\n"
-        "• `/status` - Show session and usage status\n"
-        "• `/export` - Export session history\n"
-        "• `/actions` - Show context-aware quick actions\n"
-        "• `/git` - Git repository information\n\n"
-        "**Usage Examples:**\n"
-        "• `cd myproject` - Enter project directory\n"
-        "• `ls` - See what's in current directory\n"
-        "• `Create a simple Python script` - Ask Claude to code\n"
-        "• Send a file to have Claude review it\n\n"
-        "**File Operations:**\n"
-        "• Send text files (.py, .js, .md, etc.) for review\n"
-        "• Claude can read, modify, and create files\n"
-        "• All file operations are within your approved directory\n\n"
-        "**Security Features:**\n"
-        "• 🔒 Path traversal protection\n"
-        "• ⏱️ Rate limiting to prevent abuse\n"
-        "• 📊 Usage tracking and limits\n"
-        "• 🛡️ Input validation and sanitization\n\n"
-        "**Tips:**\n"
-        "• Use specific, clear requests for best results\n"
-        "• Check `/status` to monitor your usage\n"
-        "• Use quick action buttons when available\n"
-        "• File uploads are automatically processed by Claude\n\n"
-        "Need more help? Contact your administrator."
-    )
+    """Handle /help command with localization."""
+    user_id = update.effective_user.id
+    
+    # Get localized help text - try to get combined help or build from components
+    localization = context.bot_data.get("localization")
+    user_language_storage = context.bot_data.get("user_language_storage")
+    
+    if localization and user_language_storage:
+        # Try to get full help text from translations
+        user_lang = await user_language_storage.get_language(user_id) 
+        help_data = localization._translations.get(user_lang, {}).get("commands", {}).get("help", {})
+        
+        if help_data:
+            # Build help text from individual components
+            parts = []
+            if "title" in help_data:
+                parts.append(help_data["title"])
+                parts.append("")
+            
+            if "navigation_title" in help_data:
+                parts.append(help_data["navigation_title"])
+                parts.extend([
+                    f"• `/ls` - {help_data.get('ls_desc', 'List files and directories')}",
+                    f"• `/cd <directory>` - {help_data.get('cd_desc', 'Change to directory')}",
+                    f"• `/pwd` - {help_data.get('pwd_desc', 'Show current directory')}",
+                    f"• `/projects` - {help_data.get('projects_desc', 'Show available projects')}",
+                    ""
+                ])
+            
+            if "session_title" in help_data:
+                parts.append(help_data["session_title"])
+                parts.extend([
+                    f"• `/new` - {help_data.get('new_desc', 'Start new Claude session')}",
+                    f"• `/continue [message]` - {help_data.get('continue_desc', 'Continue last session')}",
+                    f"• `/end` - {help_data.get('end_desc', 'End current session')}",
+                    f"• `/status` - {help_data.get('status_desc', 'Show session and usage status')}",
+                    f"• `/export` - {help_data.get('export_desc', 'Export session history')}",
+                    f"• `/actions` - {help_data.get('actions_desc', 'Show context-aware quick actions')}",
+                    f"• `/git` - {help_data.get('git_desc', 'Git repository information')}",
+                    ""
+                ])
+            
+            if "usage_title" in help_data:
+                parts.append(help_data["usage_title"])
+                parts.extend([
+                    f"• {help_data.get('usage_cd', 'cd myproject - Enter project directory')}",
+                    f"• {help_data.get('usage_ls', 'ls - See what is in current directory')}",
+                    f"• {help_data.get('usage_code', 'Create a simple Python script - Ask Claude to code')}",
+                    f"• {help_data.get('usage_file', 'Send a file to have Claude review it')}",
+                    ""
+                ])
+            
+            if "tips_title" in help_data:
+                parts.append(help_data["tips_title"])
+                parts.extend([
+                    f"• {help_data.get('tips_specific', 'Use specific, clear requests for best results')}",
+                    f"• {help_data.get('tips_status', 'Check `/status` to monitor your usage')}",
+                    f"• {help_data.get('tips_buttons', 'Use quick action buttons when available')}",
+                ])
+            
+            help_text = "\n".join(parts)
+        else:
+            # Fallback to English
+            help_text = await get_localized_text(context, user_id, "commands.help.title")
+    else:
+        # Ultimate fallback
+        help_text = (
+            "🤖 **Claude Code Telegram Bot Help**\n\n"
+            "• `/new` - Start new Claude session\n"
+            "• `/help` - Show this help\n"
+            "• `/status` - Show session status\n"
+            "• `/ls` - List files\n"
+            "• `/cd <dir>` - Change directory"
+        )
 
     await update.message.reply_text(help_text, parse_mode=None)
 
@@ -880,20 +930,37 @@ async def quick_actions(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             )
             return
 
-        # Create inline keyboard
-        keyboard = quick_action_manager.create_inline_keyboard(actions, max_columns=2)
+        # Create inline keyboard with localization
+        user_id = update.effective_user.id
+        localization = context.bot_data.get("localization")
+        user_language_storage = context.bot_data.get("user_language_storage")
+        user_lang = None
+        
+        if user_language_storage:
+            try:
+                user_lang = await user_language_storage.get_language(user_id)
+            except:
+                pass
+        
+        keyboard = quick_action_manager.create_inline_keyboard(
+            actions, columns=2, localization=localization, user_lang=user_lang
+        )
 
+        # Get localized title for quick actions
+        title_text = await get_localized_text(context, user_id, "quick_actions.title")
+        
         relative_path = current_dir.relative_to(settings.approved_directory)
+        message_text = f"{title_text}\n\n📂 Context: `{relative_path}/`"
+        
         await update.message.reply_text(
-            f"⚡ **Quick Actions**\n\n"
-            f"📂 Context: `{relative_path}/`\n\n"
-            f"Select an action to execute:",
+            message_text,
             parse_mode=None,
             reply_markup=keyboard,
         )
 
     except Exception as e:
-        await update.message.reply_text(f"❌ **Error Loading Actions**\n\n{str(e)}")
+        error_text = await get_localized_text(context, user_id, "errors.quick_actions_unavailable")
+        await update.message.reply_text(error_text, parse_mode=None)
         logger.error("Error in quick_actions command", error=str(e), user_id=user_id)
 
 
