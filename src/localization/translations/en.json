@@ -69,7 +69,7 @@
   },
   "messages": {
     "language_select": "🌐 **Language Selection**\n\nPlease choose your preferred language:",
-    "language_changed": "✅ Language changed to {language}",
+    "language_changed": "✅ Language changed to {language_name}",
     "language_not_available": "❌ Language not available: {language}",
     "error_occurred": "❌ An error occurred: {error}"
   }

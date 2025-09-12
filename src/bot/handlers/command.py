@@ -8,6 +8,7 @@ from ...claude.facade import ClaudeIntegration
 from ...config.settings import Settings
 from ...security.audit import AuditLogger
 from ...security.validators import SecurityValidator
+from ...localization.helpers import get_user_text
 
 logger = structlog.get_logger()
 
@@ -15,40 +16,107 @@ logger = structlog.get_logger()
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /start command."""
     user = update.effective_user
-
-    welcome_message = (
-        f"👋 Welcome to Claude Code Telegram Bot, {user.first_name}!\n\n"
-        f"🤖 I help you access Claude Code remotely through Telegram.\n\n"
-        f"**Available Commands:**\n"
-        f"• `/help` - Show detailed help\n"
-        f"• `/new` - Start a new Claude session\n"
-        f"• `/ls` - List files in current directory\n"
-        f"• `/cd <dir>` - Change directory\n"
-        f"• `/projects` - Show available projects\n"
-        f"• `/status` - Show session status\n"
-        f"• `/actions` - Show quick actions\n"
-        f"• `/git` - Git repository commands\n\n"
-        f"**Quick Start:**\n"
-        f"1. Use `/projects` to see available projects\n"
-        f"2. Use `/cd <project>` to navigate to a project\n"
-        f"3. Send any message to start coding with Claude!\n\n"
-        f"🔒 Your access is secured and all actions are logged.\n"
-        f"📊 Use `/status` to check your usage limits."
-    )
-
-    # Add quick action buttons
-    keyboard = [
-        [
-            InlineKeyboardButton(
-                "📁 Show Projects", callback_data="action:show_projects"
-            ),
-            InlineKeyboardButton("❓ Get Help", callback_data="action:help"),
-        ],
-        [
-            InlineKeyboardButton("🆕 New Session", callback_data="action:new_session"),
-            InlineKeyboardButton("📊 Check Status", callback_data="action:status"),
-        ],
-    ]
+    
+    # Get localization components from bot data
+    localization = context.bot_data.get("localization")
+    user_language_storage = context.bot_data.get("user_language_storage")
+    
+    if localization and user_language_storage:
+        # Build localized welcome message
+        welcome_text = await get_user_text(localization, user_language_storage, user.id, "commands.start.welcome", name=user.first_name)
+        description_text = await get_user_text(localization, user_language_storage, user.id, "commands.start.description")
+        available_commands_text = await get_user_text(localization, user_language_storage, user.id, "commands.start.available_commands")
+        
+        help_cmd_text = await get_user_text(localization, user_language_storage, user.id, "commands.start.help_cmd")
+        new_cmd_text = await get_user_text(localization, user_language_storage, user.id, "commands.start.new_cmd")
+        ls_cmd_text = await get_user_text(localization, user_language_storage, user.id, "commands.start.ls_cmd")
+        cd_cmd_text = await get_user_text(localization, user_language_storage, user.id, "commands.start.cd_cmd")
+        projects_cmd_text = await get_user_text(localization, user_language_storage, user.id, "commands.start.projects_cmd")
+        status_cmd_text = await get_user_text(localization, user_language_storage, user.id, "commands.start.status_cmd")
+        actions_cmd_text = await get_user_text(localization, user_language_storage, user.id, "commands.start.actions_cmd")
+        git_cmd_text = await get_user_text(localization, user_language_storage, user.id, "commands.start.git_cmd")
+        
+        quick_start_text = await get_user_text(localization, user_language_storage, user.id, "commands.start.quick_start")
+        quick_start_1_text = await get_user_text(localization, user_language_storage, user.id, "commands.start.quick_start_1")
+        quick_start_2_text = await get_user_text(localization, user_language_storage, user.id, "commands.start.quick_start_2")
+        quick_start_3_text = await get_user_text(localization, user_language_storage, user.id, "commands.start.quick_start_3")
+        
+        security_note_text = await get_user_text(localization, user_language_storage, user.id, "commands.start.security_note")
+        usage_note_text = await get_user_text(localization, user_language_storage, user.id, "commands.start.usage_note")
+        
+        welcome_message = (
+            f"{welcome_text}\n\n"
+            f"{description_text}\n\n"
+            f"{available_commands_text}\n"
+            f"• `/help` - {help_cmd_text}\n"
+            f"• `/new` - {new_cmd_text}\n"
+            f"• `/ls` - {ls_cmd_text}\n"
+            f"• `/cd <dir>` - {cd_cmd_text}\n"
+            f"• `/projects` - {projects_cmd_text}\n"
+            f"• `/status` - {status_cmd_text}\n"
+            f"• `/actions` - {actions_cmd_text}\n"
+            f"• `/git` - {git_cmd_text}\n\n"
+            f"{quick_start_text}\n"
+            f"1. {quick_start_1_text}\n"
+            f"2. {quick_start_2_text}\n"
+            f"3. {quick_start_3_text}\n\n"
+            f"{security_note_text}\n"
+            f"{usage_note_text}"
+        )
+        
+        # Localized button texts
+        show_projects_text = await get_user_text(localization, user_language_storage, user.id, "buttons.show_projects")
+        get_help_text = await get_user_text(localization, user_language_storage, user.id, "buttons.get_help")
+        new_session_text = await get_user_text(localization, user_language_storage, user.id, "buttons.new_session")
+        check_status_text = await get_user_text(localization, user_language_storage, user.id, "buttons.check_status")
+        language_settings_text = await get_user_text(localization, user_language_storage, user.id, "buttons.language_settings")
+        
+        # Add quick action buttons with language switcher
+        keyboard = [
+            [
+                InlineKeyboardButton(show_projects_text, callback_data="action:show_projects"),
+                InlineKeyboardButton(get_help_text, callback_data="action:help"),
+            ],
+            [
+                InlineKeyboardButton(new_session_text, callback_data="action:new_session"),
+                InlineKeyboardButton(check_status_text, callback_data="action:status"),
+            ],
+            [
+                InlineKeyboardButton(language_settings_text, callback_data="lang:select"),
+            ]
+        ]
+    else:
+        # Fallback to English if localization is not available
+        welcome_message = (
+            f"👋 Welcome to Claude Code Telegram Bot, {user.first_name}!\n\n"
+            f"🤖 I help you access Claude Code remotely through Telegram.\n\n"
+            f"**Available Commands:**\n"
+            f"• `/help` - Show detailed help\n"
+            f"• `/new` - Start a new Claude session\n"
+            f"• `/ls` - List files in current directory\n"
+            f"• `/cd <dir>` - Change directory\n"
+            f"• `/projects` - Show available projects\n"
+            f"• `/status` - Show session status\n"
+            f"• `/actions` - Show quick actions\n"
+            f"• `/git` - Git repository commands\n\n"
+            f"**Quick Start:**\n"
+            f"1. Use `/projects` to see available projects\n"
+            f"2. Use `/cd <project>` to navigate to a project\n"
+            f"3. Send any message to start coding with Claude!\n\n"
+            f"🔒 Your access is secured and all actions are logged.\n"
+            f"📊 Use `/status` to check your usage limits."
+        )
+        
+        keyboard = [
+            [
+                InlineKeyboardButton("📁 Show Projects", callback_data="action:show_projects"),
+                InlineKeyboardButton("❓ Get Help", callback_data="action:help"),
+            ],
+            [
+                InlineKeyboardButton("🆕 New Session", callback_data="action:new_session"),
+                InlineKeyboardButton("📊 Check Status", callback_data="action:status"),
+            ],
+        ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     await update.message.reply_text(

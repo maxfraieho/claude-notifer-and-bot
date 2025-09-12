@@ -169,6 +169,10 @@ class Settings(BaseSettings):
         default=Path("/app/target_project"),
         description="Path to target project for Claude CLI operations"
     )
+    
+    # Localization settings
+    default_language: str = Field("en", description="Default language code")
+    enable_localization: bool = Field(True, description="Enable multi-language support")
 
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", case_sensitive=False, extra="ignore"

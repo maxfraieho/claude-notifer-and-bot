@@ -8,6 +8,7 @@ from ...claude.facade import ClaudeIntegration
 from ...config.settings import Settings
 from ...security.audit import AuditLogger
 from ...security.validators import SecurityValidator
+from ...localization.helpers import get_user_text
 
 logger = structlog.get_logger()
 
@@ -41,6 +42,7 @@ async def handle_callback_query(
             "conversation": handle_conversation_callback,
             "git": handle_git_callback,
             "export": handle_export_callback,
+            "lang": handle_language_callback,
         }
 
         handler = handlers.get(action)
@@ -1142,6 +1144,76 @@ async def handle_export_callback(
             "Export failed", error=str(e), user_id=user_id, format=export_format
         )
         await query.edit_message_text(f"❌ **Export Failed**\n\n{str(e)}")
+
+
+async def handle_language_callback(query, param: str, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle language selection callbacks."""
+    user_id = query.from_user.id
+    localization = context.bot_data.get("localization")
+    user_language_storage = context.bot_data.get("user_language_storage")
+    
+    if not localization or not user_language_storage:
+        await query.edit_message_text("❌ Localization system not available")
+        return
+    
+    if param == "select":
+        # Show language selection menu
+        available_languages = localization.get_available_languages()
+        
+        keyboard = []
+        row = []
+        for lang_code, lang_name in available_languages.items():
+            flag = "🇺🇦" if lang_code == "uk" else "🇺🇸"
+            row.append(InlineKeyboardButton(f"{flag} {lang_name}", callback_data=f"lang:set:{lang_code}"))
+            
+            # Create rows of 2 buttons each
+            if len(row) == 2:
+                keyboard.append(row)
+                row = []
+        
+        # Add remaining button if any
+        if row:
+            keyboard.append(row)
+            
+        # Add back button
+        back_text = await get_user_text(localization, user_language_storage, user_id, "buttons.back")
+        keyboard.append([InlineKeyboardButton(back_text, callback_data="action:help")])
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        # Get localized text
+        select_message = await get_user_text(localization, user_language_storage, user_id, "messages.language_select")
+        
+        await query.edit_message_text(select_message, reply_markup=reply_markup)
+        
+    elif param.startswith("set:"):
+        # Set user language
+        new_language = param.split(":", 1)[1]
+        
+        if localization.is_language_available(new_language):
+            success = await user_language_storage.set_user_language(user_id, new_language)
+            
+            if success:
+                # Get language name for confirmation
+                lang_name = localization.get_available_languages().get(new_language, new_language.upper())
+                
+                # Get confirmation message in NEW language
+                confirmation_text = localization.get("messages.language_changed", language=new_language).format(language_name=lang_name)
+                
+                # Show language changed message with back button
+                back_text = localization.get("buttons.back", language=new_language)
+                keyboard = [[InlineKeyboardButton(back_text, callback_data="action:help")]]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                
+                await query.edit_message_text(confirmation_text, reply_markup=reply_markup)
+                
+                logger.info("User language changed", user_id=user_id, new_language=new_language)
+            else:
+                error_text = await get_user_text(localization, user_language_storage, user_id, "messages.error_occurred", error="Failed to save language preference")
+                await query.edit_message_text(error_text)
+        else:
+            error_text = await get_user_text(localization, user_language_storage, user_id, "messages.language_not_available", language=new_language)
+            await query.edit_message_text(error_text)
 
 
 def _format_file_size(size: int) -> str:

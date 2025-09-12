@@ -34,6 +34,7 @@ from src.security.rate_limiter import RateLimiter
 from src.security.validators import SecurityValidator
 from src.storage.facade import Storage
 from src.storage.session_storage import SQLiteSessionStorage
+from src.localization import LocalizationManager, UserLanguageStorage
 
 
 def setup_logging(debug: bool = False) -> None:
@@ -160,6 +161,17 @@ async def create_application(config: Settings) -> Dict[str, Any]:
         tool_monitor=tool_monitor,
     )
 
+    # Create localization components
+    localization_manager = None
+    user_language_storage = None
+    
+    if config.enable_localization:
+        logger.info("Initializing localization system")
+        localization_manager = LocalizationManager()
+        user_language_storage = UserLanguageStorage(storage)
+        logger.info("Localization system initialized", 
+                   available_languages=list(localization_manager.get_available_languages().keys()))
+
     # Create bot with all dependencies
     dependencies = {
         "auth_manager": auth_manager,
@@ -168,6 +180,8 @@ async def create_application(config: Settings) -> Dict[str, Any]:
         "audit_logger": audit_logger,
         "claude_integration": claude_integration,
         "storage": storage,
+        "localization": localization_manager,
+        "user_language_storage": user_language_storage,
     }
 
     bot = ClaudeCodeBot(config, dependencies)
