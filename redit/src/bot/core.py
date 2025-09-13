@@ -101,8 +101,6 @@ class ClaudeCodeBot:
             BotCommand("export", "Export current session"),
             BotCommand("actions", "Show quick actions"),
             BotCommand("git", "Git repository commands"),
-            BotCommand("schedules", "Manage scheduled tasks"),
-            BotCommand("add_schedule", "Add new scheduled task"),
         ]
 
         await self.app.bot.set_my_commands(commands)
@@ -127,8 +125,6 @@ class ClaudeCodeBot:
             ("export", command.export_session),
             ("actions", command.quick_actions),
             ("git", command.git_command),
-            ("schedules", command.schedules_command),
-            ("add_schedule", command.add_schedule_command),
         ]
 
         for cmd, handler in handlers:
@@ -221,17 +217,12 @@ class ClaudeCodeBot:
                 context.bot_data[key] = value
             context.bot_data["settings"] = self.settings
 
-            # Create a dummy handler that continues processing
-            async def continue_handler(event, data):
-                # This allows the message to continue to the actual handlers
+            # Create a dummy handler that does nothing (middleware will handle everything)
+            async def dummy_handler(event, data):
                 return None
 
             # Call middleware with Telegram-style parameters
-            result = await middleware_func(continue_handler, update, context.bot_data)
-            
-            # If middleware returns None, it blocked the request
-            # If it returns result of handler, continue processing
-            return result
+            return await middleware_func(dummy_handler, update, context.bot_data)
 
         return middleware_wrapper
 

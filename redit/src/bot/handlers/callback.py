@@ -56,18 +56,17 @@ async def handle_callback_query(
             "git": handle_git_callback,
             "export": handle_export_callback,
             "lang": handle_language_callback,
-            "schedule": handle_schedule_callback,
         }
 
         handler = handlers.get(action)
         if handler:
             await handler(query, param, context)
         else:
-            await query.edit_message_text(
-                "❌ **Unknown Action**\n\n"
-                "This button action is not recognized. "
-                "The bot may have been updated since this message was sent."
+            error_text = await get_localized_text(
+                context, user_id, "errors_extended.unknown_action",
+                message="This button action is not recognized. The bot may have been updated since this message was sent."
             )
+            await query.edit_message_text(error_text)
 
     except Exception as e:
         logger.error(
@@ -78,17 +77,18 @@ async def handle_callback_query(
         )
 
         try:
-            await query.edit_message_text(
-                "❌ **Error Processing Action**\n\n"
-                "An error occurred while processing your request.\n"
-                "Please try again or use text commands."
+            error_text = await get_localized_text(
+                context, user_id, "errors_extended.error_processing",
+                error="An error occurred while processing your request.\nPlease try again or use text commands."
             )
+            await query.edit_message_text(error_text)
         except Exception:
             # If we can't edit the message, send a new one
-            await query.message.reply_text(
-                "❌ **Error Processing Action**\n\n"
-                "An error occurred while processing your request."
+            error_text = await get_localized_text(
+                context, user_id, "errors_extended.error_processing", 
+                error="An error occurred while processing your request."
             )
+            await query.message.reply_text(error_text)
 
 
 async def handle_cd_callback(
@@ -123,17 +123,20 @@ async def handle_cd_callback(
                 str(new_path), settings.approved_directory
             )
             if not valid:
-                await query.edit_message_text(f"❌ **Access Denied**\n\n{error}")
+                error_text = await get_localized_text(
+                    context, user_id, "errors_extended.access_denied", error=error
+                )
+                await query.edit_message_text(error_text)
                 return
             # Use the validated path
             new_path = resolved_path
 
         # Check if directory exists
         if not new_path.exists() or not new_path.is_dir():
-            await query.edit_message_text(
-                f"❌ **Directory Not Found**\n\n"
-                f"The directory `{project_name}` no longer exists or is not accessible."
+            error_text = await get_localized_text(
+                context, user_id, "errors_extended.directory_not_found", path=project_name
             )
+            await query.edit_message_text(error_text)
             return
 
         # Update directory and clear session
@@ -161,10 +164,11 @@ async def handle_cd_callback(
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
 
+        success_text = await get_localized_text(
+            context, user_id, "status.directory_changed", path=relative_path
+        )
         await query.edit_message_text(
-            f"✅ **Directory Changed**\n\n"
-            f"📂 Current directory: `{relative_path}/`\n\n"
-            f"🔄 Claude session cleared. You can now start coding in this directory!",
+            success_text,
             parse_mode=None,
             reply_markup=reply_markup,
         )
@@ -176,7 +180,10 @@ async def handle_cd_callback(
             )
 
     except Exception as e:
-        await query.edit_message_text(f"❌ **Error changing directory**\n\n{str(e)}")
+        error_text = await get_localized_text(
+            context, user_id, "errors_extended.error_changing_directory", error=str(e)
+        )
+        await query.edit_message_text(error_text)
 
         if audit_logger:
             await audit_logger.log_command(
@@ -207,10 +214,11 @@ async def handle_action_callback(
     if handler:
         await handler(query, context)
     else:
-        await query.edit_message_text(
-            f"❌ **Unknown Action: {action_type}**\n\n"
-            "This action is not implemented yet."
+        error_text = await get_localized_text(
+            context, query.from_user.id, "errors_extended.unknown_action_type", 
+            action_type=action_type, message="This action is not implemented yet."
         )
+        await query.edit_message_text(error_text)
 
 
 async def handle_confirm_callback(
@@ -218,9 +226,11 @@ async def handle_confirm_callback(
 ) -> None:
     """Handle confirmation dialogs."""
     if confirmation_type == "yes":
-        await query.edit_message_text("✅ **Confirmed**\n\nAction will be processed.")
+        confirmed_text = await get_localized_text(context, query.from_user.id, "status.confirmed")
+        await query.edit_message_text(confirmed_text)
     elif confirmation_type == "no":
-        await query.edit_message_text("❌ **Cancelled**\n\nAction was cancelled.")
+        cancelled_text = await get_localized_text(context, query.from_user.id, "status.cancelled")
+        await query.edit_message_text(cancelled_text)
     else:
         await query.edit_message_text("❓ **Unknown confirmation response**")
 
@@ -808,7 +818,7 @@ async def handle_quick_action_callback(
             
         # Get localized action name
         if localization and user_language_storage:
-            user_lang = await user_language_storage.get_user_language(user_id)
+            user_lang = await user_language_storage.get_language(user_id)
             action_display_name = localization.get(f"quick_actions.{action.id}.name", language=user_lang) or f"{action.icon} {action.name}"
         else:
             action_display_name = f"{action.icon} {action.name}"
@@ -1242,155 +1252,6 @@ async def handle_language_callback(query, param: str, context: ContextTypes.DEFA
         else:
             error_text = await get_user_text(localization, user_language_storage, user_id, "messages.language_not_available", language=new_language)
             await query.edit_message_text(error_text)
-
-
-async def handle_schedule_callback(query, param: str, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle scheduled prompts callbacks."""
-    try:
-        from ..features.scheduled_prompts import ScheduledPromptsManager
-        
-        user_id = query.from_user.id
-        application = context.application
-        settings = context.bot_data.get("settings")
-        
-        if not application or not settings:
-            await query.edit_message_text("❌ Помилка доступу до системи")
-            return
-            
-        prompts_manager = ScheduledPromptsManager(application, settings)
-        
-        if param == "add":
-            # Show add schedule menu
-            keyboard = [
-                [InlineKeyboardButton("📝 Створити завдання", callback_data="schedule:create_new")],
-                [InlineKeyboardButton("📋 Зі шаблону", callback_data="schedule:from_template")],
-                [InlineKeyboardButton("🔙 Назад", callback_data="schedule:list")]
-            ]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            
-            message = (
-                "➕ **Додати планове завдання**\n\n"
-                "Планові завдання виконуються автоматично\n"
-                "під час DND періоду (23:00-08:00).\n\n"
-                "Оберіть спосіб створення:"
-            )
-            await query.edit_message_text(message, reply_markup=reply_markup)
-            
-        elif param == "list":
-            # Show schedules list
-            config = await prompts_manager.load_prompts()
-            prompts = config.get("prompts", [])
-            system_settings = config.get("settings", {})
-            
-            if not prompts:
-                keyboard = [[
-                    InlineKeyboardButton("➕ Додати завдання", callback_data="schedule:add"),
-                    InlineKeyboardButton("⚙️ Налаштування", callback_data="schedule:settings")
-                ]]
-                reply_markup = InlineKeyboardMarkup(keyboard)
-                
-                await query.edit_message_text(
-                    "📋 **Планових завдань немає**\n\n"
-                    "🔧 Додайте перше завдання для початку роботи",
-                    reply_markup=reply_markup
-                )
-                return
-            
-            enabled_count = sum(1 for p in prompts if p.get("enabled", False))
-            system_status = "✅ Увімкнена" if system_settings.get("enabled", False) else "❌ Вимкнена"
-            
-            message = (
-                f"📋 **Планові завдання** ({len(prompts)})\n"
-                f"🔧 Система: {system_status} | Активних: {enabled_count}\n\n"
-            )
-            
-            for i, prompt in enumerate(prompts[:5], 1):  # Show first 5
-                status_icon = "✅" if prompt.get("enabled", False) else "❌"
-                schedule = prompt.get("schedule", {})
-                schedule_info = f"{schedule.get('type', 'daily')} о {schedule.get('time', '02:00')}"
-                
-                message += (
-                    f"{i}. {status_icon} **{prompt.get('title', 'Без назви')}**\n"
-                    f"   📅 {schedule_info}\n\n"
-                )
-            
-            if len(prompts) > 5:
-                message += f"... та ще {len(prompts) - 5} завдань\n\n"
-                
-            keyboard = [
-                [
-                    InlineKeyboardButton("➕ Додати", callback_data="schedule:add"),
-                    InlineKeyboardButton("📝 Редагувати", callback_data="schedule:edit")
-                ],
-                [
-                    InlineKeyboardButton("⚙️ Налаштування", callback_data="schedule:settings"),
-                    InlineKeyboardButton("🔄 Оновити", callback_data="schedule:list")
-                ]
-            ]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            await query.edit_message_text(message, reply_markup=reply_markup)
-            
-        elif param == "settings":
-            # Show system settings
-            config = await prompts_manager.load_prompts()
-            system_settings = config.get("settings", {})
-            
-            enabled = system_settings.get("enabled", False)
-            dnd_start = system_settings.get("dnd_start", "23:00")
-            dnd_end = system_settings.get("dnd_end", "08:00")
-            max_concurrent = system_settings.get("max_concurrent_tasks", 1)
-            
-            message = (
-                "⚙️ **Налаштування системи**\n\n"
-                f"🔧 Система: {'✅ Увімкнена' if enabled else '❌ Вимкнена'}\n"
-                f"🌙 DND період: {dnd_start} - {dnd_end}\n"
-                f"⚡ Максимально завдань: {max_concurrent}\n\n"
-                "**Do Not Disturb (DND) період** - це час коли\n"
-                "користувачі не працюють і система може\n"
-                "автоматично виконувати планові завдання."
-            )
-            
-            keyboard = [
-                [InlineKeyboardButton(
-                    "❌ Вимкнути" if enabled else "✅ Увімкнути",
-                    callback_data=f"schedule:toggle_system"
-                )],
-                [
-                    InlineKeyboardButton("🌙 Змінити DND", callback_data="schedule:change_dnd"),
-                    InlineKeyboardButton("⚡ Налаштування", callback_data="schedule:advanced")
-                ],
-                [InlineKeyboardButton("🔙 Назад", callback_data="schedule:list")]
-            ]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            await query.edit_message_text(message, reply_markup=reply_markup)
-            
-        elif param == "stats":
-            # Show execution statistics
-            stats = await prompts_manager.get_execution_stats()
-            
-            message = (
-                "📊 **Статистика виконання**\n\n"
-                f"📈 Всього виконань: {stats.get('total_executions', 0)}\n"
-                f"✅ Успішних: {stats.get('successful', 0)}\n"
-                f"❌ Помилок: {stats.get('failed', 0)}\n"
-                f"⏱️ Середній час: {stats.get('avg_duration', 0):.1f}с\n"
-                f"🕒 Останнє виконання: {stats.get('last_execution', 'Немає')}\n\n"
-                f"🔄 Система працює: {'✅ Так' if stats.get('system_active', False) else '❌ Ні'}"
-            )
-            
-            keyboard = [
-                [InlineKeyboardButton("📋 Детальні логи", callback_data="schedule:logs")],
-                [InlineKeyboardButton("🔙 Назад", callback_data="schedule:list")]
-            ]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            await query.edit_message_text(message, reply_markup=reply_markup)
-            
-        else:
-            await query.edit_message_text(f"❌ Невідома дія: {param}")
-            
-    except Exception as e:
-        logger.error("Error in schedule callback", error=str(e))
-        await query.edit_message_text(f"❌ Помилка: {str(e)}")
 
 
 def _format_file_size(size: int) -> str:

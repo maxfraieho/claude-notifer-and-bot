@@ -33,10 +33,8 @@ class ClaudeAvailabilityMonitor:
         self.last_state: Optional[bool] = None
         self.ok_counter = 0
         self.pending_notification: Optional[Dict[str, Any]] = None
-
-        # Additional tracking fields
-        self.last_limit_warning: Optional[datetime] = None
-        self.consecutive_limit_hits = 0
+        self.last_limit_warning: Optional[datetime] = None  # Track when we last warned about approaching limits
+        self.consecutive_limit_hits = 0  # Count consecutive rate limit hits for pattern detection
 
         # Ensure state files exist
         self._init_state_files()
@@ -119,7 +117,8 @@ class ClaudeAvailabilityMonitor:
             
             # If the time is in the past today, assume it means tomorrow
             if reset_time_kyiv <= datetime.now(kyiv_tz):
-                reset_time_kyiv = reset_time_kyiv.replace(day=reset_time_kyiv.day + 1)
+                from datetime import timedelta
+                reset_time_kyiv = reset_time_kyiv + timedelta(days=1)
             
             # Convert to UTC
             reset_time_utc = reset_time_kyiv.astimezone(ZoneInfo("UTC"))
@@ -131,31 +130,13 @@ class ClaudeAvailabilityMonitor:
             logger.warning(f"Failed to parse time '{time_str}': {e}")
             return None
 
-    def _classify_limit_type(self, output: str, reset_time: datetime) -> str:
-        """Classify the type of limit hit based on output content and reset time patterns."""
-        output_lower = output.lower()
-        
-        # Check for hourly limits (resets within 2 hours)
-        now_utc = datetime.now(ZoneInfo("UTC"))
-        time_until_reset = reset_time - now_utc
-        hours_until_reset = time_until_reset.total_seconds() / 3600
-        
-        if "5-hour" in output_lower or "5 hour" in output_lower:
-            return "5_hour_limit"
-        elif hours_until_reset <= 2:
-            return "hourly_limit" 
-        elif "daily" in output_lower or hours_until_reset > 12:
-            return "daily_limit"
-        else:
-            return "request_limit"
-
     async def health_check(self) -> Tuple[bool, Optional[str], Optional[datetime]]:
-        """Perform health check by running `claude auth status`.
+        """Perform health check by running `claude --version`.
         
         Returns:
             Tuple of (is_available, reason, reset_time):
             - is_available: True if Claude CLI is working
-            - reason: None if available, "limit" if rate limited, "auth" for authentication issues, "error" for other issues
+            - reason: None if available, "daily_limit"/"hourly_limit"/"request_limit"/"error" for specific issues
             - reset_time: UTC datetime when limit resets, None if not applicable
         
         ⚠️ For Claude CLI to work inside the container:
@@ -165,23 +146,18 @@ class ClaudeAvailabilityMonitor:
         - See README.md for instructions.
         """
         try:
-            # Use shell with explicit PATH environment
-            import os
-            env = os.environ.copy()
-            env['PATH'] = f"/home/claudebot/.local/bin:{env.get('PATH', '')}"
-            
-            proc = await asyncio.create_subprocess_shell(
-                "claude auth status",
+            # Replace subprocess.run with async call
+            proc = await asyncio.create_subprocess_exec(
+                "claude", "--version",
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                env=env,
             )
             
             # Use async timeout
             stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=10)
             
             if proc.returncode == 0:
-                logger.debug("Claude CLI check: available and authenticated")
+                logger.debug("Claude CLI check: available")
                 return True, None, None
             
             # Decode output for analysis
@@ -189,42 +165,28 @@ class ClaudeAvailabilityMonitor:
             stderr_text = stderr.decode('utf-8', errors='ignore') if stderr else ""
             combined_output = f"{stdout_text}\n{stderr_text}"
             
-            # Debug logging for diagnosis
-            logger.debug(f"Claude CLI exit code: {proc.returncode}")
-            logger.debug(f"Claude CLI stdout: {stdout_text}")
-            logger.debug(f"Claude CLI stderr: {stderr_text}")
-            
-            # Check for authentication errors first
-            auth_errors = [
-                "authentication_error",
-                "OAuth token has expired",
-                "Please run /login",
-                "Invalid authentication",
-                "Please obtain a new token"
-            ]
-            
-            if any(auth_error in combined_output for auth_error in auth_errors):
-                logger.debug("Claude CLI check: authentication error detected")
-                return False, "auth", None
-            
             # Check if this is a limit-related error and classify the type
             reset_time = self.parse_limit_message(combined_output)
             if reset_time:
-                # Classify limit type based on output patterns and timing
+                # Classify limit type based on reset time pattern
                 limit_type = self._classify_limit_type(combined_output, reset_time)
-                logger.debug(f"Claude CLI {limit_type} reached, resets at: {reset_time.isoformat()}")
+                logger.debug(f"Claude CLI {limit_type} limit reached, resets at: {reset_time.isoformat()}")
                 return False, limit_type, reset_time
+            
+            # Check for other common error patterns
+            if "authentication" in combined_output.lower() or "login" in combined_output.lower():
+                logger.debug(f"Claude CLI authentication error: {combined_output}")
+                return False, "auth_error", None
+            elif "network" in combined_output.lower() or "connection" in combined_output.lower():
+                logger.debug(f"Claude CLI network error: {combined_output}")
+                return False, "network_error", None
             
             # Other error
             logger.debug(f"Claude CLI check: unavailable (exit_code={proc.returncode})")
             return False, "error", None
             
-        except (asyncio.TimeoutError, FileNotFoundError) as e:
-            logger.warning(f"Claude CLI unavailable (timeout/not found): {e}")
-            return False, "error", None
-        except Exception as e:
-            logger.warning(f"Claude CLI unavailable (general error): {e}")
-            logger.debug(f"Exception details: {type(e).__name__}: {str(e)}")
+        except (asyncio.TimeoutError, FileNotFoundError, Exception) as e:
+            logger.warning(f"Claude CLI unavailable: {e}")
             return False, "error", None
 
     async def _save_state(self, available: bool, reason: Optional[str] = None, reset_expected: Optional[datetime] = None):
@@ -234,10 +196,10 @@ class ClaudeAvailabilityMonitor:
             "last_check": datetime.now(ZoneInfo("Europe/Kyiv")).isoformat()
         }
         
-        # Add reason and reset_expected for limited state
+        # Add reason and reset_expected for limited state  
         if not available and reason:
             state["reason"] = reason
-            if reset_expected and reason == "limit":
+            if reset_expected and reason in ["daily_limit", "hourly_limit", "request_limit", "limit"]:
                 state["reset_expected"] = reset_expected.isoformat()
         
         # Use aiofiles for async file writing
@@ -273,6 +235,61 @@ class ClaudeAvailabilityMonitor:
         """Get platform information."""
         import platform
         return f"{platform.system()} {platform.machine()}"
+
+    def _classify_limit_type(self, output: str, reset_time: datetime) -> str:
+        """Classify the type of rate limit based on output and reset time."""
+        output_lower = output.lower()
+        
+        # Check for specific limit mentions in output
+        if "daily" in output_lower or "day" in output_lower:
+            return "daily_limit"
+        elif "hourly" in output_lower or "hour" in output_lower:
+            return "hourly_limit"
+        elif "per request" in output_lower or "request" in output_lower:
+            return "request_limit"
+        
+        # Fallback: classify based on reset time patterns
+        now_utc = datetime.now(ZoneInfo("UTC"))
+        time_until_reset = (reset_time - now_utc).total_seconds()
+        
+        # If reset is more than 12 hours away, likely daily limit
+        if time_until_reset > 12 * 3600:
+            return "daily_limit"
+        # If reset is 1-12 hours away, could be hourly or daily
+        elif time_until_reset > 3600:
+            return "hourly_limit"
+        # If reset is less than 1 hour, likely request-based
+        else:
+            return "request_limit"
+    
+    async def _check_internal_rate_limits(self, user_id: Optional[int] = None) -> Tuple[bool, Optional[str]]:
+        """Check internal rate limiter status for early warning."""
+        try:
+            rate_limiter = self.application.bot_data.get("rate_limiter")
+            if not rate_limiter or not user_id:
+                return True, None  # Cannot check, assume OK
+            
+            # Check with minimal cost to see current status
+            allowed, message = await rate_limiter.check_rate_limit(user_id, cost=0.1, tokens=1)
+            
+            if not allowed:
+                return False, message
+                
+            # Check if user is approaching limits (rough estimation)
+            current_usage = rate_limiter.cost_tracker.get(user_id, 0.0)
+            max_usage = rate_limiter.config.claude_max_cost_per_user
+            
+            usage_percentage = (current_usage / max_usage) * 100 if max_usage > 0 else 0
+            
+            if usage_percentage > 80:  # Warn when over 80% usage
+                warning_msg = f"⚠️ Ви використали {usage_percentage:.0f}% вашого денного ліміту Claude. Залишилось: {max_usage - current_usage:.1f} кредитів."
+                return True, warning_msg
+                
+            return True, None
+            
+        except Exception as e:
+            logger.warning(f"Failed to check internal rate limits: {e}")
+            return True, None  # Assume OK if check fails
 
     def _is_dnd_time(self) -> bool:
         """Check if current time is within DND window (23:00–08:00 Europe/Kyiv)."""
@@ -316,15 +333,18 @@ class ClaudeAvailabilityMonitor:
         if downtime_duration:
             hours, remainder = divmod(downtime_duration, 3600)
             minutes, seconds = divmod(remainder, 60)
-            duration_text = self._get_localized_text("availability.downtime_duration", 
-                                                   hours=int(hours), minutes=int(minutes))
-            duration_str = f" {duration_text}"
+            duration_str = self._get_localized_text(
+                "availability.downtime_duration", 
+                hours=int(hours), 
+                minutes=int(minutes)
+            )
 
-        # Get localized message template
-        message = self._get_localized_text("availability.cli_available", 
-                                         timestamp=now.strftime('%Y-%m-%d %H:%M:%S'),
-                                         platform=platform,
-                                         duration=duration_str)
+        message = self._get_localized_text(
+            "availability.cli_available",
+            timestamp=now.strftime('%Y-%m-%d %H:%M:%S'),
+            platform=platform,
+            duration=duration_str
+        )
         
         # Add reset time information if available
         if reset_expected and reset_actual:
@@ -332,59 +352,45 @@ class ClaudeAvailabilityMonitor:
             expected_local = reset_expected.astimezone(kyiv_tz)
             actual_local = reset_actual.astimezone(kyiv_tz)
             
-            message += (
-                f"\n📅 Фактичний час відновлення: {actual_local.strftime('%H:%M')}"
-                f"\n⏳ Очікуваний був: {expected_local.strftime('%H:%M')}"
+            reset_info = self._get_localized_text(
+                "availability.reset_time_actual",
+                actual_time=actual_local.strftime('%H:%M'),
+                expected_time=expected_local.strftime('%H:%M')
             )
+            message += reset_info
         
         return message
 
-    async def _build_limit_message(self, reset_expected: Optional[datetime] = None) -> str:
-        """Build limit reached message for Telegram."""
+    async def _build_limit_message(self, reset_expected: Optional[datetime] = None, limit_type: str = "limit") -> str:
+        """Build limit reached message for Telegram with specific limit type."""
         now = datetime.now(ZoneInfo("Europe/Kyiv"))
         
-        message = self._get_localized_text("availability.cli_unavailable", 
-                                         timestamp=now.strftime('%Y-%m-%d %H:%M:%S'))
+        # Choose appropriate message based on limit type
+        if limit_type == "daily_limit":
+            limit_description = "денний ліміт досягнуто"
+            advice = "\n\n💬 **Поради:**\n• Дочекайтеся скидання ліміту завтра\n• Оптимізуйте запити для економії кредитів\n• Розподіліть завдання на кілька днів"
+        elif limit_type == "hourly_limit":
+            limit_description = "погодинний ліміт досягнуто"
+            advice = "\n\n💬 **Поради:**\n• Дочекайтеся скидання ліміту\n• Використовуйте коротші запити\n• Розподіліть роботу рівномірно"
+        elif limit_type == "request_limit":
+            limit_description = "ліміт запитів досягнуто"
+            advice = "\n\n💬 **Поради:**\n• Зачекайте кілька хвилин\n• Об'єднайте кілька питань в один запит\n• Уникайте частих коротких запитів"
+        else:
+            limit_description = "ліміт використання досягнуто"
+            advice = ""
+        
+        message = f"🔴 **Claude CLI недоступний ({limit_description})**\n📅 `{now.strftime('%Y-%m-%d %H:%M:%S')}`{advice}"
         
         if reset_expected:
             kyiv_tz = ZoneInfo("Europe/Kyiv")
             reset_local = reset_expected.astimezone(kyiv_tz)
-            reset_text = self._get_localized_text("availability.reset_time_expected", 
-                                                time=reset_local.strftime('%H:%M'))
-            message += reset_text
+            reset_info = self._get_localized_text(
+                "availability.reset_time_expected",
+                time=reset_local.strftime('%H:%M')
+            )
+            message += reset_info
         
         return message
-
-    async def _build_auth_message(self) -> str:
-        """Build authentication error message for Telegram."""
-        now = datetime.now(ZoneInfo("Europe/Kyiv"))
-        platform = self._get_platform()
-        
-        message = (
-            f"🔴 **Claude CLI недоступний (помилка автентифікації)**\n"
-            f"📅 `{now.strftime('%Y-%m-%d %H:%M:%S')}`\n"
-            f"🖥️ `{platform}`\n"
-            f"⚠️ Токен автентифікації закінчився або невалідний\n"
-            f"🔧 Потрібно оновити автентифікацію Claude CLI"
-        )
-        
-        return message
-
-    async def _check_scheduled_prompts(self, context):
-        """Check and trigger scheduled prompts if conditions are met."""
-        try:
-            # Import here to avoid circular imports
-            from src.bot.features.scheduled_prompts import ScheduledPromptsManager
-            
-            # Check if we have a scheduled prompts manager
-            if not hasattr(self, '_prompts_manager'):
-                self._prompts_manager = ScheduledPromptsManager(self.application, self.settings)
-            
-            # Trigger prompt check
-            await self._prompts_manager.check_and_execute_prompts(context)
-            
-        except Exception as e:
-            logger.error(f"Error checking scheduled prompts: {e}")
 
     async def monitor_task(self, context):
         """Main monitoring task that runs periodically."""
@@ -394,10 +400,6 @@ class ClaudeAvailabilityMonitor:
         # Get current health status
         current_available, current_reason, current_reset_time = await self.health_check()
         current_time = time.time()
-        
-        # Check for scheduled prompts during DND when Claude is available
-        if current_available and self._is_dnd_time():
-            await self._check_scheduled_prompts(context)
 
         # Load previous state
         try:
@@ -429,23 +431,23 @@ class ClaudeAvailabilityMonitor:
         debounce_threshold = self.settings.claude_availability.debounce_ok_count
         confirmed_available = self.ok_counter >= debounce_threshold
 
-        # Determine current state string for logging
+        # Determine current state string for logging with more granularity  
         if confirmed_available:
             current_state = "available"
-        elif current_reason == "limit":
-            current_state = "limited"
-        elif current_reason == "auth":
-            current_state = "auth_error"
+        elif current_reason in ["daily_limit", "hourly_limit", "request_limit"]:
+            current_state = f"limited_{current_reason}"
+        elif current_reason in ["auth_error", "network_error"]:
+            current_state = f"error_{current_reason}"
         else:
             current_state = "unavailable"
 
-        # Determine previous state string for logging
+        # Determine previous state string for logging with more granularity
         if last_available:
             last_state = "available"
-        elif last_reason == "limit":
-            last_state = "limited"
-        elif last_reason == "auth":
-            last_state = "auth_error"
+        elif last_reason in ["daily_limit", "hourly_limit", "request_limit"]:
+            last_state = f"limited_{last_reason}"
+        elif last_reason in ["auth_error", "network_error"]:
+            last_state = f"error_{last_reason}"
         else:
             last_state = "unavailable"
 
@@ -494,23 +496,30 @@ class ClaudeAvailabilityMonitor:
                     await self._send_notification(message)
                     self.pending_notification = None
 
-            elif not confirmed_available and last_available and current_reason == "limit":
-                # Became limited from available
-                message = await self._build_limit_message(current_reset_time)
+            elif not confirmed_available and last_available and current_reason in ["daily_limit", "hourly_limit", "request_limit"]:
+                # Became limited from available - track pattern
+                self.consecutive_limit_hits += 1
+                
+                # Build more detailed limit message based on type
+                message = await self._build_limit_message(current_reset_time, current_reason)
+                
+                # Add pattern warning if this is frequent
+                if self.consecutive_limit_hits >= 3:
+                    pattern_warning = "\n\n⚠️ **Частe досягнення лімітів**\nРозгляньте можливість оптимізації запитів або розподілення навантаження."
+                    message += pattern_warning
                 
                 if not self._is_dnd_time():
                     await self._send_notification(message)
                 # Note: We don't defer limit notifications during DND as they are important
-
-            elif not confirmed_available and last_available and current_reason == "auth":
-                # Became auth error from available
-                message = await self._build_auth_message()
-                
-                if not self._is_dnd_time():
-                    await self._send_notification(message)
-                # Note: We don't defer auth error notifications during DND as they are important
+            
+            # Reset consecutive limit counter when becoming available
+            if confirmed_available:
+                self.consecutive_limit_hits = 0
 
             self.last_state = confirmed_available
+
+        # Send proactive notifications about approaching reset times
+        await self._check_and_send_proactive_notifications(current_reason, current_reset_time)
 
         # If there's a pending notification and we're no longer in DND - send it
         if self.pending_notification and not self._is_dnd_time():
@@ -530,12 +539,6 @@ async def setup_availability_monitor(application: Application, settings: Setting
 
     monitor = ClaudeAvailabilityMonitor(application, settings)
 
-    # Check if job_queue is available
-    if application.job_queue is None:
-        logger.warning("JobQueue not available - availability monitoring will not run periodic checks")
-        logger.warning("To enable periodic monitoring, install python-telegram-bot[job-queue]")
-        return
-
     # Add periodic task
     application.job_queue.run_repeating(
         monitor.monitor_task,
@@ -544,7 +547,57 @@ async def setup_availability_monitor(application: Application, settings: Setting
         name="claude_availability_monitor"
     )
 
+    # Store monitor in application data for potential future use
+    application.bot_data["availability_monitor"] = monitor
+
     logger.info(
         f"✅ Claude CLI monitoring enabled. Interval: {settings.claude_availability.check_interval_seconds}s. "
         f"Notification chats: {settings.claude_availability.notify_chat_ids}"
     )
+
+    async def _check_and_send_proactive_notifications(self, reason: Optional[str], reset_time: Optional[datetime]):
+        """Send proactive notifications about approaching reset times."""
+        if not reason or not reset_time or reason not in ["daily_limit", "hourly_limit", "request_limit"]:
+            return
+            
+        now_utc = datetime.now(ZoneInfo("UTC"))
+        time_until_reset = (reset_time - now_utc).total_seconds()
+        
+        # Send notification 30 minutes before expected reset for daily limits
+        # Send notification 10 minutes before for hourly limits  
+        # Send notification 2 minutes before for request limits
+        notification_threshold = {
+            "daily_limit": 30 * 60,  # 30 minutes
+            "hourly_limit": 10 * 60,  # 10 minutes
+            "request_limit": 2 * 60   # 2 minutes
+        }.get(reason, 10 * 60)
+        
+        # Check if we should send a proactive notification
+        if (notification_threshold - 60) <= time_until_reset <= (notification_threshold + 60):
+            # Only send if we haven't sent a warning recently
+            if (not self.last_limit_warning or 
+                (now_utc - self.last_limit_warning).total_seconds() > notification_threshold):
+                
+                kyiv_tz = ZoneInfo("Europe/Kyiv")
+                reset_local = reset_time.astimezone(kyiv_tz)
+                
+                if reason == "daily_limit":
+                    warning_msg = (f"⚡ **Попередження: Скоро скидання лімітів**\n"
+                                  f"🕓 Claude CLI стане доступним о ≈{reset_local.strftime('%H:%M')}\n"
+                                  f"🔍 Підготуйте свої задачі зараніе!")
+                elif reason == "hourly_limit":
+                    warning_msg = (f"⚡ **Попередження: Скоро скидання лімітів**\n"
+                                  f"🕓 Claude CLI стане доступним о ≈{reset_local.strftime('%H:%M')}\n"
+                                  f"🚀 Приблизно 10 хвилин до відновлення!")
+                else:  # request_limit
+                    warning_msg = (f"⚡ **Попередження: Скоро скидання лімітів**\n"
+                                  f"🕓 Claude CLI стане доступним о ≈{reset_local.strftime('%H:%M')}\n"
+                                  f"⏱️ Лише кілька хвилин!")
+                
+                if not self._is_dnd_time():
+                    await self._send_notification(warning_msg)
+                    self.last_limit_warning = now_utc
+                    logger.info(f"Proactive {reason} reset notification sent")
+                    
+    # Add the method to the monitor class
+    monitor._check_and_send_proactive_notifications = _check_and_send_proactive_notifications.__get__(monitor, ClaudeAvailabilityMonitor)

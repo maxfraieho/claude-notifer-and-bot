@@ -82,13 +82,12 @@ async def auth_middleware(handler: Callable, event: Any, data: Dict[str, Any]) -
             auth_provider=session.auth_provider if session else None,
         )
 
-        # Log authentication success (welcome message handled by /start command)
-        logger.info(
-            "New user session started",
-            user_id=user_id,
-            username=username,
-            session_time=datetime.utcnow().isoformat()
-        )
+        # Welcome message for new session
+        if event.effective_message:
+            await event.effective_message.reply_text(
+                f"🔓 Welcome! You are now authenticated.\n"
+                f"Session started at {datetime.utcnow().strftime('%H:%M:%S UTC')}"
+            )
 
         # Continue to handler
         return await handler(event, data)

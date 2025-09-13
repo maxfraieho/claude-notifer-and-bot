@@ -155,9 +155,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     if localization and user_language_storage:
         # Try to get full help text from translations
         user_lang = await user_language_storage.get_user_language(user_id) 
-        if not user_lang:
-            user_lang = "uk"  # Default to Ukrainian
-        help_data = localization.translations.get(user_lang, {}).get("commands", {}).get("help", {})
+        help_data = localization._translations.get(user_lang, {}).get("commands", {}).get("help", {})
         
         if help_data:
             # Build help text from individual components
@@ -390,17 +388,11 @@ async def continue_session(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         except Exception:
             pass
 
-        # Send error response
-        await update.message.reply_text(
-            f"❌ **Error Continuing Session**\n\n"
-            f"An error occurred while trying to continue your session:\n\n"
-            f"`{error_msg}`\n\n"
-            f"**Suggestions:**\n"
-            f"• Try starting a new session with `/new`\n"
-            f"• Check your session status with `/status`\n"
-            f"• Contact support if the issue persists",
-            parse_mode=None,
+        # Send localized error response
+        error_text = await get_localized_text(
+            context, user_id, "errors_command.error_continuing_session", error=error_msg
         )
+        await update.message.reply_text(error_text, parse_mode=None)
 
         # Log failed continue
         if audit_logger:
@@ -718,22 +710,34 @@ async def session_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             cost_limit = cost_usage.get("limit", settings.claude_max_cost_per_user)
             cost_percentage = (current_cost / cost_limit) * 100 if cost_limit > 0 else 0
 
-            usage_info = f"💰 Usage: ${current_cost:.2f} / ${cost_limit:.2f} ({cost_percentage:.0f}%)\n"
+            usage_info = await get_localized_text(context, user_id, "status.usage_info", 
+                current_cost=f"{current_cost:.2f}", 
+                cost_limit=f"{cost_limit:.2f}",
+                cost_percentage=f"{cost_percentage:.0f}"
+            ) + "\n"
         except Exception:
-            usage_info = "💰 Usage: _Unable to retrieve_\n"
+            usage_info = await get_localized_text(context, user_id, "status.usage_error") + "\n"
 
+    # Get localized status strings
+    status_title = await get_localized_text(context, user_id, "status.title")
+    status_directory = await get_localized_text(context, user_id, "status.directory", directory=relative_path)
+    claude_active = await get_localized_text(context, user_id, "status.claude_session_active")
+    claude_inactive = await get_localized_text(context, user_id, "status.claude_session_inactive")
+    last_update = await get_localized_text(context, user_id, "status.last_update", time=update.message.date.strftime('%H:%M:%S'))
+    
     # Format status message
     status_lines = [
-        "📊 **Session Status**",
+        status_title,
         "",
-        f"📂 Directory: `{relative_path}/`",
-        f"🤖 Claude Session: {'✅ Active' if claude_session_id else '❌ None'}",
+        status_directory,
+        claude_active if claude_session_id else claude_inactive,
         usage_info.rstrip(),
-        f"🕐 Last Update: {update.message.date.strftime('%H:%M:%S UTC')}",
+        last_update,
     ]
 
     if claude_session_id:
-        status_lines.append(f"🆔 Session ID: `{claude_session_id[:8]}...`")
+        session_id_text = await get_localized_text(context, user_id, "status.session_id", session_id=claude_session_id[:8])
+        status_lines.append(session_id_text)
 
     # Add action buttons
     keyboard = []
@@ -1064,121 +1068,3 @@ def _format_file_size(size: int) -> str:
             return f"{size:.1f}{unit}" if unit != "B" else f"{size}B"
         size /= 1024
     return f"{size:.1f}TB"
-
-
-async def schedules_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """List and manage scheduled tasks."""
-    try:
-        from ..features.scheduled_prompts import ScheduledPromptsManager
-        
-        # Get application from context
-        application = context.application
-        settings = context.bot_data.get("settings")
-        
-        if not application or not settings:
-            await update.message.reply_text(
-                "❌ **Помилка системи**\n"
-                "Неможливо отримати доступ до компонентів системи"
-            )
-            return
-            
-        prompts_manager = ScheduledPromptsManager(application, settings)
-        config = await prompts_manager.load_prompts()
-        prompts = config.get("prompts", [])
-        system_settings = config.get("settings", {})
-        
-        if not prompts:
-            keyboard = [[
-                InlineKeyboardButton("➕ Додати завдання", callback_data="schedule:add"),
-                InlineKeyboardButton("⚙️ Налаштування", callback_data="schedule:settings")
-            ]]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            
-            await update.message.reply_text(
-                "📋 **Планових завдань немає**\n\n"
-                "Ця система дозволяє автоматично виконувати завдання\n"
-                "під час DND періоду (23:00-08:00).\n\n"
-                "🔧 Додайте перше завдання для початку роботи",
-                reply_markup=reply_markup
-            )
-            return
-        
-        # Build message with prompts list
-        enabled_count = sum(1 for p in prompts if p.get("enabled", False))
-        system_status = "✅ Увімкнена" if system_settings.get("enabled", False) else "❌ Вимкнена"
-        
-        message = (
-            f"📋 **Планові завдання** ({len(prompts)})\n"
-            f"🔧 Система: {system_status} | Активних: {enabled_count}\n\n"
-        )
-        
-        for i, prompt in enumerate(prompts[:10], 1):  # Show first 10
-            status_icon = "✅" if prompt.get("enabled", False) else "❌"
-            schedule = prompt.get("schedule", {})
-            schedule_info = f"{schedule.get('type', 'daily')} о {schedule.get('time', '02:00')}"
-            
-            message += (
-                f"{i}. {status_icon} **{prompt.get('title', 'Без назви')}**\n"
-                f"   📅 {schedule_info}\n"
-                f"   📝 {prompt.get('description', 'Без опису')[:50]}{'...' if len(prompt.get('description', '')) > 50 else ''}\n\n"
-            )
-        
-        if len(prompts) > 10:
-            message += f"... та ще {len(prompts) - 10} завдань\n\n"
-            
-        # Add control buttons
-        keyboard = [
-            [
-                InlineKeyboardButton("➕ Додати", callback_data="schedule:add"),
-                InlineKeyboardButton("📝 Редагувати", callback_data="schedule:edit")
-            ],
-            [
-                InlineKeyboardButton("⚙️ Налаштування", callback_data="schedule:settings"),
-                InlineKeyboardButton("📊 Статистика", callback_data="schedule:stats")
-            ]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await update.message.reply_text(message, reply_markup=reply_markup)
-        
-    except Exception as e:
-        logger.error("Error in schedules command", error=str(e))
-        await update.message.reply_text(
-            "❌ **Помилка**\n"
-            f"Не вдалося отримати список завдань: {str(e)}"
-        )
-
-
-async def add_schedule_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Add new scheduled task."""
-    try:
-        # Create inline keyboard for adding new task
-        keyboard = [
-            [InlineKeyboardButton("📝 Створити завдання", callback_data="schedule:create_new")],
-            [InlineKeyboardButton("📋 Зі шаблону", callback_data="schedule:from_template")],
-            [InlineKeyboardButton("🔙 Назад", callback_data="schedule:list")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        message = (
-            "➕ **Додати планове завдання**\n\n"
-            "Планові завдання виконуються автоматично\n"
-            "під час DND періоду (23:00-08:00)\n"
-            "коли Claude CLI доступна та користувачі не працюють.\n\n"
-            "**Типи завдань:**\n"
-            "• 🔍 Аналіз коду та архітектури\n"
-            "• 📊 Генерація звітів\n"
-            "• 🧹 Рефакторинг та оптимізація\n"
-            "• 📝 Оновлення документації\n"
-            "• 🔒 Перевірка безпеки\n\n"
-            "Оберіть спосіб створення:"
-        )
-        
-        await update.message.reply_text(message, reply_markup=reply_markup)
-        
-    except Exception as e:
-        logger.error("Error in add_schedule command", error=str(e))
-        await update.message.reply_text(
-            "❌ **Помилка**\n"
-            f"Не вдалося відкрити меню додавання: {str(e)}"
-        )

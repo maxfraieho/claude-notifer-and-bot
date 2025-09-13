@@ -66,7 +66,7 @@ RUN mkdir -p ~/.local/bin ~/.claude/plugins/repos \
 
 # Copy and extract Claude CLI authentication archive
 COPY --chown=${USERNAME}:${USERNAME} claude-auth.tar.gz /tmp/claude-auth.tar.gz
-RUN cd ~/.claude \
+RUN cd ~ \
     && tar -xzf /tmp/claude-auth.tar.gz \
     && rm /tmp/claude-auth.tar.gz \
     && chmod 600 ~/.claude/.credentials.json 2>/dev/null || true \
