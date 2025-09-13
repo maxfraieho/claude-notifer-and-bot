@@ -51,11 +51,12 @@ RUN curl -sSL https://install.python-poetry.org | python3 -
 ENV PATH="/home/${USERNAME}/.local/bin:${PATH}"
 
 # Copy dependency files for Poetry
-COPY --chown=${USERNAME}:${USERNAME} pyproject.toml poetry.lock README.md ./
+COPY --chown=${USERNAME}:${USERNAME} pyproject.toml README.md ./
 
 # Configure Poetry and install Python dependencies
 RUN poetry config virtualenvs.create false \
     && poetry config virtualenvs.in-project false \
+    && poetry lock \
     && poetry install --only=main --no-root --no-cache
 
 # Install Claude CLI and create necessary directories

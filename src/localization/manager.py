@@ -2,6 +2,9 @@
 
 import json
 import os
+import threading
+import time
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -22,6 +25,8 @@ class LocalizationManager:
         self.translations_dir = Path(__file__).parent / translations_dir
         self.translations: Dict[str, Dict[str, Any]] = {}
         self.default_language = "en"
+        self.missing_keys: Dict[str, Dict[str, Any]] = {}
+        self._lock = threading.Lock()
         self._load_translations()
 
     def _load_translations(self) -> None:
@@ -64,7 +69,8 @@ class LocalizationManager:
             if isinstance(value, dict) and k in value:
                 value = value[k]
             else:
-                # If key not found, return the key itself as fallback
+                # If key not found, track it and return the key itself as fallback
+                self._track_missing_key(key, language)
                 logger.warning("Translation key not found", key=key, language=language)
                 return key
 
@@ -101,3 +107,87 @@ class LocalizationManager:
             True if language is available
         """
         return language in self.translations
+
+    def _track_missing_key(self, key: str, language: str) -> None:
+        """Track missing translation keys with frequency and timestamp.
+        
+        Args:
+            key: The missing translation key
+            language: The language code that was requested
+        """
+        with self._lock:
+            key_id = f"{key}:{language}"
+            current_time = datetime.now().isoformat()
+            
+            if key_id in self.missing_keys:
+                self.missing_keys[key_id]["frequency"] += 1
+                self.missing_keys[key_id]["last_accessed"] = current_time
+            else:
+                self.missing_keys[key_id] = {
+                    "key": key,
+                    "language": language,
+                    "frequency": 1,
+                    "first_accessed": current_time,
+                    "last_accessed": current_time
+                }
+
+    def dump_missing_translations(self, output_file: str = "missing_translations.json") -> None:
+        """Export missing translation keys to a JSON file.
+        
+        Args:
+            output_file: Path to the output JSON file
+        """
+        with self._lock:
+            # Create output data structure
+            output_data = {
+                "generated_at": datetime.now().isoformat(),
+                "total_missing_keys": len(self.missing_keys),
+                "missing_keys": list(self.missing_keys.values()),
+                "summary_by_language": {}
+            }
+            
+            # Generate summary by language
+            for key_data in self.missing_keys.values():
+                lang = key_data["language"]
+                if lang not in output_data["summary_by_language"]:
+                    output_data["summary_by_language"][lang] = {
+                        "count": 0,
+                        "total_frequency": 0
+                    }
+                output_data["summary_by_language"][lang]["count"] += 1
+                output_data["summary_by_language"][lang]["total_frequency"] += key_data["frequency"]
+            
+            # Write to file with thread-safe access
+            try:
+                output_path = Path(output_file)
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+                
+                with open(output_path, "w", encoding="utf-8") as f:
+                    json.dump(output_data, f, indent=2, ensure_ascii=False)
+                
+                logger.info("Missing translations exported", 
+                           file=str(output_path), 
+                           total_keys=len(self.missing_keys))
+                           
+            except Exception as e:
+                logger.error("Failed to export missing translations", 
+                           file=output_file, 
+                           error=str(e))
+                raise
+
+    def get_missing_keys_summary(self) -> Dict[str, Any]:
+        """Get summary of missing translation keys.
+        
+        Returns:
+            Dictionary with summary information about missing keys
+        """
+        with self._lock:
+            return {
+                "total_missing_keys": len(self.missing_keys),
+                "languages_affected": list(set(data["language"] for data in self.missing_keys.values())),
+                "most_frequent_keys": sorted(
+                    self.missing_keys.values(),
+                    key=lambda x: x["frequency"],
+                    reverse=True
+                )[:10]
+            }

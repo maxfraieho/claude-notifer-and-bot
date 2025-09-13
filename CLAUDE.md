@@ -201,6 +201,40 @@ Enable debug mode for detailed logging:
 poetry run python -m src.main --debug
 ```
 
+## Claude CLI Authentication Transfer
+
+### Transferring Auth from Host to Container
+
+When Claude CLI authentication expires in the container, you can transfer working credentials from the host:
+
+```bash
+# 1. Create archive of working Claude auth files from host
+tar -czf claude-auth-latest.tar.gz -C /home/vokov .claude
+
+# 2. Copy auth archive to Docker container
+docker cp claude-auth-latest.tar.gz claude-code-bot:/tmp/claude-auth.tar.gz
+
+# 3. Extract auth files in container home directory
+docker exec claude-code-bot bash -c "cd /home/claudebot && tar -xzf /tmp/claude-auth.tar.gz"
+
+# 4. Verify authentication works
+docker exec claude-code-bot bash -c "claude --version"
+
+# 5. Rebuild and restart system
+docker compose down
+docker compose up -d --build
+```
+
+### ВАЖЛИВО: Тільки метод архівування
+
+**НЕ використовуємо SDK mode!** Тільки архівування `.claude` налаштувань з хосту:
+
+1. Завжди `USE_SDK=false` в `.env`
+2. Тільки архівуємо та розархівовуємо `.claude` директорію з хосту
+3. Ніяких API ключів або SDK режимів не потрібно
+
+Система працює ТІЛЬКИ через архівування робочих Claude CLI налаштувань.
+
 ## Common Development Workflows
 
 1. **Adding new bot commands**: Add handler in `src/bot/handlers/command.py` and register in `src/bot/core.py`

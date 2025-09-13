@@ -807,7 +807,7 @@ async def handle_quick_action_callback(
             
         # Get localized action name
         if localization and user_language_storage:
-            user_lang = await user_language_storage.get_language(user_id)
+            user_lang = await user_language_storage.get_user_language(user_id)
             action_display_name = localization.get(f"quick_actions.{action.id}.name", language=user_lang) or f"{action.icon} {action.name}"
         else:
             action_display_name = f"{action.icon} {action.name}"

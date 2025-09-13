@@ -154,8 +154,10 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     
     if localization and user_language_storage:
         # Try to get full help text from translations
-        user_lang = await user_language_storage.get_language(user_id) 
-        help_data = localization._translations.get(user_lang, {}).get("commands", {}).get("help", {})
+        user_lang = await user_language_storage.get_user_language(user_id) 
+        if not user_lang:
+            user_lang = "uk"  # Default to Ukrainian
+        help_data = localization.translations.get(user_lang, {}).get("commands", {}).get("help", {})
         
         if help_data:
             # Build help text from individual components
@@ -938,7 +940,7 @@ async def quick_actions(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         
         if user_language_storage:
             try:
-                user_lang = await user_language_storage.get_language(user_id)
+                user_lang = await user_language_storage.get_user_language(user_id)
             except:
                 pass
         

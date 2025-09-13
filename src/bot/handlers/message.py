@@ -301,9 +301,7 @@ async def handle_text_message(
                 conversation_enhancer.update_context(user_id, claude_response)
 
                 # Check if we should show follow-up suggestions
-                if conversation_enhancer.should_show_suggestions(
-                    claude_response.tools_used or [], claude_response.content
-                ):
+                if conversation_enhancer.should_show_suggestions(claude_response):
                     # Generate follow-up suggestions
                     suggestions = conversation_enhancer.generate_follow_up_suggestions(
                         claude_response.content,

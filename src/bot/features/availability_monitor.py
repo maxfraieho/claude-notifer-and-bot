@@ -113,12 +113,12 @@ class ClaudeAvailabilityMonitor:
             return None
 
     async def health_check(self) -> Tuple[bool, Optional[str], Optional[datetime]]:
-        """Perform health check by running `claude --version`.
+        """Perform health check by running `claude auth status`.
         
         Returns:
             Tuple of (is_available, reason, reset_time):
             - is_available: True if Claude CLI is working
-            - reason: None if available, "limit" if rate limited, "error" for other issues
+            - reason: None if available, "limit" if rate limited, "auth" for authentication issues, "error" for other issues
             - reset_time: UTC datetime when limit resets, None if not applicable
         
         ⚠️ For Claude CLI to work inside the container:
@@ -128,24 +128,47 @@ class ClaudeAvailabilityMonitor:
         - See README.md for instructions.
         """
         try:
-            # Replace subprocess.run with async call
-            proc = await asyncio.create_subprocess_exec(
-                "claude", "--version",
+            # Use shell with explicit PATH environment
+            import os
+            env = os.environ.copy()
+            env['PATH'] = f"/home/claudebot/.local/bin:{env.get('PATH', '')}"
+            
+            proc = await asyncio.create_subprocess_shell(
+                "claude auth status",
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
+                env=env,
             )
             
             # Use async timeout
             stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=10)
             
             if proc.returncode == 0:
-                logger.debug("Claude CLI check: available")
+                logger.debug("Claude CLI check: available and authenticated")
                 return True, None, None
             
             # Decode output for analysis
             stdout_text = stdout.decode('utf-8', errors='ignore') if stdout else ""
             stderr_text = stderr.decode('utf-8', errors='ignore') if stderr else ""
             combined_output = f"{stdout_text}\n{stderr_text}"
+            
+            # Debug logging for diagnosis
+            logger.debug(f"Claude CLI exit code: {proc.returncode}")
+            logger.debug(f"Claude CLI stdout: {stdout_text}")
+            logger.debug(f"Claude CLI stderr: {stderr_text}")
+            
+            # Check for authentication errors first
+            auth_errors = [
+                "authentication_error",
+                "OAuth token has expired",
+                "Please run /login",
+                "Invalid authentication",
+                "Please obtain a new token"
+            ]
+            
+            if any(auth_error in combined_output for auth_error in auth_errors):
+                logger.debug("Claude CLI check: authentication error detected")
+                return False, "auth", None
             
             # Check if this is a limit-related error
             reset_time = self.parse_limit_message(combined_output)
@@ -157,8 +180,12 @@ class ClaudeAvailabilityMonitor:
             logger.debug(f"Claude CLI check: unavailable (exit_code={proc.returncode})")
             return False, "error", None
             
-        except (asyncio.TimeoutError, FileNotFoundError, Exception) as e:
-            logger.warning(f"Claude CLI unavailable: {e}")
+        except (asyncio.TimeoutError, FileNotFoundError) as e:
+            logger.warning(f"Claude CLI unavailable (timeout/not found): {e}")
+            return False, "error", None
+        except Exception as e:
+            logger.warning(f"Claude CLI unavailable (general error): {e}")
+            logger.debug(f"Exception details: {type(e).__name__}: {str(e)}")
             return False, "error", None
 
     async def _save_state(self, available: bool, reason: Optional[str] = None, reset_expected: Optional[datetime] = None):
@@ -288,6 +315,21 @@ class ClaudeAvailabilityMonitor:
         
         return message
 
+    async def _build_auth_message(self) -> str:
+        """Build authentication error message for Telegram."""
+        now = datetime.now(ZoneInfo("Europe/Kyiv"))
+        platform = self._get_platform()
+        
+        message = (
+            f"🔴 **Claude CLI недоступний (помилка автентифікації)**\n"
+            f"📅 `{now.strftime('%Y-%m-%d %H:%M:%S')}`\n"
+            f"🖥️ `{platform}`\n"
+            f"⚠️ Токен автентифікації закінчився або невалідний\n"
+            f"🔧 Потрібно оновити автентифікацію Claude CLI"
+        )
+        
+        return message
+
     async def monitor_task(self, context):
         """Main monitoring task that runs periodically."""
         if not self.settings.claude_availability.enabled:
@@ -332,6 +374,8 @@ class ClaudeAvailabilityMonitor:
             current_state = "available"
         elif current_reason == "limit":
             current_state = "limited"
+        elif current_reason == "auth":
+            current_state = "auth_error"
         else:
             current_state = "unavailable"
 
@@ -340,6 +384,8 @@ class ClaudeAvailabilityMonitor:
             last_state = "available"
         elif last_reason == "limit":
             last_state = "limited"
+        elif last_reason == "auth":
+            last_state = "auth_error"
         else:
             last_state = "unavailable"
 
@@ -396,6 +442,14 @@ class ClaudeAvailabilityMonitor:
                     await self._send_notification(message)
                 # Note: We don't defer limit notifications during DND as they are important
 
+            elif not confirmed_available and last_available and current_reason == "auth":
+                # Became auth error from available
+                message = await self._build_auth_message()
+                
+                if not self._is_dnd_time():
+                    await self._send_notification(message)
+                # Note: We don't defer auth error notifications during DND as they are important
+
             self.last_state = confirmed_available
 
         # If there's a pending notification and we're no longer in DND - send it
@@ -415,6 +469,12 @@ async def setup_availability_monitor(application: Application, settings: Setting
         return
 
     monitor = ClaudeAvailabilityMonitor(application, settings)
+
+    # Check if job_queue is available
+    if application.job_queue is None:
+        logger.warning("JobQueue not available - availability monitoring will not run periodic checks")
+        logger.warning("To enable periodic monitoring, install python-telegram-bot[job-queue]")
+        return
 
     # Add periodic task
     application.job_queue.run_repeating(

@@ -28,7 +28,7 @@ from src.utils.constants import (
 )
 
 
-class ClaudeAvailabilitySettings(BaseModel):
+class ClaudeAvailabilitySettings(BaseSettings):
     """Settings for Claude CLI availability monitoring."""
     
     enabled: bool = Field(default=False, description="Whether Claude CLI availability monitoring is enabled")
@@ -37,6 +37,22 @@ class ClaudeAvailabilitySettings(BaseModel):
     dnd_start: time = Field(default=time(23, 0), description="DND start time (Europe/Kyiv)")
     dnd_end: time = Field(default=time(8, 0), description="DND end time (Europe/Kyiv)")
     debounce_ok_count: int = Field(default=2, description="Number of consecutive OK checks to confirm availability")
+    
+    model_config = SettingsConfigDict(env_prefix="CLAUDE_AVAILABILITY_")
+    
+    @field_validator("notify_chat_ids", mode="before")
+    @classmethod
+    def parse_notify_chat_ids(cls, v: Any) -> List[int]:
+        """Parse comma-separated chat IDs."""
+        if v is None or v == "":
+            return []
+        if isinstance(v, str):
+            return [int(chat_id.strip()) for chat_id in v.split(",") if chat_id.strip()]
+        if isinstance(v, int):
+            return [v]
+        if isinstance(v, list):
+            return v
+        return []
 
 
 class Settings(BaseSettings):
