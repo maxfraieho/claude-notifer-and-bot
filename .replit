@@ -1,4 +1,4 @@
-modules = ["bash", "python-3.11"]
+modules = ["bash", "python-3.11", "nodejs-20"]
 [agent]
 expertMode = true
 
@@ -23,7 +23,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd /home/runner/workspace && TELEGRAM_BOT_USERNAME=DevClaude_bot ALLOWED_USERS=123456789 APPROVED_DIRECTORY=/home/runner/workspace/target_project TARGET_PROJECT_PATH=/home/runner/workspace/target_project SECURITY_FLEXIBLE_MODE=true CLAUDE_AVAILABILITY_ENABLED=false DEBUG=true LOG_LEVEL=INFO DEVELOPMENT_MODE=true DATABASE_URL=sqlite:////tmp/bot.db USE_SDK=true ENABLE_LOCALIZATION=true DEFAULT_LANGUAGE=en python -m src.main"
+args = "cd /home/runner/workspace && TELEGRAM_BOT_USERNAME=DevClaude_bot ALLOWED_USERS=123456789 APPROVED_DIRECTORY=/home/runner/workspace/target_project TARGET_PROJECT_PATH=/home/runner/workspace/target_project SECURITY_FLEXIBLE_MODE=true CLAUDE_AVAILABILITY_ENABLED=false DEBUG=true LOG_LEVEL=INFO DEVELOPMENT_MODE=true DATABASE_URL=sqlite:////home/runner/workspace/data/bot.db USE_SDK=false ENABLE_LOCALIZATION=true DEFAULT_LANGUAGE=en python -m src.main"
 
 [workflows.workflow.metadata]
 outputType = "console"
