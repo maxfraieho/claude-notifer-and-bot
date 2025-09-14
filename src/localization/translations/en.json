@@ -3,6 +3,140 @@
     "name": "English",
     "code": "en"
   },
+  "status": {
+    "title": "📊 Bot Status",
+    "directory": "📂 Current Directory: `{directory}`",
+    "claude_session_active": "🤖 Claude Session: ✅ Active",
+    "claude_session_inactive": "🤖 Claude Session: ❌ Inactive",
+    "usage": "📊 Usage Statistics",
+    "session_id": "🆔 Session ID: {session_id}",
+    "usage_info": "You have used {used}/{limit} credits this session",
+    "usage_error": "❌ Failed to retrieve usage data",
+    "last_update": "🕐 Last update: {time} UTC"
+  },
+  "errors_extended": {
+    "unknown_action": "❌ **Unknown action**\n\nThis button action is not recognized. The bot may have been updated since you sent this message.",
+    "error_processing": "❌ **Error processing request**\n\n{error}",
+    "access_denied": "🔒 **Access denied**\n\nYou are not authorized to use this bot.",
+    "directory_not_found": "❌ **Directory not found**\n\nThe directory `{path}` no longer exists or is inaccessible.",
+    "not_a_directory": "❌ **Not a directory**\n\n`{path}` is not a directory.",
+    "error_changing_directory": "❌ **Error changing directory**\n\n{error}",
+    "error_listing_directory": "❌ **Error listing directory contents**\n\n{error}",
+    "error_loading_projects": "❌ **Error loading projects**\n\n{error}",
+    "claude_integration_not_available": "❌ **Claude integration not available**\n\nThe Claude Code integration is not properly configured.",
+    "no_session_found": "❌ **No active session found**\n\n{message}",
+    "error_continuing_session": "❌ **Error continuing session**\n\n{message}",
+    "error_processing_message": "❌ **Error processing message**\n\n{error}",
+    "error_processing_file": "❌ **Error processing file**\n\n{error}",
+    "error_processing_image": "❌ **Error processing image**\n\n{error}",
+    "file_upload_rejected": "❌ **File upload rejected**\n\n{error}",
+    "file_too_large": "❌ **File too large**\n\nMaximum file size: {max_size}MB\nYour file: {file_size}MB",
+    "timeout_error": "⏰ **Request timeout**\n\nYour request took too long and timed out.\n\n**What you can do:**\n• Try breaking your request into smaller parts\n• Use simpler commands\n• Try again in a moment",
+    "rate_limit_reached": "⏱️ **Rate limit reached**\n\nToo many requests in a short time period.\n\n**What you can do:**\n• Wait a moment before trying again\n• Use simpler requests\n• Check current usage with `/status`",
+    "no_conversation_found": "🔄 **Session not found**\n\nThe Claude session could not be found or has expired.\n\n**What you can do:**\n• Use `/new` to start a fresh session\n• Try your request again\n• Use `/status` to check your current session",
+    "claude_code_error": "❌ **Claude Code Error**\n\nFailed to process your request: {error}\n\nPlease try again or contact the administrator if the problem persists.",
+    "failed_to_send_response": "❌ Failed to send response. Please try again.",
+    "export_unavailable": "❌ **Export unavailable**\n\nSession export service is unavailable.",
+    "no_active_session": "❌ **No active session**\n\nNo active session available for export.",
+    "export_failed": "❌ **Export failed**\n\n{error}",
+    "localization_not_available": "❌ Localization system unavailable",
+    "quick_actions_disabled": "❌ **Quick actions disabled**\n\n{message}",
+    "git_integration_disabled": "❌ **Git integration disabled**\n\n{message}",
+    "git_integration_unavailable": "❌ **Git integration unavailable**\n\n{message}",
+    "git_error": "❌ **Git error**\n\n{error}",
+    "unknown_action_type": "❌ **Unknown action type: {action_type}**\n\n{message}"
+  },
+  "system_errors": {
+    "auth_required": "🔒 Authentication required. Please contact the administrator.",
+    "security_violation": "🛡️ Security violation detected. This incident has been logged.",
+    "rate_limit_exceeded": "⏱️ Rate limit exceeded. Please wait before sending more messages.",
+    "configuration_error": "⚙️ Configuration error. Please contact the administrator.",
+    "operation_timeout": "⏰ Operation timed out. Please try again with a simpler request.",
+    "unexpected_error": "❌ An unexpected error occurred. Please try again."
+  },
+  "progress": {
+    "starting_model": "🚀 **Starting {model}** with {tools_count} available tools",
+    "processing_request": "🤔 Processing your request...",
+    "processing_image": "🖼️ Processing image...",
+    "analyzing_image": "🤖 Analyzing image with Claude...",
+    "file_truncated_notice": "\n... (file truncated for processing)",
+    "review_file_default": "Please review this file: ",
+    "using_tools": "🔧 **Using tools:** {tools_text}",
+    "claude_working": "🤖 **Claude is working...**\n\n_{content_preview}_",
+    "working_default": "🔄 **Working...**",
+    "working_with_content": "🔄 **{content}**",
+    "error_generic": "❌ **Error**\n\n_{error_message}_",
+    "tool_failed": "❌ **{tool_name} failed**\n\n_{error_message}_",
+    "tool_completed": "✅ **{tool_name} completed**{execution_time}",
+    "processing_file_claude": "🤖 Processing file with Claude...",
+    "processing_file_basic": "📄 Processing file: `{filename}`...",
+    "processing_file_with_type": "📄 Processing {type} file: `{filename}`...",
+    "step_progress": "Step {step} of {total_steps}",
+    "unknown_tool": "Unknown",
+    "tool_fallback": "Tool"
+  },
+  "error_messages": {
+    "session_not_found": "🔄 **Session Not Found**\n\nThe Claude session could not be found or has expired.\n\n**What you can do:**\n• Use `/new` to start a fresh session\n• Try your request again\n• Use `/status` to check your current session",
+    "rate_limit_reached": "⏱️ **Rate Limit Reached**\n\nToo many requests in a short time period.\n\n**What you can do:**\n• Wait a moment before trying again\n• Use simpler requests\n• Check your current usage with `/status`",
+    "request_timeout": "⏰ **Request Timeout**\n\nYour request took too long to process and timed out.\n\n**What you can do:**\n• Try breaking down your request into smaller parts\n• Use simpler commands\n• Try again in a moment",
+    "claude_code_error": "❌ **Claude Code Error**\n\nFailed to process your request: {error}\n\nPlease try again or contact the administrator if the problem persists.",
+    "claude_integration_not_available": "❌ **Claude integration not available**\n\nThe Claude Code integration is not properly configured. Please contact the administrator.",
+    "file_upload_rejected": "❌ **File Upload Rejected**\n\n{error}",
+    "file_too_large": "❌ **File Too Large**\n\nMaximum file size: {max_size}MB\nYour file: {file_size}MB",
+    "file_format_not_supported": "❌ **File Format Not Supported**\n\nFile must be text-based and UTF-8 encoded.\n\n**Supported formats:**\n• Source code files (.py, .js, .ts, etc.)\n• Text files (.txt, .md)\n• Configuration files (.json, .yaml, .toml)\n• Documentation files",
+    "processing_message_error": "❌ **Error processing message**\n\n{error}",
+    "processing_file_error": "❌ **Error processing file**\n\n{error}",
+    "send_response_failed": "❌ Failed to send response. Please try again."
+  },
+  "errors_message": {
+    "session_not_found": "🔄 **Session not found**\n\nThe Claude session could not be found or has expired.\n\n**What you can do:**\n• Use `/new` to start a fresh session\n• Try your request again\n• Use `/status` to check your current session",
+    "rate_limit_reached": "⏱️ **Rate limit reached**\n\nToo many requests in a short time period.\n\n**What you can do:**\n• Wait a moment before trying again\n• Use simpler requests\n• Check current usage with `/status`",
+    "request_timeout": "⏰ **Request timeout**\n\nYour request took too long and timed out.\n\n**What you can do:**\n• Try breaking your request into smaller parts\n• Use simpler commands\n• Try again in a moment",
+    "claude_code_error": "❌ **Claude Code Error**\n\nFailed to process your request: {error}\n\nPlease try again or contact the administrator if the problem persists.",
+    "file_format_not_supported": "❌ **File format not supported**\n\nFile must be text-based and UTF-8 encoded.\n\n**Supported formats:**\n• Code files (.py, .js, .ts, etc.)\n• Text files (.txt, .md)\n• Configuration files (.json, .yaml, .toml)\n• Documentation files",
+    "claude_integration_not_available": "❌ **Claude integration not available**\n\nThe Claude Code integration is not properly configured.",
+    "processing_image": "🖼️ Processing image...",
+    "analyzing_image": "🤖 Analyzing image with Claude...",
+    "file_truncated_notice": "\n... (file truncated for processing)",
+    "review_file_default": "Please review this file:"
+  },
+  "callback_errors": {
+    "bot_updated": "The bot may have been updated since this message was sent.",
+    "try_again_text_commands": "Please try again or use text commands.",
+    "general_error": "An error occurred while processing your request.",
+    "action_not_implemented": "This action is not implemented yet.",
+    "claude_integration_error": "Claude integration is not properly configured.",
+    "no_session_try_new": "Try starting a new session instead.",
+    "create_directories": "Create some directories to organize your projects!",
+    "unknown_action": "❌ **Unknown Action**\n\nThis button action is not recognized. The bot may have been updated since this message was sent.",
+    "processing_error": "❌ **Error Processing Action**\n\nAn error occurred while processing your request.\nPlease try again or use text commands.",
+    "access_denied": "❌ **Access Denied**\n\n{error}",
+    "directory_not_found": "❌ **Directory Not Found**\n\nThe directory `{project_name}` no longer exists or is not accessible.",
+    "directory_changed": "✅ **Directory Changed**\n\n📂 Current directory: `{relative_path}/`\n\n🔄 Claude session cleared. You can now start coding in this directory!",
+    "error_changing_directory": "❌ **Error changing directory**\n\n{error}"
+  },
+  "session": {
+    "new_session_created": "🆕 **New Claude Code Session**\n\n📂 Working directory: `{path}/`\n\nReady to start coding with Claude!",
+    "session_cleared": "✅ **Session cleared**\n\nYour Claude session has been cleared. You can now start coding in this directory!",
+    "export_complete": "✅ **Export completed**\n\nYour session has been exported as {filename}.\nCheck above for the full conversation history.",
+    "export_session_progress": "📤 **Exporting session**\n\nGenerating {format} export...",
+    "session_terminated": "Your Claude session has been terminated.\n\n**Current status:**\n• Directory: `{path}/`\n• Session: None\n• Ready for new commands\n\n**Next steps:**\n• Start a new session\n• Check status\n• Send any message to begin a new conversation",
+    "continuing_session": "🔄 **Continuing session**\n\nSession ID: `{session_id}...`\nDirectory: `{path}/`\n\nContinuing where you left off...",
+    "no_recent_session": "No recent Claude session found in this directory.\nDirectory: `{path}/`\n\n**What you can do:**\n• Use the button below to start a new session\n• Check session status\n• Navigate to a different directory",
+    "conversation_ended": "✅ **Conversation ended**\n\n{message}",
+    "continuing_conversation": "✅ **Continuing conversation**\n\n{message}",
+    "follow_up_not_available": "❌ **Follow-up unavailable**\n\n{message}"
+  },
+  "help": {
+    "navigation_section": "**Navigation:**",
+    "sessions_section": "**Sessions:**",
+    "tips_section": "**Tips:**",
+    "send_text_tip": "• Send any text to interact with Claude",
+    "upload_files_tip": "• Upload files for code review",
+    "use_buttons_tip": "• Use buttons for quick actions",
+    "detailed_help_note": "Use `/help` for detailed help.",
+    "quick_help_title": "🤖 **Quick Help**"
+  },
   "commands": {
     "start": {
       "welcome": "👋 Welcome to Claude Code Telegram Bot, {name}!",
@@ -14,8 +148,9 @@
       "cd_cmd": "Change directory",
       "projects_cmd": "Show available projects",
       "status_cmd": "Show session status",
-      "actions_cmd": "Show quick actions",
-      "git_cmd": "Git repository commands",
+      "export_cmd": "Export session history",
+      "actions_cmd": "Show context-aware quick actions",
+      "git_cmd": "Git repository information",
       "quick_start": "**Quick Start:**",
       "quick_start_1": "Use `/projects` to see available projects",
       "quick_start_2": "Use `/cd <project>` to navigate to a project",
@@ -59,14 +194,19 @@
     }
   },
   "buttons": {
-    "show_projects": "📁 Show Projects",
-    "get_help": "❓ Get Help",
-    "new_session": "🆕 New Session",
-    "check_status": "📊 Check Status",
+    "show_projects": "📁 Show projects",
+    "get_help": "❓ Get help",
+    "new_session": "🆕 New session",
+    "check_status": "📊 Check status",
     "language_settings": "🌐 Language",
     "back": "⬅️ Back",
-    "select_language": "Select Language",
-    "list_files": "📁 List Files",
+    "select_language": "Select language",
+    "list_files": "📁 List files",
+    "continue_session": "🔄 Continue session",
+    "end_session": "🛑 End session",
+    "export_session": "📤 Export session",
+    "quick_actions": "⚡ Quick actions",
+    "git_info": "📚 Git info",
     "full_help": "📖 Full Help",
     "main_menu": "🏠 Main Menu",
     "root": "🏠 Root",
@@ -77,9 +217,15 @@
     "go_up": "⬆️ Go Up",
     "start_coding": "📝 Start Coding",
     "change_project": "📁 Change Project",
-    "quick_actions": "📋 Quick Actions",
-    "status": "📊 Status",
-    "end_session": "🛑 End Session"
+    "status": "📊 Status"
+  },
+  "security": {
+    "auth_required": "🔒 Authentication required. Contact administrator.",
+    "security_violation": "🛡️ Security violation detected. This incident has been logged.",
+    "rate_limit_exceeded": "⏱️ Rate limit exceeded. Wait before sending more messages.",
+    "configuration_error": "⚙️ Configuration error. Contact administrator.",
+    "operation_timeout": "⏰ Operation timed out. Try again with a simpler request.",
+    "unauthorized_access": "🔐 Unauthorized access attempt blocked."
   },
   "messages": {
     "language_select": "🌐 **Language Selection**\n\nPlease choose your preferred language:",
@@ -92,7 +238,21 @@
     "executing_action": "🚀 **Executing {action}**\n\nPlease wait...",
     "action_completed": "✅ **{action} Complete**",
     "action_failed": "❌ **Action Failed**\n\nFailed to execute {action}. Please try again.",
-    "what_next": "💡 **What would you like to do next?**"
+    "what_next": "💡 **What would you like to do next?**",
+    "welcome_back": "Welcome back, {name}! Your session has been restored.",
+    "session_started": "Session started at {time} UTC",
+    "session_ended": "Session ended successfully.",
+    "authentication_success": "🔓 Welcome! You are now authenticated.",
+    "file_processed": "✅ File processed successfully.",
+    "command_executed": "Command executed successfully.",
+    "maintenance_mode": "⚠️ System under maintenance. Please try again later.",
+    "server_overloaded": "⚠️ Server is currently overloaded. Please try again in a few minutes."
+  },
+  "notifications": {
+    "availability_issue": "⚠️ Claude API availability issue detected.",
+    "update_available": "🆕 A new version of the bot is available.",
+    "daily_reset": "🔁 Daily usage quota has been reset.",
+    "quota_warning": "⚠️ You're approaching your daily usage limit."
   },
   "errors": {
     "quick_actions_unavailable": "❌ **Quick Actions Not Available**\n\nQuick actions feature is not available.",
@@ -130,58 +290,24 @@
       "name": "🔧 Lint Code"
     }
   },
-  "progress": {
-    "tool_failed": "❌ **{tool_name} failed**\n\n_{error_message}_",
-    "tool_completed": "✅ **{tool_name} completed**{execution_time}",
-    "working_default": "🔄 **Working...**",
-    "working_with_content": "🔄 **{content}**",
-    "error_generic": "❌ **Error**\n\n_{error_message}_",
-    "using_tools": "🔧 **Using tools:** {tools_text}",
-    "claude_working": "🤖 **Claude is working...**\n\n_{content_preview}_",
-    "starting_model": "🚀 **Starting {model}** with {tools_count} tools available",
-    "processing_request": "🤔 Processing your request...",
-    "processing_file_claude": "🤖 Processing file with Claude...",
-    "processing_file_basic": "📄 Processing file: `{filename}`...",
-    "processing_file_with_type": "📄 Processing {type} file: `{filename}`...",
-    "step_progress": "Step {step} of {total_steps}",
-    "unknown_tool": "Unknown",
-    "tool_fallback": "Tool"
-  },
-  "error_messages": {
-    "session_not_found": "🔄 **Session Not Found**\n\nThe Claude session could not be found or has expired.\n\n**What you can do:**\n• Use `/new` to start a fresh session\n• Try your request again\n• Use `/status` to check your current session",
-    "rate_limit_reached": "⏱️ **Rate Limit Reached**\n\nToo many requests in a short time period.\n\n**What you can do:**\n• Wait a moment before trying again\n• Use simpler requests\n• Check your current usage with `/status`",
-    "request_timeout": "⏰ **Request Timeout**\n\nYour request took too long to process and timed out.\n\n**What you can do:**\n• Try breaking down your request into smaller parts\n• Use simpler commands\n• Try again in a moment",
-    "claude_code_error": "❌ **Claude Code Error**\n\nFailed to process your request: {error}\n\nPlease try again or contact the administrator if the problem persists.",
-    "claude_integration_not_available": "❌ **Claude integration not available**\n\nThe Claude Code integration is not properly configured. Please contact the administrator.",
-    "file_upload_rejected": "❌ **File Upload Rejected**\n\n{error}",
-    "file_too_large": "❌ **File Too Large**\n\nMaximum file size: {max_size}MB\nYour file: {file_size}MB",
-    "file_format_not_supported": "❌ **File Format Not Supported**\n\nFile must be text-based and UTF-8 encoded.\n\n**Supported formats:**\n• Source code files (.py, .js, .ts, etc.)\n• Text files (.txt, .md)\n• Configuration files (.json, .yaml, .toml)\n• Documentation files",
-    "processing_message_error": "❌ **Error processing message**\n\n{error}",
-    "processing_file_error": "❌ **Error processing file**\n\n{error}",
-    "send_response_failed": "❌ Failed to send response. Please try again."
-  },
-  "callback_errors": {
-    "bot_updated": "The bot may have been updated since this message was sent.",
-    "try_again_text_commands": "Please try again or use text commands.",
-    "general_error": "An error occurred while processing your request.",
-    "action_not_implemented": "This action is not implemented yet.",
-    "claude_integration_error": "Claude integration is not properly configured.",
-    "no_session_try_new": "Try starting a new session instead.",
-    "create_directories": "Create some directories to organize your projects!",
-    "unknown_action": "❌ **Unknown Action**\n\nThis button action is not recognized. The bot may have been updated since this message was sent.",
-    "processing_error": "❌ **Error Processing Action**\n\nAn error occurred while processing your request.\nPlease try again or use text commands.",
-    "access_denied": "❌ **Access Denied**\n\n{error}",
-    "directory_not_found": "❌ **Directory Not Found**\n\nThe directory `{project_name}` no longer exists or is not accessible.",
-    "directory_changed": "✅ **Directory Changed**\n\n📂 Current directory: `{relative_path}/`\n\n🔄 Claude session cleared. You can now start coding in this directory!",
-    "error_changing_directory": "❌ **Error changing directory**\n\n{error}"
-  },
-  "system_errors": {
-    "auth_required": "🔒 Authentication required. Please contact the administrator.",
-    "security_violation": "🛡️ Security violation detected. This incident has been logged.",
-    "rate_limit_exceeded": "⏱️ Rate limit exceeded. Please wait before sending more messages.",
-    "configuration_error": "⚙️ Configuration error. Please contact the administrator.",
-    "operation_timeout": "⏰ Operation timed out. Please try again with a simpler request.",
-    "unexpected_error": "❌ An unexpected error occurred. Please try again."
+  "errors_command": {
+    "error_continuing_session": "❌ **Error continuing session**\n\nError while trying to continue your session:\n\n`{error}`\n\n**Suggestions:**\n• Try starting a new session with `/new`\n• Check session status with `/status`\n• Contact support if the issue persists",
+    "claude_integration_unavailable": "❌ **Claude integration unavailable**\n\nClaude Code integration is not properly configured.",
+    "no_session_found": "❌ **Session not found**\n\nNo recent Claude session found in this directory.\nDirectory: `{path}/`\n\n**What you can do:**\n• Use the button below to start a new session\n• Check session status\n• Navigate to a different directory",
+    "access_denied": "❌ **Access denied**\n\n{error}",
+    "directory_not_found": "❌ **Directory not found**\n\n`{path}` does not exist.",
+    "not_a_directory": "❌ **Not a directory**\n\n`{path}` is not a directory.",
+    "error_changing_directory": "❌ **Error changing directory**\n\n{error}",
+    "error_listing_directory": "❌ Error reading directory: {error}",
+    "no_projects_found": "📁 **No projects found**\n\nNo subdirectories found in the approved directory.\n\n**What you can do:**\n• Create a new project or folder\n• Check approved directory settings\n• Use current directory for work",
+    "error_loading_projects": "❌ Error loading projects: {error}",
+    "export_failed": "❌ **Export failed**\n\n{error}",
+    "quick_actions_disabled": "❌ **Quick actions disabled**\n\nQuick actions are disabled in settings.\n\n**What you can do:**\n• Use regular text commands\n• Contact administrator to enable",
+    "quick_actions_unavailable": "❌ **Quick actions unavailable**\n\nQuick actions service is currently unavailable.\n\n**What you can do:**\n• Try again later\n• Use text commands",
+    "no_actions_available": "🤖 **No actions available**\n\nSorry, no quick actions available for current state.\n\n**Try:**\n• Start new session with `/new`\n• List files with `/ls`\n• Check status with `/status`",
+    "git_integration_disabled": "❌ **Git integration disabled**\n\nGit integration is disabled in settings.\n\n**What you can do:**\n• Use regular git commands in Claude\n• Contact administrator to enable",
+    "git_integration_unavailable": "❌ **Git integration unavailable**\n\nGit service is currently unavailable.\n\n**What you can do:**\n• Try again later\n• Use git commands in Claude",
+    "not_git_repository": "📂 **Not a Git repository**\n\nCurrent directory is not a git repository.\n\n**Options:**\n• Initialize new repository\n• Navigate to existing repository\n• Use regular commands"
   },
   "auth": {
     "authentication_required": "🔒 Authentication required.",
@@ -288,5 +414,33 @@
     "error_system_toggle": "❌ Error toggling system state",
     "history_empty": "📊 **Execution history is empty**",
     "error_loading_history": "❌ Error loading history"
+  },
+  "availability": {
+    "cli_available": "🟢 **Claude CLI is available again**\n📅 `{timestamp}`\n🖥️ `{platform}`\n⏱️ {duration}",
+    "cli_unavailable": "🔴 **Claude CLI unavailable (usage limit)**\n📅 `{timestamp}`",
+    "reset_time_expected": "\n⏳ Expected recovery time: {time} (according to CLI)",
+    "reset_time_actual": "\n📅 Actual recovery time: {actual_time}\n⏳ Expected was: {expected_time}",
+    "downtime_duration": "(downtime: {hours}h {minutes}m)"
+  },
+  "files": {
+    "processing_file": "📄 Processing file: `{filename}`...",
+    "processing_file_with_type": "📄 Processing {type} file: `{filename}`...",
+    "available_projects": "📁 **Available projects**\n\n{message}\nClick on a project to navigate to it:",
+    "export_session": "📤 **Export session**\n\nGenerating {format} export...",
+    "export_complete_details": "📤 **Session export completed**\n\nFormat: {format}\nSize: {size} bytes\nCreated: {created_at}"
+  },
+  "export": {
+    "session_export_complete": "📤 **Session export completed**\n\nFormat: {format}\nSize: {size} bytes\nCreated: {created_at}",
+    "export_complete": "✅ **Export completed**\n\nYour session has been exported as {filename}.\nCheck above for the full conversation history.",
+    "export_session_progress": "📤 **Exporting session**\n\nGenerating {format} export..."
+  },
+  "git": {
+    "diff_title": "📊 **Git Diff**\n\n```\n{diff}\n```",
+    "unknown_git_action": "❌ **Unknown Git action: {action}**\n\n{message}"
+  },
+  "processing": {
+    "thinking": "🤔 Processing your request...",
+    "working_on_request": "🔄 Working on your request...",
+    "generating_response": "✨ Generating response..."
   }
 }
