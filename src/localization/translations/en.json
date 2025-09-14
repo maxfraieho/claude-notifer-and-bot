@@ -180,6 +180,113 @@
     "security_violation": "🛡️ Security violation detected. This incident has been logged.",
     "rate_limit_exceeded": "⏱️ Rate limit exceeded. Please wait before sending more messages.",
     "configuration_error": "⚙️ Configuration error. Please contact the administrator.",
-    "operation_timeout": "⏰ Operation timed out. Please try again with a simpler request."
+    "operation_timeout": "⏰ Operation timed out. Please try again with a simpler request.",
+    "unexpected_error": "❌ An unexpected error occurred. Please try again."
+  },
+  "auth": {
+    "authentication_required": "🔒 Authentication required.",
+    "authentication_required_command": "🔒 Authentication required to use this command.",
+    "session_unavailable": "🔒 Session information unavailable.",
+    "admin_access_required": "🔒 **Admin Access Required**\n\nThis command requires administrator privileges."
+  },
+  "commands_extended": {
+    "new_session": {
+      "title": "🆕 **New Claude Code Session**",
+      "working_directory": "📂 Working directory: `{relative_path}/`",
+      "ready_message": "Ready to help you code! Send me a message to get started, or use the buttons below:",
+      "button_start_coding": "📝 Start Coding",
+      "button_change_project": "📁 Change Project",
+      "button_quick_actions": "📋 Quick Actions",
+      "button_help": "❓ Help"
+    },
+    "continue_session": {
+      "continuing": "🔄 **Continuing Session**",
+      "session_id": "Session ID: `{session_id}...`",
+      "directory": "Directory: `{relative_path}/`",
+      "processing_message": "Processing your message...",
+      "continuing_message": "Continuing where you left off...",
+      "looking_for_session": "🔍 **Looking for Recent Session**",
+      "searching_message": "Searching for your most recent session in this directory..."
+    },
+    "cd": {
+      "usage_title": "**Usage:** `/cd <directory>`",
+      "examples_title": "**Examples:**",
+      "example_subdirectory": "Enter subdirectory",
+      "example_up_level": "Go up one level",
+      "example_root": "Go to root of approved directory",
+      "tips_title": "**Tips:**",
+      "tip_ls": "Use `/ls` to see available directories",
+      "tip_projects": "Use `/projects` to see all projects",
+      "access_denied": "❌ **Access Denied**",
+      "directory_not_found": "❌ **Directory Not Found**\n\n`{path}` does not exist.",
+      "not_a_directory": "❌ **Not a Directory**\n\n`{path}` is not a directory.",
+      "directory_changed": "✅ **Directory Changed**\n\n📂 Current directory: `{relative_path}/`\n\n🔄 Claude session cleared. You can now start coding in this directory!"
+    },
+    "pwd": {
+      "title": "📍 **Current Directory**",
+      "relative": "Relative: `{relative_path}/`",
+      "absolute": "Absolute: `{absolute_path}`",
+      "button_list_files": "📁 List Files",
+      "button_projects": "📋 Projects"
+    },
+    "ls": {
+      "empty_directory": "_(empty directory)_",
+      "more_items": "_... and {count} more items_",
+      "button_go_up": "⬆️ Go Up",
+      "button_go_to_root": "🏠 Go to Root",
+      "button_refresh": "🔄 Refresh",
+      "button_projects": "📁 Projects"
+    },
+    "projects": {
+      "no_projects_title": "📁 **No Projects Found**",
+      "no_projects_message": "No subdirectories found in your approved directory.\nCreate some directories to organize your projects!",
+      "available_projects_title": "📁 **Available Projects**",
+      "click_to_navigate": "Click a project below to navigate to it:",
+      "button_go_to_root": "🏠 Go to Root",
+      "button_refresh": "🔄 Refresh",
+      "error_loading": "❌ Error loading projects: {error}"
+    },
+    "status": {
+      "session_active": "✅ Active",
+      "session_none": "❌ None",
+      "usage_unable_retrieve": "💰 Usage: _Unable to retrieve_",
+      "button_continue": "🔄 Continue",
+      "button_new_session": "🆕 New Session",
+      "button_start_session": "🆕 Start Session",
+      "button_export": "📤 Export",
+      "button_refresh": "🔄 Refresh"
+    },
+    "export": {
+      "not_available_title": "📤 **Export Session**",
+      "not_available_message": "Session export functionality is not available.",
+      "planned_features_title": "**Planned features:**",
+      "planned_export_history": "Export conversation history",
+      "planned_save_state": "Save session state",
+      "planned_share_conversations": "Share conversations",
+      "planned_create_backups": "Create session backups",
+      "no_active_session_title": "❌ **No Active Session**",
+      "no_active_session_message": "There's no active Claude session to export.",
+      "what_you_can_do_title": "**What you can do:**",
+      "start_new_session": "Start a new session with `/new`",
+      "continue_existing_session": "Continue an existing session with `/continue`",
+      "check_status": "Check your status with `/status`",
+      "export_title": "📤 **Export Session**",
+      "ready_to_export": "Ready to export session: `{session_id}...`",
+      "choose_format": "**Choose export format:**",
+      "button_markdown": "📝 Markdown",
+      "button_html": "🌐 HTML",
+      "button_json": "📋 JSON",
+      "button_cancel": "❌ Cancel"
+    }
+  },
+  "messages_extended": {
+    "failed_send_response": "❌ Failed to send response. Please try again.",
+    "what_next": "💡 **What would you like to do next?**"
+  },
+  "scheduled_prompts": {
+    "error_loading_tasks": "❌ Error loading task list",
+    "error_system_toggle": "❌ Error toggling system state",
+    "history_empty": "📊 **Execution history is empty**",
+    "error_loading_history": "❌ Error loading history"
   }
 }
