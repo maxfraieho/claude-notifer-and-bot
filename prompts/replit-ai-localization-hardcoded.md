@@ -1,0 +1,161 @@
+# Replit AI - Localization of Hardcoded Interface Elements
+
+## Context
+You are working with a Claude Code Telegram Bot that has a comprehensive localization system. The bot currently has structured translations in JSON files (`src/localization/translations/en.json` and `src/localization/translations/uk.json`), but there are still hardcoded strings scattered throughout the codebase that need to be extracted and localized.
+
+## Task
+Analyze the codebase and extract all remaining hardcoded user-facing strings, then integrate them into the existing localization system.
+
+## Current Localization Structure
+The bot uses a hierarchical localization system with these main sections:
+- `commands` - Command descriptions and help text
+- `buttons` - Button labels and UI elements
+- `messages` - General user messages
+- `errors` - Error messages
+- `quick_actions` - Quick action labels
+- `progress` - Progress and status messages
+- `error_messages` - Detailed error explanations
+- `callback_errors` - Button-specific errors
+- `system_errors` - System-level errors
+
+## Instructions
+
+### Step 1: Comprehensive Code Analysis
+Search through all Python files in the `src/` directory and identify:
+
+1. **Direct string literals** that are shown to users
+2. **Format strings** with user-visible content
+3. **Exception messages** that reach users
+4. **Log messages** that users might see
+5. **Hardcoded button texts** not using localization
+6. **Status messages** and notifications
+7. **Validation error messages**
+8. **File operation messages**
+
+### Step 2: Categorization
+Organize found strings into logical categories that fit the existing structure:
+- Determine which existing section each string belongs to
+- Identify new sections that might be needed
+- Group related strings together
+
+### Step 3: Translation Key Generation
+Create meaningful, hierarchical keys following the existing pattern:
+- Use descriptive, nested keys (e.g., `session.start.success`)
+- Keep consistency with existing naming conventions
+- Make keys self-documenting
+
+### Step 4: JSON Structure Updates
+For each language file (en.json, uk.json):
+- Add new translation keys in appropriate sections
+- Maintain alphabetical ordering within sections
+- Ensure Ukrainian translations are natural and idiomatic
+- Keep English as the reference language
+
+### Step 5: Code Refactoring
+Update Python files to use the localization system:
+- Replace hardcoded strings with `t()` calls
+- Use proper translation keys
+- Maintain existing functionality
+- Ensure all format parameters are preserved
+
+### Step 6: Validation
+- Verify all translations are complete in both languages
+- Check that no user-facing strings remain hardcoded
+- Ensure translation keys are used correctly
+- Test that localized messages display properly
+
+## Key Areas to Focus On
+
+### High Priority Files
+```
+src/bot/handlers/
+src/bot/middleware/
+src/claude/
+src/security/
+src/storage/
+```
+
+### Common Hardcoded String Patterns
+```python
+# Direct strings
+await update.message.reply_text("Some message")
+return "Error occurred"
+
+# Exception messages
+raise ValueError("Invalid input")
+
+# Log messages that users see
+logger.error("Failed to process")
+
+# Format strings
+f"Processing {filename}"
+"Status: {status}"
+```
+
+## Expected Deliverables
+
+1. **Updated translation files**:
+   - `src/localization/translations/en.json` - Extended with new keys
+   - `src/localization/translations/uk.json` - Complete Ukrainian translations
+
+2. **Refactored Python files**:
+   - All identified files with hardcoded strings replaced
+   - Proper use of localization system
+   - Maintained functionality
+
+3. **Analysis report**:
+   - List of all found hardcoded strings
+   - Categorization decisions
+   - New sections added (if any)
+   - Files modified
+
+## Quality Requirements
+
+### Translation Quality (Ukrainian)
+- Use natural, idiomatic Ukrainian
+- Maintain technical accuracy
+- Keep consistent terminology
+- Follow Ukrainian grammar rules
+- Use appropriate formality level
+
+### Code Quality
+- Preserve all existing functionality
+- Maintain proper error handling
+- Use meaningful translation keys
+- Follow existing code patterns
+- Ensure proper parameter passing to translations
+
+## Example Transformation
+
+### Before
+```python
+await update.message.reply_text("Processing your request...")
+if error:
+    return "Failed to complete operation"
+```
+
+### After
+```python
+await update.message.reply_text(t("messages.processing_request"))
+if error:
+    return t("errors.operation_failed")
+```
+
+### JSON Addition
+```json
+{
+  "messages": {
+    "processing_request": "Processing your request..."
+  },
+  "errors": {
+    "operation_failed": "Failed to complete operation"
+  }
+}
+```
+
+## Notes
+- Focus on user-facing strings only
+- Keep debug/internal logging in English
+- Preserve existing localization structure
+- Test thoroughly after changes
+- Document any new localization patterns introduced
