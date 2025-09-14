@@ -246,19 +246,20 @@ class Settings(BaseSettings):
         return v.upper()  # type: ignore[no-any-return]
 
     @model_validator(mode="after")
-    def validate_cross_field_dependencies(self) -> "Settings":
+    @classmethod
+    def validate_cross_field_dependencies(cls, v):
         """Validate dependencies between fields."""
         # Check auth token requirements
-        if self.enable_token_auth and not self.auth_token_secret:
+        if v.enable_token_auth and not v.auth_token_secret:
             raise ValueError(
                 "auth_token_secret required when enable_token_auth is True"
             )
 
         # Check MCP requirements
-        if self.enable_mcp and not self.mcp_config_path:
+        if v.enable_mcp and not v.mcp_config_path:
             raise ValueError("mcp_config_path required when enable_mcp is True")
 
-        return self
+        return v
 
     @property
     def is_production(self) -> bool:
