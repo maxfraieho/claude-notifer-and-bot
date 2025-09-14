@@ -27,3 +27,7 @@ args = "cd /home/runner/workspace && TELEGRAM_BOT_USERNAME=DevClaude_bot ALLOWED
 
 [workflows.workflow.metadata]
 outputType = "console"
+
+[deployment]
+deploymentTarget = "vm"
+run = ["python", "-m", "src.main"]
