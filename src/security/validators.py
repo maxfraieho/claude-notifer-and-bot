@@ -92,6 +92,15 @@ class SecurityValidator:
         ".vue",
         ".svelte",
         ".lock",
+        # Image formats for image processing
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".gif",
+        ".webp",
+        ".bmp",
+        ".tiff",
+        ".tif",
     }
 
     # Forbidden filenames and patterns

@@ -12,6 +12,7 @@ from ...config.settings import Settings
 from ...security.audit import AuditLogger
 from ...security.rate_limiter import RateLimiter
 from ...security.validators import SecurityValidator
+from .command import handle_claude_auth_code
 
 logger = structlog.get_logger()
 
@@ -142,6 +143,17 @@ async def handle_text_message(
     logger.info(
         "Processing text message", user_id=user_id, message_length=len(message_text)
     )
+
+    # First check if this is a Claude authentication code
+    if await handle_claude_auth_code(update, context):
+        return
+
+    # Check if user has active image session and handle it
+    if context.user_data and context.user_data.get('awaiting_images'):
+        image_command_handler = context.bot_data.get('image_command_handler')
+        if image_command_handler:
+            await image_command_handler.handle_text_message(update, context)
+            return
 
     try:
         # Check rate limit with estimated cost for text processing
@@ -593,6 +605,13 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     """Handle photo uploads."""
     user_id = update.effective_user.id
     settings: Settings = context.bot_data["settings"]
+
+    # Check if user has active image session
+    if context.user_data and context.user_data.get('awaiting_images'):
+        image_command_handler = context.bot_data.get('image_command_handler')
+        if image_command_handler:
+            await image_command_handler.handle_image_upload(update, context)
+            return
 
     # Check if enhanced image handler is available
     features = context.bot_data.get("features")

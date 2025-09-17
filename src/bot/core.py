@@ -101,35 +101,65 @@ class ClaudeCodeBot:
             BotCommand("export", "Export current session"),
             BotCommand("actions", "Show quick actions"),
             BotCommand("git", "Git repository commands"),
+            BotCommand("claude", "Authenticate Claude CLI"),
             BotCommand("schedules", "Manage scheduled tasks"),
             BotCommand("add_schedule", "Add new scheduled task"),
         ]
+
+        # Add image processing command if enabled
+        if self.settings.enable_image_processing:
+            commands.append(BotCommand("img", "Process images with Claude"))
+
+        # Add MCP commands
+        commands.extend([
+            BotCommand("mcpadd", "Add MCP server"),
+            BotCommand("mcplist", "List MCP servers"),
+            BotCommand("mcpselect", "Select active MCP context"),
+            BotCommand("mcpask", "Ask with MCP context"),
+            BotCommand("mcpremove", "Remove MCP server"),
+            BotCommand("mcpstatus", "Show MCP system status"),
+        ])
 
         await self.app.bot.set_my_commands(commands)
         logger.info("Bot commands set", commands=[cmd.command for cmd in commands])
 
     def _register_handlers(self) -> None:
         """Register all command and message handlers."""
-        from .handlers import callback, command, message
+        from .handlers import callback, command, message, mcp_commands
 
         # Command handlers
         handlers = [
             ("start", command.start_command),
-            ("help", command.help_command),
-            ("new", command.new_session),
+            ("help", command.help_handler),
+            ("new", command.new_handler),
             ("continue", command.continue_session),
             ("end", command.end_session),
             ("ls", command.list_files),
             ("cd", command.change_directory),
-            ("pwd", command.print_working_directory),
-            ("projects", command.show_projects),
-            ("status", command.session_status),
+            ("pwd", command.pwd_handler),
+            ("projects", command.projects_handler),
+            ("status", command.status_handler),
             ("export", command.export_session),
-            ("actions", command.quick_actions),
-            ("git", command.git_command),
+            ("actions", command.actions_handler),
+            ("git", command.git_handler),
+            ("claude", command.claude_auth_command),
             ("schedules", command.schedules_command),
             ("add_schedule", command.add_schedule_command),
         ]
+
+        # Add image processing command if enabled
+        if self.settings.enable_image_processing:
+            handlers.append(("img", command.img_command))
+
+        # Add MCP command handlers
+        handlers.extend([
+            ("mcpadd", mcp_commands.mcpadd_command),
+            ("mcplist", mcp_commands.mcplist_command),
+            ("mcpselect", mcp_commands.mcpselect_command),
+            ("mcpask", mcp_commands.mcpask_command),
+            ("mcpremove", mcp_commands.mcpremove_command),
+            ("mcpstatus", mcp_commands.mcpstatus_command),
+        ])
 
         for cmd, handler in handlers:
             self.app.add_handler(CommandHandler(cmd, self._inject_deps(handler)))

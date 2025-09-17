@@ -205,6 +205,82 @@ class DatabaseManager:
             (
                 2,
                 """
+                -- Add MCP Management System
+                CREATE TABLE IF NOT EXISTS mcp_server_templates (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    server_type TEXT UNIQUE NOT NULL,
+                    display_name TEXT NOT NULL,
+                    description TEXT,
+                    command_template TEXT NOT NULL,
+                    args_template TEXT,
+                    env_template TEXT,
+                    config_schema TEXT,
+                    setup_instructions TEXT,
+                    is_active BOOLEAN DEFAULT 1,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+
+                CREATE TABLE IF NOT EXISTS user_mcp_servers (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    server_name TEXT NOT NULL,
+                    server_type TEXT NOT NULL,
+                    server_command TEXT NOT NULL,
+                    server_args TEXT,
+                    server_env TEXT,
+                    config TEXT,
+                    is_active BOOLEAN DEFAULT 1,
+                    is_enabled BOOLEAN DEFAULT 1,
+                    status TEXT DEFAULT 'inactive',
+                    last_used TIMESTAMP,
+                    last_status_check TIMESTAMP,
+                    error_message TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(user_id, server_name),
+                    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+                );
+
+                CREATE TABLE IF NOT EXISTS user_active_context (
+                    user_id INTEGER PRIMARY KEY,
+                    selected_server TEXT,
+                    context_settings TEXT,
+                    selected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+                );
+
+                CREATE TABLE IF NOT EXISTS mcp_usage_log (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER,
+                    server_name TEXT,
+                    query TEXT,
+                    response_time INTEGER,
+                    success BOOLEAN,
+                    error_message TEXT,
+                    cost REAL DEFAULT 0.0,
+                    session_id TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_user_mcp_servers_user_id ON user_mcp_servers(user_id);
+                CREATE INDEX IF NOT EXISTS idx_user_mcp_servers_status ON user_mcp_servers(status);
+                CREATE INDEX IF NOT EXISTS idx_user_mcp_servers_type ON user_mcp_servers(server_type);
+                CREATE INDEX IF NOT EXISTS idx_mcp_usage_log_user_id ON mcp_usage_log(user_id);
+                CREATE INDEX IF NOT EXISTS idx_mcp_usage_log_created_at ON mcp_usage_log(created_at);
+
+                INSERT OR IGNORE INTO mcp_server_templates (server_type, display_name, description, command_template, args_template, env_template, config_schema, setup_instructions) VALUES
+                ('github', 'GitHub Integration', 'Доступ до GitHub репозиторіїв, issues, pull requests та іншого', 'npx', '["-y", "@modelcontextprotocol/server-github"]', '{"GITHUB_PERSONAL_ACCESS_TOKEN": "${input:github_token}"}', '{"type": "object", "properties": {"github_token": {"type": "string", "description": "GitHub Personal Access Token", "required": true}}}', '1. Перейдіть до GitHub Settings > Developer settings > Personal access tokens\n2. Створіть новий токен з доступом до репозиторіїв\n3. Скопіюйте токен'),
+                ('filesystem', 'File System Access', 'Читання та запис файлів у вказаних директоріях', 'npx', '["-y", "@modelcontextprotocol/server-filesystem", "${config:allowed_path}"]', '{}', '{"type": "object", "properties": {"allowed_path": {"type": "string", "description": "Шлях до дозволеної директорії", "required": true}}}', 'Вкажіть повний шлях до директорії, де Claude може читати/писати файли'),
+                ('postgres', 'PostgreSQL Database', 'Запити та управління PostgreSQL базами даних', 'npx', '["-y", "@modelcontextprotocol/server-postgres", "${config:connection_string}"]', '{}', '{"type": "object", "properties": {"connection_string": {"type": "string", "description": "Рядок підключення PostgreSQL", "required": true}}}', 'Формат: postgresql://username:password@host:port/database'),
+                ('sqlite', 'SQLite Database', 'Запити та управління SQLite базами даних', 'npx', '["-y", "@modelcontextprotocol/server-sqlite", "${config:database_path}"]', '{}', '{"type": "object", "properties": {"database_path": {"type": "string", "description": "Шлях до файлу SQLite бази даних", "required": true}}}', 'Вкажіть повний шлях до файлу вашої SQLite бази даних'),
+                ('git', 'Git Repository Tools', 'Git операції та управління репозиторіями', 'uvx', '["mcp-server-git", "--repository", "${config:repo_path}"]', '{}', '{"type": "object", "properties": {"repo_path": {"type": "string", "description": "Шлях до git репозиторію", "required": true}}}', 'Вкажіть шлях до вашого git репозиторію'),
+                ('playwright', 'Web Automation', 'Автоматизація браузера та веб-скрапінг', 'npx', '["-y", "@modelcontextprotocol/server-playwright"]', '{}', '{"type": "object", "properties": {}}', 'Додаткова конфігурація не потрібна');
+                """
+            ),
+            (
+                3,
+                """
                 -- Add analytics views
                 CREATE VIEW IF NOT EXISTS daily_stats AS
                 SELECT 
@@ -228,6 +304,57 @@ class DatabaseManager:
                 LEFT JOIN sessions s ON u.user_id = s.user_id
                 LEFT JOIN messages m ON u.user_id = m.user_id
                 GROUP BY u.user_id;
+                """,
+            ),
+            (
+                4,
+                """
+                -- Add image processing tables
+                CREATE TABLE IF NOT EXISTS image_uploads (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    session_id TEXT,
+                    message_id INTEGER,
+                    filename TEXT NOT NULL,
+                    original_filename TEXT,
+                    file_size INTEGER NOT NULL,
+                    format TEXT NOT NULL,
+                    width INTEGER NOT NULL,
+                    height INTEGER NOT NULL,
+                    file_hash TEXT NOT NULL,
+                    caption TEXT,
+                    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    processed_at TIMESTAMP,
+                    processing_status TEXT DEFAULT 'uploaded',
+                    processing_error TEXT,
+                    metadata TEXT,
+                    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+                    FOREIGN KEY (session_id) REFERENCES sessions(session_id) ON DELETE SET NULL,
+                    FOREIGN KEY (message_id) REFERENCES messages(message_id) ON DELETE SET NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS image_sessions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    session_id TEXT UNIQUE NOT NULL,
+                    user_id INTEGER NOT NULL,
+                    instruction TEXT,
+                    status TEXT DEFAULT 'active',
+                    images_count INTEGER DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    expires_at TIMESTAMP,
+                    completed_at TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+                );
+
+                -- Indexes for performance
+                CREATE INDEX IF NOT EXISTS idx_image_uploads_user_id ON image_uploads(user_id);
+                CREATE INDEX IF NOT EXISTS idx_image_uploads_session_id ON image_uploads(session_id);  
+                CREATE INDEX IF NOT EXISTS idx_image_uploads_hash ON image_uploads(file_hash);
+                CREATE INDEX IF NOT EXISTS idx_image_uploads_status ON image_uploads(processing_status);
+                CREATE INDEX IF NOT EXISTS idx_image_sessions_user_id ON image_sessions(user_id);
+                CREATE INDEX IF NOT EXISTS idx_image_sessions_status ON image_sessions(status);
+                CREATE INDEX IF NOT EXISTS idx_image_sessions_expires_at ON image_sessions(expires_at);
                 """,
             ),
         ]

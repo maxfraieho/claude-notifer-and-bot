@@ -165,6 +165,29 @@ class Settings(BaseSettings):
     enable_file_uploads: bool = Field(True, description="Enable file upload handling")
     enable_quick_actions: bool = Field(True, description="Enable quick action buttons")
     claude_availability: ClaudeAvailabilitySettings = Field(default_factory=ClaudeAvailabilitySettings)
+    
+    # Image processing settings
+    enable_image_processing: bool = Field(True, description="Enable image upload and processing")
+    image_max_file_size: int = Field(20 * 1024 * 1024, description="Max image file size in bytes (20MB)")
+    image_max_batch_size: int = Field(5, description="Max images per batch processing")
+    image_session_timeout_minutes: int = Field(5, description="Image session timeout in minutes")
+    image_temp_directory: Path = Field(default=Path("/tmp/claude_bot_images"), description="Temp directory for images")
+    
+    # Image validation settings
+    image_max_width: int = Field(4096, description="Maximum image width in pixels")
+    image_max_height: int = Field(4096, description="Maximum image height in pixels") 
+    image_min_width: int = Field(32, description="Minimum image width in pixels")
+    image_min_height: int = Field(32, description="Minimum image height in pixels")
+    
+    # Image optimization settings
+    image_optimization_enabled: bool = Field(True, description="Enable image optimization")
+    image_optimization_max_width: int = Field(2048, description="Max width for optimization")
+    image_optimization_max_height: int = Field(2048, description="Max height for optimization")
+    image_optimization_quality: int = Field(85, description="JPEG quality for optimization (1-100)")
+    
+    # Claude image integration settings
+    claude_supports_images: bool = Field(True, description="Whether Claude CLI supports images")
+    claude_image_timeout_seconds: int = Field(600, description="Timeout for image processing with Claude")
 
     # Monitoring
     log_level: str = Field("INFO", description="Logging level")

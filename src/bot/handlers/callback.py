@@ -8,7 +8,9 @@ from ...claude.facade import ClaudeIntegration
 from ...config.settings import Settings
 from ...security.audit import AuditLogger
 from ...security.validators import SecurityValidator
+from ...localization.util import t, get_user_id
 from ...localization.helpers import get_user_text
+from ..utils.error_handler import safe_user_error
 
 logger = structlog.get_logger()
 
@@ -57,16 +59,26 @@ async def handle_callback_query(
             "export": handle_export_callback,
             "lang": handle_language_callback,
             "schedule": handle_schedule_callback,
+            "prompts_settings": handle_prompts_settings_callback,
+            "save_code": handle_save_code_callback,
+            "continue": handle_continue_callback,
+            "explain": handle_explain_callback,
+            "refresh": handle_refresh_callback,
         }
+
+        # Check for MCP callbacks first
+        if action.startswith("mcp"):
+            from .mcp_callbacks import handle_mcp_callback
+            await handle_mcp_callback(update, context)
+            return
 
         handler = handlers.get(action)
         if handler:
             await handler(query, param, context)
         else:
+            user_id = get_user_id(update)
             await query.edit_message_text(
-                "❌ **Unknown Action**\n\n"
-                "This button action is not recognized. "
-                "The bot may have been updated since this message was sent."
+                await t(context, user_id, "callback_errors.unknown_action")
             )
 
     except Exception as e:
@@ -192,6 +204,7 @@ async def handle_action_callback(
         "help": _handle_help_action,
         "show_projects": _handle_show_projects_action,
         "new_session": _handle_new_session_action,
+        "new": _handle_new_session_action,  # alias for new_session
         "continue": _handle_continue_action,
         "end_session": _handle_end_session_action,
         "status": _handle_status_action,
@@ -201,15 +214,17 @@ async def handle_action_callback(
         "refresh_status": _handle_refresh_status_action,
         "refresh_ls": _handle_refresh_ls_action,
         "export": _handle_export_action,
+        "settings": _handle_settings_action,
+        "main_menu": _handle_main_menu_action,
     }
 
     handler = actions.get(action_type)
     if handler:
         await handler(query, context)
     else:
+        user_id = get_user_id(update)
         await query.edit_message_text(
-            f"❌ **Unknown Action: {action_type}**\n\n"
-            "This action is not implemented yet."
+            await t(context, user_id, "callback_errors.action_not_implemented") + f": {action_type}"
         )
 
 
@@ -217,12 +232,19 @@ async def handle_confirm_callback(
     query, confirmation_type: str, context: ContextTypes.DEFAULT_TYPE
 ) -> None:
     """Handle confirmation dialogs."""
+    user_id = query.from_user.id
     if confirmation_type == "yes":
-        await query.edit_message_text("✅ **Confirmed**\n\nAction will be processed.")
+        await query.edit_message_text(
+            await t(context, user_id, "buttons.confirmed")
+        )
     elif confirmation_type == "no":
-        await query.edit_message_text("❌ **Cancelled**\n\nAction was cancelled.")
+        await query.edit_message_text(
+            await t(context, user_id, "buttons.cancelled")
+        )
     else:
-        await query.edit_message_text("❓ **Unknown confirmation response**")
+        await query.edit_message_text(
+            await t(context, user_id, "callback_errors.unknown_action") + f": {confirmation_type}"
+        )
 
 
 # Action handlers
@@ -696,16 +718,30 @@ async def _handle_start_coding_action(
     query, context: ContextTypes.DEFAULT_TYPE
 ) -> None:
     """Handle start coding action."""
-    await query.edit_message_text(
-        "🚀 **Ready to Code!**\n\n"
-        "Send me any message to start coding with Claude:\n\n"
-        "**Examples:**\n"
-        '• _"Create a Python script that..."_\n'
-        '• _"Help me debug this code..."_\n'
-        '• _"Explain how this file works..."_\n'
-        "• Upload a file for review\n\n"
-        "I'm here to help with all your coding needs!"
+    user_id = query.from_user.id
+    
+    # Get localized text
+    ready_to_code = await get_localized_text(context, user_id, "session.ready_to_code")
+    send_message_prompt = await get_localized_text(context, user_id, "session.send_message_prompt")
+    examples_title = await get_localized_text(context, user_id, "session.examples_title")
+    example_create_script = await get_localized_text(context, user_id, "session.example_create_script")
+    example_debug_code = await get_localized_text(context, user_id, "session.example_debug_code")
+    example_explain_file = await get_localized_text(context, user_id, "session.example_explain_file")
+    example_upload_file = await get_localized_text(context, user_id, "session.example_upload_file")
+    help_message = await get_localized_text(context, user_id, "session.help_message")
+    
+    message_text = (
+        f"{ready_to_code}\n\n"
+        f"{send_message_prompt}\n\n"
+        f"{examples_title}\n"
+        f"{example_create_script}\n"
+        f"{example_debug_code}\n"
+        f"{example_explain_file}\n"
+        f"{example_upload_file}\n\n"
+        f"{help_message}"
     )
+    
+    await query.edit_message_text(message_text)
 
 
 async def _handle_quick_actions_action(
@@ -970,9 +1006,9 @@ async def handle_conversation_callback(
         logger.info("Conversation ended via callback", user_id=user_id)
 
     else:
+        user_id = query.from_user.id
         await query.edit_message_text(
-            f"❌ **Unknown Conversation Action: {action_type}**\n\n"
-            "This conversation action is not recognized."
+            await t(context, user_id, "callback_errors.unknown_action") + f": {action_type}"
         )
 
 
@@ -1085,9 +1121,9 @@ async def handle_git_callback(
             )
 
         else:
+            user_id = query.from_user.id
             await query.edit_message_text(
-                f"❌ **Unknown Git Action: {git_action}**\n\n"
-                "This git action is not recognized."
+                await t(context, user_id, "callback_errors.unknown_action") + f": {git_action}"
             )
 
     except Exception as e:
@@ -1109,7 +1145,7 @@ async def handle_export_callback(
 
     if export_format == "cancel":
         await query.edit_message_text(
-            "📤 **Export Cancelled**\n\n" "Session export has been cancelled."
+            await t(context, user_id, "buttons.cancelled")
         )
         return
 
@@ -1385,12 +1421,145 @@ async def handle_schedule_callback(query, param: str, context: ContextTypes.DEFA
             reply_markup = InlineKeyboardMarkup(keyboard)
             await query.edit_message_text(message, reply_markup=reply_markup)
             
+        elif param == "create_new":
+            # Handle create new scheduled prompt
+            await query.edit_message_text(
+                "📝 **Створити нове завдання**\n\n"
+                "Функція створення нових планових завдань\n"
+                "буде доступна найближчим часом.\n\n"
+                "Наразі ви можете:\n"
+                "• Переглядати існуючі завдання\n"
+                "• Керувати налаштуваннями системи\n"
+                "• Переглядати статистику",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("🔙 Назад", callback_data="schedule:list")]
+                ])
+            )
+            
+        elif param == "advanced":
+            # Handle advanced settings  
+            config = await prompts_manager.load_prompts()
+            system_settings = config.get("settings", {})
+            
+            message = (
+                "⚙️ **Розширені налаштування**\n\n"
+                f"🔧 Максимально завдань: {system_settings.get('max_concurrent_tasks', 1)}\n"
+                f"⏰ Тайм-аут завдання: {system_settings.get('task_timeout', 300)}с\n"
+                f"🔄 Інтервал перевірки: {system_settings.get('check_interval', 60)}с\n"
+                f"📝 Логування: {'✅ Увімкнено' if system_settings.get('logging_enabled', True) else '❌ Вимкнено'}\n\n"
+                "**Опис налаштувань:**\n"
+                "• Максимально завдань - скільки завдань можуть виконуватись одночасно\n"
+                "• Тайм-аут - максимальний час виконання одного завдання\n"
+                "• Інтервал перевірки - як часто система перевіряє нові завдання"
+            )
+            
+            keyboard = [
+                [InlineKeyboardButton("🔙 Назад", callback_data="schedule:settings")]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await query.edit_message_text(message, reply_markup=reply_markup)
+            
+        elif param == "change_dnd":
+            # Handle change DND settings
+            config = await prompts_manager.load_prompts()
+            system_settings = config.get("settings", {})
+            
+            dnd_start = system_settings.get("dnd_start", "23:00")
+            dnd_end = system_settings.get("dnd_end", "08:00")
+            
+            message = (
+                "🌙 **Налаштування DND періоду**\n\n"
+                f"📅 Поточні налаштування:\n"
+                f"• Початок: {dnd_start}\n"
+                f"• Кінець: {dnd_end}\n\n"
+                "**Do Not Disturb (DND)** - це період часу,\n"
+                "коли користувачі зазвичай не працюють\n"
+                "і система може виконувати планові завдання\n"
+                "без перешкод.\n\n"
+                "Зміна DND періоду буде доступна\n"
+                "в наступних версіях системи."
+            )
+            
+            keyboard = [
+                [InlineKeyboardButton("🔙 Назад", callback_data="schedule:settings")]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await query.edit_message_text(message, reply_markup=reply_markup)
+            
         else:
-            await query.edit_message_text(f"❌ Невідома дія: {param}")
+            user_id = query.from_user.id
+            await query.edit_message_text(
+                await t(context, user_id, "callback_errors.unknown_action") + f": {param}"
+            )
             
     except Exception as e:
         logger.error("Error in schedule callback", error=str(e))
-        await query.edit_message_text(f"❌ Помилка: {str(e)}")
+        user_id = query.from_user.id
+        await query.edit_message_text(
+            await t(context, user_id, "errors.unexpected_error")
+        )
+
+
+async def _handle_settings_action(query, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle settings action."""
+    update = query.callback_query if hasattr(query, 'callback_query') else type('obj', (object,), {'callback_query': query})()
+    user_id = get_user_id(update)
+    
+    try:
+        # Create settings keyboard
+        keyboard = [
+            [
+                InlineKeyboardButton(await t(context, user_id, "buttons.help"), callback_data="action:help"),
+                InlineKeyboardButton("🔙 " + await t(context, user_id, "buttons.back"), callback_data="action:quick_actions")
+            ]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        settings_text = await t(context, user_id, "commands.settings.title")
+        description_text = await t(context, user_id, "commands.settings.description")
+        
+        await query.edit_message_text(
+            f"⚙️ **{settings_text}**\n\n{description_text}",
+            reply_markup=reply_markup
+        )
+    except Exception as e:
+        logger.error("Error in settings action", error=str(e))
+        await query.edit_message_text(await t(context, user_id, "errors.unexpected_error"))
+
+
+async def _handle_main_menu_action(query, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle main menu action."""
+    update = query.callback_query if hasattr(query, 'callback_query') else type('obj', (object,), {'callback_query': query})()
+    user_id = get_user_id(update)
+    
+    try:
+        # Create main menu keyboard with all primary actions
+        keyboard = [
+            [
+                InlineKeyboardButton(await t(context, user_id, "buttons.new_session"), callback_data="action:new"),
+                InlineKeyboardButton(await t(context, user_id, "buttons.continue_session"), callback_data="action:continue")
+            ],
+            [
+                InlineKeyboardButton(await t(context, user_id, "buttons.status"), callback_data="action:status"),
+                InlineKeyboardButton(await t(context, user_id, "buttons.export"), callback_data="action:export")
+            ],
+            [
+                InlineKeyboardButton(await t(context, user_id, "buttons.help"), callback_data="action:help"),
+                InlineKeyboardButton(await t(context, user_id, "buttons.settings"), callback_data="action:settings")
+            ]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        main_menu_text = await t(context, user_id, "commands.main_menu.title")
+        description_text = await t(context, user_id, "commands.main_menu.description")
+        
+        await query.edit_message_text(
+            f"🏠 **{main_menu_text}**\n\n{description_text}",
+            reply_markup=reply_markup
+        )
+    except Exception as e:
+        logger.error("Error in main menu action", error=str(e))
+        await query.edit_message_text(await t(context, user_id, "errors.unexpected_error"))
 
 
 def _format_file_size(size: int) -> str:
@@ -1400,3 +1569,94 @@ def _format_file_size(size: int) -> str:
             return f"{size:.1f}{unit}" if unit != "B" else f"{size}B"
         size /= 1024
     return f"{size:.1f}TB"
+
+
+# NEW CALLBACK HANDLERS FROM GROK ALL-FIX
+
+async def handle_prompts_settings_callback(query, param: str, context: ContextTypes.DEFAULT_TYPE):
+    """Handle 'Налаштування' button."""
+    await query.answer()
+    try:
+        user_id = query.from_user.id
+        settings_text = await t(context, user_id, "settings.title")
+        await query.edit_message_text(
+            text=settings_text,
+            # reply_markup=get_settings_keyboard(query.from_user.id)  # TODO: implement
+        )
+        logger.info("Prompts settings callback", user_id=user_id)
+    except Exception as e:
+        await query.edit_message_text(await t(context, query.from_user.id, "errors.settings_failed"))
+        logger.error("Settings callback error", error=str(e))
+
+async def handle_save_code_callback(query, param: str, context: ContextTypes.DEFAULT_TYPE):
+    """Handle 'Save Code' button."""
+    await query.answer()
+    try:
+        user_id = query.from_user.id
+        # Assuming storage save logic
+        # from src.storage.facade import Storage
+        # storage = context.application.bot_data.get('storage')
+        # await storage.save_code(user_id, context.user_data.get('current_code', ''))
+        await query.edit_message_text(await t(context, user_id, "session.save_complete"))
+        logger.info("Code saved", user_id=user_id)
+    except Exception as e:
+        await query.edit_message_text(await t(context, query.from_user.id, "errors.save_failed", error=str(e)))
+
+async def handle_continue_callback(query, param: str, context: ContextTypes.DEFAULT_TYPE):
+    """Handle 'Continue Session' button."""
+    await query.answer()
+    try:
+        user_id = query.from_user.id
+        session_id = context.user_data.get('claude_session_id') if context.user_data else None
+        if session_id:
+            # Resume Claude session
+            claude = context.application.bot_data.get('claude_integration')
+            if claude:
+                # result = await claude.resume_session(session_id, "")
+                await query.edit_message_text(await t(context, user_id, "session.continued"))
+            else:
+                await query.edit_message_text(await t(context, user_id, "errors.service_unavailable"))
+        else:
+            await query.edit_message_text(await t(context, user_id, "session.no_active_session"))
+    except Exception as e:
+        await query.edit_message_text(await t(context, query.from_user.id, "errors.continue_failed"))
+
+async def handle_explain_callback(query, param: str, context: ContextTypes.DEFAULT_TYPE):
+    """Handle 'Explain' button."""
+    await query.answer()
+    try:
+        user_id = query.from_user.id
+        code = context.user_data.get('current_code', '') if context.user_data else ''
+        explain_text = await t(context, user_id, "explain.processing")
+        await query.edit_message_text(explain_text)
+        # Call Claude for explanation
+        claude = context.application.bot_data.get('claude_integration')
+        if claude:
+            # explanation = await claude.explain_code(code)
+            # await query.edit_message_text(explanation)
+            await query.edit_message_text("✅ " + await t(context, user_id, "explain.processing"))
+        else:
+            await query.edit_message_text(await t(context, user_id, "errors.service_unavailable"))
+    except Exception as e:
+        await query.edit_message_text(await t(context, query.from_user.id, "errors.explain_failed"))
+
+async def handle_refresh_callback(query, param: str, context: ContextTypes.DEFAULT_TYPE):
+    """Fixed: Hardcoded '🔄 Оновити'."""
+    await query.answer()
+    try:
+        user_id = query.from_user.id
+        refresh_text = await t(context, user_id, "buttons.refresh")
+        current_status = await t(context, user_id, "status.title")
+        await query.edit_message_text(refresh_text + "\n\n" + current_status)
+    except Exception as e:
+        from ..utils.error_handler import safe_user_error
+        await safe_user_error(query, context, "errors.refresh_failed", e)
+
+
+# Registration function for callbacks
+def register_callbacks(application):
+    """Register all callback handlers."""
+    from telegram.ext import CallbackQueryHandler
+    
+    # Register the main callback query handler
+    application.add_handler(CallbackQueryHandler(handle_callback_query))

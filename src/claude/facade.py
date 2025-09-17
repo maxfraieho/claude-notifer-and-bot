@@ -4,7 +4,7 @@ Provides simple interface for bot handlers.
 """
 
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union, TYPE_CHECKING
 
 import structlog
 
@@ -14,6 +14,9 @@ from .integration import ClaudeProcessManager, ClaudeResponse, StreamUpdate
 from .monitor import ToolMonitor
 from .sdk_integration import ClaudeSDKManager
 from .session import SessionManager
+
+if TYPE_CHECKING:
+    from ..bot.features.image_processor import ProcessedImage
 
 logger = structlog.get_logger()
 
@@ -223,6 +226,102 @@ class ClaudeIntegration:
                 session_id=session.session_id,
             )
             raise
+
+    async def run_command_with_images(
+        self,
+        prompt: str,
+        images: List["ProcessedImage"],
+        working_directory: Path,
+        user_id: int,
+        session_id: Optional[str] = None,
+        on_stream: Optional[Callable[[StreamUpdate], None]] = None,
+    ) -> ClaudeResponse:
+        """Run Claude Code command with image attachments."""
+        logger.info(
+            "Running Claude command with images",
+            user_id=user_id,
+            working_directory=str(working_directory),
+            session_id=session_id,
+            prompt_length=len(prompt),
+            image_count=len(images),
+        )
+
+        if not self.config.claude_supports_images:
+            raise ClaudeToolValidationError(
+                "Image processing is not enabled for Claude CLI. "
+                "Please contact the administrator to enable image support."
+            )
+
+        # Create enhanced prompt with image context
+        enhanced_prompt = await self._create_image_prompt(prompt, images)
+
+        # For now, we'll use the regular command execution with enhanced prompt
+        # In the future, we can add specific image attachment support to the CLI integration
+        response = await self.run_command(
+            prompt=enhanced_prompt,
+            working_directory=working_directory,
+            user_id=user_id,
+            session_id=session_id,
+            on_stream=on_stream,
+        )
+
+        # Track image usage for this response
+        if response.session_id:
+            await self._log_image_usage(user_id, response.session_id, images)
+
+        return response
+
+    async def _create_image_prompt(
+        self, 
+        prompt: str, 
+        images: List["ProcessedImage"]
+    ) -> str:
+        """Create enhanced prompt with image context information."""
+        if not images:
+            return prompt
+
+        image_info = []
+        for i, img in enumerate(images, 1):
+            info = f"Image {i}: {img.filename} ({img.format}, {img.dimensions[0]}x{img.dimensions[1]}, {img.file_size / 1024:.1f}KB)"
+            if img.caption:
+                info += f" - Caption: {img.caption}"
+            image_info.append(info)
+
+        enhanced_prompt = f"""{prompt}
+
+I'm providing you with {len(images)} image(s) for analysis:
+{chr(10).join(image_info)}
+
+Please analyze these images in the context of my request above. Consider:
+1. The content and context of each image
+2. Any text, code, or UI elements visible
+3. Technical aspects if relevant (architecture, diagrams, code snippets)
+4. Relationships between images if multiple
+5. Specific actionable recommendations
+
+Note: While I cannot directly attach the image files to this prompt, please provide your best analysis and recommendations based on the context and filenames provided."""
+
+        return enhanced_prompt
+
+    async def _log_image_usage(
+        self, 
+        user_id: int, 
+        session_id: str, 
+        images: List["ProcessedImage"]
+    ) -> None:
+        """Log image usage for tracking purposes."""
+        try:
+            total_size = sum(img.file_size for img in images)
+            logger.info(
+                "Image processing completed",
+                user_id=user_id,
+                session_id=session_id,
+                image_count=len(images),
+                total_size_mb=round(total_size / (1024 * 1024), 2),
+                formats=[img.format for img in images],
+            )
+        except Exception as e:
+            logger.warning("Failed to log image usage", error=str(e))
 
     async def _execute_with_fallback(
         self,

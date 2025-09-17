@@ -36,6 +36,7 @@ aiosqlite = "^0.21.0"
 anthropic = "^0.40.0"
 claude-code-sdk = "^0.0.11"
 tenacity = "^8.2.3"
+pillow = "^11.0.0"
 
 [tool.poetry.scripts]
 claude-telegram-bot = "src.main:run"

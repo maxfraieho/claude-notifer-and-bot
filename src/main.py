@@ -12,8 +12,8 @@ import structlog
 
 from src import __version__
 from src.bot.core import ClaudeCodeBot
+from src.claude.facade import ClaudeIntegration
 from src.claude import (
-    ClaudeIntegration,
     ClaudeProcessManager,
     SessionManager,
     ToolMonitor,
@@ -35,6 +35,8 @@ from src.security.validators import SecurityValidator
 from src.storage.facade import Storage
 from src.storage.session_storage import SQLiteSessionStorage
 from src.localization import LocalizationManager, UserLanguageStorage
+from src.mcp.manager import MCPManager
+from src.mcp.context_handler import MCPContextHandler
 
 
 def setup_logging(debug: bool = False) -> None:
@@ -172,6 +174,30 @@ async def create_application(config: Settings) -> Dict[str, Any]:
         logger.info("Localization system initialized", 
                    available_languages=list(localization_manager.get_available_languages().keys()))
 
+    # Create image processing components
+    if config.enable_image_processing:
+        logger.info("Initializing image processing system")
+        from src.bot.features.image_processor import ImageProcessor
+        from src.bot.handlers.image_command import ImageCommandHandler
+        
+        image_processor = ImageProcessor(config, security_validator)
+        image_command_handler = ImageCommandHandler(config, image_processor)
+        logger.info("Image processing system initialized")
+    else:
+        image_command_handler = None
+
+    # Create MCP components
+    logger.info("Initializing MCP management system")
+    mcp_manager = MCPManager(config, storage)
+    
+    # Create MCP context handler
+    mcp_context_handler = MCPContextHandler(
+        mcp_manager=mcp_manager,
+        claude_integration=claude_integration,
+        storage=storage
+    )
+    logger.info("MCP system initialized")
+
     # Create bot with all dependencies
     dependencies = {
         "auth_manager": auth_manager,
@@ -182,6 +208,9 @@ async def create_application(config: Settings) -> Dict[str, Any]:
         "storage": storage,
         "localization": localization_manager,
         "user_language_storage": user_language_storage,
+        "mcp_manager": mcp_manager,
+        "mcp_context_handler": mcp_context_handler,
+        "image_command_handler": image_command_handler,
     }
 
     bot = ClaudeCodeBot(config, dependencies)

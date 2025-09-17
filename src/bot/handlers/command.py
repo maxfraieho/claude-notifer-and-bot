@@ -1,7 +1,12 @@
 """Command handlers for bot operations."""
 
 import structlog
-from typing import cast
+import asyncio
+import re
+import pexpect
+import time
+from datetime import datetime, timedelta
+from typing import cast, Optional, Tuple
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
@@ -10,8 +15,197 @@ from ...config.settings import Settings
 from ...security.audit import AuditLogger
 from ...security.validators import SecurityValidator
 from ...localization.util import t, get_user_id, get_effective_message
+from ..utils.error_handler import safe_user_error, safe_critical_error
+from datetime import datetime
+from pathlib import Path
+import uuid
 
 logger = structlog.get_logger()
+
+
+# Pexpect functions for Claude CLI authentication
+async def claude_auth_with_pexpect(timeout: int = 30) -> Tuple[bool, str, Optional[pexpect.spawn]]:
+    """
+    Захоплює URL авторизації з команди claude login використовуючи pexpect.
+    
+    Args:
+        timeout: Максимальний час очікування в секундах
+        
+    Returns:
+        Tuple з (успіх, URL_або_помилка, процес_pexpect)
+    """
+    try:
+        logger.info("Starting claude login with pexpect")
+        
+        # Запускаємо процес claude login з підтримкою UTF-8
+        child = pexpect.spawn('claude login', encoding='utf-8', timeout=timeout)
+        
+        # Патерни для пошуку в виводі команди
+        patterns = [
+            r'https://claude\.ai/[^\s]*',      # Claude.ai URL
+            r'https://[^\s]*anthropic[^\s]*', # Anthropic URL
+            r'https://[^\s]+',                # Будь-який HTTPS URL
+            r'Please visit:?\s*(https://[^\s]+)',  # "Please visit: URL"
+            r'Go to:?\s*(https://[^\s]+)',    # "Go to: URL"
+            pexpect.TIMEOUT,
+            pexpect.EOF
+        ]
+        
+        url = None
+        output_buffer = ""
+        start_time = time.time()
+        
+        logger.info("Waiting for authentication URL...")
+        
+        while time.time() - start_time < timeout:
+            try:
+                # Очікуємо на один з патернів
+                index = child.expect(patterns, timeout=5)
+                
+                # Збираємо вивід
+                if child.before:
+                    output_buffer += child.before
+                if child.after and index < 5:
+                    output_buffer += child.after
+                
+                logger.debug("Pattern matched", index=index, output_snippet=output_buffer[-200:])
+                
+                if index < 5:  # Знайдено URL патерн
+                    # Витягуємо всі URL з накопиченого виводу
+                    url_matches = re.findall(r'https://[^\s]+', output_buffer)
+                    
+                    if url_matches:
+                        # Пріоритет: Claude.ai > Anthropic > інші HTTPS
+                        for match in url_matches:
+                            if 'claude.ai' in match and ('auth' in match or 'login' in match):
+                                url = match
+                                break
+                        if not url:
+                            for match in url_matches:
+                                if 'anthropic' in match:
+                                    url = match
+                                    break
+                        if not url:
+                            url = url_matches[0]  # Перший HTTPS URL
+                        
+                        # Очищуємо URL від зайвих символів
+                        url = url.rstrip('.,;)')
+                        
+                        logger.info("Authentication URL captured", url=url)
+                        return True, url, child
+                        
+                elif index == 5:  # TIMEOUT
+                    logger.debug("Timeout waiting for pattern, continuing...")
+                    continue
+                    
+                elif index == 6:  # EOF
+                    logger.warning("Process ended unexpectedly", output=output_buffer)
+                    break
+                    
+            except pexpect.TIMEOUT:
+                # Спробуємо прочитати доступний вивід
+                try:
+                    available = child.read_nonblocking(size=1024, timeout=0.1)
+                    if available:
+                        output_buffer += available
+                        logger.debug("Read additional output", content=available[:100])
+                except:
+                    pass
+                continue
+                
+        # Якщо дійшли сюди - не знайшли URL
+        logger.error("No authentication URL found", output=output_buffer)
+        return False, f"No authentication URL found in output: {output_buffer}", child
+        
+    except Exception as e:
+        logger.error("Error starting claude login", error=str(e))
+        return False, f"Error starting claude login: {str(e)}", None
+
+
+async def send_auth_code(child: pexpect.spawn, code: str, timeout: int = 30) -> Tuple[bool, str]:
+    """
+    Відправляє код авторизації в процес claude login.
+    
+    Args:
+        child: Процес pexpect
+        code: Код авторизації від користувача
+        timeout: Максимальний час очікування
+        
+    Returns:
+        Tuple з (успіх, вивід_або_помилка)
+    """
+    try:
+        logger.info("Sending authentication code")
+        
+        # Відправляємо код авторизації
+        child.sendline(code)
+        
+        # Патерни для результату авторизації
+        patterns = [
+            r'(?i)(success|successful|authenticated|complete)',  # Успіх
+            r'(?i)(error|failed|invalid|expired|wrong)',        # Помилка
+            r'(?i)(rate limit|too many|quota|limit exceeded)',  # Ліміти
+            pexpect.TIMEOUT,
+            pexpect.EOF
+        ]
+        
+        output = ""
+        start_time = time.time()
+        
+        while time.time() - start_time < timeout:
+            try:
+                index = child.expect(patterns, timeout=5)
+                
+                # Збираємо вся вивід
+                if child.before:
+                    output += child.before
+                if child.after and index < 3:
+                    output += child.after
+                
+                logger.debug("Auth response pattern", index=index, output_snippet=output[-200:])
+                
+                if index == 0:  # Успіх
+                    logger.info("Authentication successful")
+                    child.close()
+                    return True, output
+                    
+                elif index == 1:  # Помилка авторизації
+                    logger.warning("Authentication failed", error=output)
+                    child.close()
+                    return False, output
+                    
+                elif index == 2:  # Ліміти API
+                    logger.warning("Rate limit or quota issue", output=output)
+                    child.close()
+                    return False, output
+                    
+                elif index == 3:  # TIMEOUT
+                    continue
+                    
+                elif index == 4:  # EOF
+                    child.close()
+                    # Перевіряємо exit код
+                    if child.exitstatus == 0:
+                        logger.info("Process exited successfully")
+                        return True, output
+                    else:
+                        logger.warning("Process exited with error", exit_code=child.exitstatus)
+                        return False, f"Process exited with code {child.exitstatus}: {output}"
+                        
+            except pexpect.TIMEOUT:
+                logger.debug("Waiting for auth response...")
+                continue
+                
+        # Timeout досягнуто
+        logger.error("Authentication timeout", output=output)
+        child.close()
+        return False, f"Authentication timed out after {timeout}s: {output}"
+        
+    except Exception as e:
+        logger.error("Error during authentication", error=str(e))
+        if child and child.isalive():
+            child.close()
+        return False, f"Error during authentication: {str(e)}"
 
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -232,7 +426,7 @@ async def new_session(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         
     settings = context.bot_data.get("settings")
     if not settings:
-        await message.reply_text("❌ Settings not available")
+        await message.reply_text(await t(context, user_id, "errors.settings_not_available"))
         return
     settings_typed = cast(Settings, settings)
 
@@ -314,7 +508,7 @@ async def continue_session(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         
     settings = context.bot_data.get("settings")
     if not settings:
-        await message.reply_text("❌ Settings not available")
+        await message.reply_text(await t(context, user_id, "errors.settings_not_available"))
         return
     settings_typed = cast(Settings, settings)
     
@@ -480,8 +674,8 @@ async def continue_session(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         try:
             if 'status_msg' in locals() and status_msg:
                 await status_msg.delete()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Failed to delete status message", error=str(e))
 
         # Send error response
         await message.reply_text(
@@ -516,7 +710,7 @@ async def list_files(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         
     settings = context.bot_data.get("settings")
     if not settings:
-        await message.reply_text("❌ Settings not available")
+        await message.reply_text(await t(context, user_id, "errors.settings_not_available"))
         return
     settings_typed = cast(Settings, settings)
     
@@ -620,7 +814,7 @@ async def change_directory(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         
     settings = context.bot_data.get("settings")
     if not settings:
-        await message.reply_text("❌ Settings not available")
+        await message.reply_text(await t(context, user_id, "errors.settings_not_available"))
         return
     settings_typed = cast(Settings, settings)
     
@@ -737,7 +931,7 @@ async def print_working_directory(
         
     settings = context.bot_data.get("settings")
     if not settings:
-        await message.reply_text("❌ Settings not available")
+        await message.reply_text(await t(context, user_id, "errors.settings_not_available"))
         return
     settings_typed = cast(Settings, settings)
     
@@ -776,7 +970,7 @@ async def show_projects(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         
     settings = context.bot_data.get("settings")
     if not settings:
-        await message.reply_text("❌ Settings not available")
+        await message.reply_text(await t(context, user_id, "errors.settings_not_available"))
         return
     settings_typed = cast(Settings, settings)
 
@@ -846,7 +1040,7 @@ async def session_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         
     settings = context.bot_data.get("settings")
     if not settings:
-        await message.reply_text("❌ Settings not available")
+        await message.reply_text(await t(context, user_id, "errors.settings_not_available"))
         return
     settings_typed = cast(Settings, settings)
 
@@ -990,7 +1184,7 @@ async def end_session(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         
     settings = context.bot_data.get("settings")
     if not settings:
-        await message.reply_text("❌ Settings not available")
+        await message.reply_text(await t(context, user_id, "errors.settings_not_available"))
         return
     settings_typed = cast(Settings, settings)
 
@@ -1063,7 +1257,7 @@ async def quick_actions(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         
     settings = context.bot_data.get("settings")
     if not settings:
-        await message.reply_text("❌ Settings not available")
+        await message.reply_text(await t(context, user_id, "errors.settings_not_available"))
         return
     settings_typed = cast(Settings, settings)
     
@@ -1116,8 +1310,9 @@ async def quick_actions(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         if user_language_storage:
             try:
                 user_lang = await user_language_storage.get_user_language(user_id)
-            except:
-                pass
+            except Exception as e:
+                logger.warning("Failed to get user language", user_id=user_id, error=str(e))
+                user_lang = "en"  # fallback to English
         
         keyboard = quick_action_manager.create_inline_keyboard(
             actions, columns=2, localization=localization, user_lang=user_lang
@@ -1151,7 +1346,7 @@ async def git_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         
     settings = context.bot_data.get("settings")
     if not settings:
-        await message.reply_text("❌ Settings not available")
+        await message.reply_text(await t(context, user_id, "errors.settings_not_available"))
         return
     settings_typed = cast(Settings, settings)
     
@@ -1380,3 +1575,493 @@ async def add_schedule_command(update: Update, context: ContextTypes.DEFAULT_TYP
             "❌ **Помилка**\n"
             f"Не вдалося відкрити меню додавання: {str(e)}"
         )
+
+
+# ========== MISSING CRITICAL COMMAND HANDLERS ==========
+
+async def status_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Show bot and session status."""
+    user_id = get_user_id(update)
+    message = get_effective_message(update)
+    
+    if not user_id or not message:
+        return
+    
+    try:
+        status_text = await t(context, user_id, "status.title")
+        current_dir = await t(context, user_id, "status.directory", directory=str(Path.cwd()))
+        claude_active = "🤖 Сесія Claude: ✅ Активна" if context.user_data.get('claude_session_active') else await t(context, user_id, "status.claude_session_inactive")
+        
+        full_status = f"{status_text}\n\n{current_dir}\n{claude_active}"
+        await message.reply_text(full_status)
+        logger.info("Status command executed", user_id=user_id)
+    except Exception as e:
+        await safe_user_error(update, context, "errors.status_failed", e)
+        logger.error("Status handler error", error=str(e), user_id=user_id)
+
+async def help_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Show help information."""
+    user_id = get_user_id(update)
+    message = get_effective_message(update)
+    
+    if not user_id or not message:
+        return
+    
+    try:
+        help_text = await t(context, user_id, "help.title")
+        commands_list = await t(context, user_id, "help.commands")
+        await message.reply_text(f"{help_text}\n\n{commands_list}")
+        logger.info("Help command executed", user_id=user_id)
+    except Exception as e:
+        await safe_user_error(update, context, "errors.help_failed", e)
+
+async def new_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Start new Claude session."""
+    user_id = get_user_id(update)
+    message = get_effective_message(update)
+    
+    if not user_id or not message:
+        return
+    
+    try:
+        await message.reply_text(await t(context, user_id, "session.new_started"))
+        # Reset session in context.user_data
+        if context.user_data:
+            context.user_data['claude_session_id'] = None
+            context.user_data['claude_session_active'] = False
+        await message.reply_text(await t(context, user_id, "session.cleared"))
+        logger.info("New session started", user_id=user_id)
+    except Exception as e:
+        await safe_user_error(update, context, "errors.session_new_failed", e)
+
+async def actions_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Show available quick actions."""
+    user_id = get_user_id(update)
+    message = get_effective_message(update)
+    
+    if not user_id or not message:
+        return
+    
+    try:
+        actions_text = await t(context, user_id, "actions.title")
+        await message.reply_text(actions_text)
+    except Exception as e:
+        await safe_user_error(update, context, "errors.actions_failed", e)
+
+async def pwd_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Show current directory."""
+    user_id = get_user_id(update)
+    message = get_effective_message(update)
+    
+    if not user_id or not message:
+        return
+    
+    try:
+        pwd_text = await t(context, user_id, "pwd.title", directory=str(Path.cwd()))
+        await message.reply_text(pwd_text)
+    except Exception as e:
+        await safe_user_error(update, context, "errors.pwd_failed", e)
+
+async def projects_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Show project list."""
+    user_id = get_user_id(update)
+    message = get_effective_message(update)
+    
+    if not user_id or not message:
+        return
+    
+    try:
+        projects_text = await t(context, user_id, "projects.title", count=0)
+        await message.reply_text(projects_text)
+    except Exception as e:
+        await safe_user_error(update, context, "errors.projects_failed", e)
+
+
+# FIXED: Git command (line ~1241 - mixed language fix)
+async def git_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Git operations - fixed error handling."""
+    user_id = get_user_id(update)
+    message = get_effective_message(update)
+    
+    if not user_id or not message:
+        return
+        
+    try:
+        # Existing git logic...
+        git_text = await t(context, user_id, "commands.git.title")
+        await message.reply_text(f"🔗 **{git_text}**")
+    except Exception as e:
+        error_msg = await t(context, user_id, "errors.git_operation_failed", error=str(e))
+        await message.reply_text(error_msg)
+        logger.error("Git operation failed", error=str(e), user_id=user_id)
+
+
+def extract_auth_url(output: str) -> str:
+    """Extract authentication URL from claude login output."""
+    # Look for URLs in the output
+    url_pattern = r'https://[^\s]+'
+    urls = re.findall(url_pattern, output)
+    for url in urls:
+        if 'anthropic.com' in url or 'claude.ai' in url:
+            return url
+    return ""
+
+
+def extract_reset_time(error_text: str) -> str:
+    """Extract reset time from rate limit error."""
+    # Look for reset time patterns in error messages
+    patterns = [
+        r'reset at (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})',
+        r'try again at (\d{2}:\d{2})',
+        r'available at (\d+:\d+)',
+        r'reset in (\d+) minutes',
+        r'after (\d+:\d{2})'
+    ]
+    
+    for pattern in patterns:
+        match = re.search(pattern, error_text, re.IGNORECASE)
+        if match:
+            return match.group(1)
+    
+    return "невідомо"
+
+
+def analyze_claude_error(error_text: str, stderr: str = "") -> tuple[str, dict]:
+    """Analyze Claude CLI error and return appropriate message key and format args."""
+    full_error = f"{error_text} {stderr}".lower()
+    
+    # Rate limiting patterns
+    rate_limit_patterns = [
+        "rate limit", "too many requests", "429", "quota exceeded",
+        "requests per", "try again later", "temporary limit"
+    ]
+    
+    # Quota/billing patterns  
+    quota_patterns = [
+        "usage limit", "billing", "plan limit", "daily limit",
+        "monthly usage", "account limit", "subscription"
+    ]
+    
+    # Network patterns
+    network_patterns = [
+        "network", "connection", "timeout", "dns", "unreachable",
+        "connection refused", "connection reset", "no internet"
+    ]
+    
+    # Server error patterns
+    server_patterns = [
+        "500", "502", "503", "504", "internal server error",
+        "bad gateway", "service unavailable", "gateway timeout"
+    ]
+    
+    # Invalid code patterns
+    invalid_patterns = [
+        "invalid code", "invalid token", "expired token", "wrong code",
+        "authentication failed", "invalid authorization"
+    ]
+    
+    if any(pattern in full_error for pattern in rate_limit_patterns):
+        reset_time = extract_reset_time(full_error)
+        return "commands.claude.error_rate_limit", {"reset_time": reset_time}
+    
+    elif any(pattern in full_error for pattern in quota_patterns):
+        return "commands.claude.error_quota", {}
+    
+    elif any(pattern in full_error for pattern in network_patterns):
+        return "commands.claude.error_network", {}
+    
+    elif any(pattern in full_error for pattern in server_patterns):
+        return "commands.claude.error_server", {}
+    
+    elif any(pattern in full_error for pattern in invalid_patterns):
+        return "commands.claude.error_invalid_code", {}
+    
+    else:
+        return "commands.claude.error_generic", {}
+
+
+async def claude_auth_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /claude command for interactive Claude CLI authentication using pexpect."""
+    user_id = get_user_id(update)
+    message = get_effective_message(update)
+    
+    if not user_id or not message:
+        return
+
+    try:
+        # Check if already waiting for auth code
+        if context.user_data.get('claude_auth_waiting'):
+            already_waiting_msg = await t(context, user_id, "commands.claude.already_waiting")
+            await message.reply_text(already_waiting_msg)
+            return
+        
+        # First check current Claude CLI authentication status
+        logger.info("Checking Claude CLI authentication status", user_id=user_id)
+        try:
+            import json
+            credentials_path = Path.home() / ".claude" / ".credentials.json"
+            logger.info("Checking credentials file", path=str(credentials_path), exists=credentials_path.exists())
+            if credentials_path.exists():
+                with open(credentials_path, 'r') as f:
+                    creds = json.load(f)
+                    oauth_data = creds.get("claudeAiOauth", {})
+                    expires_at = oauth_data.get("expiresAt", 0)
+                    current_time = time.time() * 1000
+                    
+                    logger.info("Token status check", current_time=current_time, expires_at=expires_at, 
+                               expired=current_time > expires_at)
+                    
+                    if current_time < expires_at:
+                        # Token is not expired, test connectivity
+                        logger.info("Token valid, testing Claude CLI connectivity", user_id=user_id)
+                        test_result = await asyncio.create_subprocess_exec(
+                            "timeout", "10", "claude", "auth", "status",
+                            stdout=asyncio.subprocess.PIPE,
+                            stderr=asyncio.subprocess.PIPE
+                        )
+                        stdout, stderr = await test_result.communicate()
+                        
+                        logger.info("Claude CLI connectivity test result", return_code=test_result.returncode,
+                                   stdout=stdout.decode()[:100], stderr=stderr.decode()[:100])
+                        
+                        if test_result.returncode == 0:
+                            # Claude CLI works fine
+                            logger.info("Claude CLI verified working", user_id=user_id)
+                            verified_msg = await t(context, user_id, "commands.claude.verified")
+                            await message.reply_text(verified_msg)
+                            return
+                        else:
+                            # Token exists but CLI doesn't work - connectivity issue
+                            hours_remaining = (expires_at - current_time) / (1000 * 3600)
+                            logger.info("Claude CLI connectivity issue detected", user_id=user_id, 
+                                       hours_remaining=hours_remaining, return_code=test_result.returncode)
+                            connectivity_msg = await t(context, user_id, "commands.claude.connectivity_issue", 
+                                                     hours=f"{hours_remaining:.1f}")
+                            await message.reply_text(connectivity_msg)
+                            return
+                    else:
+                        # Token is expired
+                        logger.info("Claude CLI token expired", user_id=user_id, expires_at=expires_at)
+                        expired_msg = await t(context, user_id, "commands.claude.token_expired")
+                        await message.reply_text(expired_msg)
+                        # Continue with authentication process
+            else:
+                logger.info("No Claude CLI credentials file found", user_id=user_id)
+        except Exception as e:
+            logger.warning("Could not check Claude CLI status", error=str(e), user_id=user_id)
+            # Continue with authentication process anyway
+        
+        # Start claude login process with pexpect
+        logger.info("Starting Claude authentication process with pexpect", user_id=user_id)
+        
+        starting_msg = await t(context, user_id, "commands.claude.starting")
+        await message.reply_text(starting_msg)
+        
+        # Use pexpect to capture authentication URL
+        success, result, child = await claude_auth_with_pexpect(timeout=30)
+        
+        if not success:
+            # Authentication failed
+            error_key, format_args = analyze_claude_error(result, "")
+            error_msg = await t(context, user_id, error_key, **format_args)
+            await message.reply_text(error_msg)
+            logger.error("Failed to start Claude authentication with pexpect", 
+                        user_id=user_id, error=result)
+            return
+        
+        # Success - we have the authentication URL
+        auth_url = result
+        
+        # Send instructions to user
+        title = await t(context, user_id, "commands.claude.title")
+        step1 = await t(context, user_id, "commands.claude.step1")
+        step2 = await t(context, user_id, "commands.claude.step2") 
+        step3 = await t(context, user_id, "commands.claude.step3")
+        step4 = await t(context, user_id, "commands.claude.step4")
+        waiting = await t(context, user_id, "commands.claude.waiting")
+        
+        instructions = (
+            f"{title}\n\n"
+            f"{step1}\n"
+            f"🔗 {auth_url}\n\n"
+            f"{step2}\n"
+            f"{step3}\n"
+            f"{step4}\n\n"
+            f"{waiting}"
+        )
+        
+        await message.reply_text(instructions)
+        
+        # Store authentication state with pexpect child process
+        context.user_data['claude_auth_process'] = child
+        context.user_data['claude_auth_waiting'] = True
+        context.user_data['claude_auth_start_time'] = datetime.now()
+        
+        logger.info("Claude authentication instructions sent with pexpect", 
+                   user_id=user_id, auth_url=auth_url)
+        
+    except Exception as e:
+        error_msg = await t(context, user_id, "commands.claude.error_process")
+        await message.reply_text(f"{error_msg}\n\n_{str(e)}_")
+        logger.error("Failed to start Claude authentication", error=str(e), user_id=user_id)
+
+
+async def handle_claude_auth_code(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
+    """Handle authentication code input for Claude CLI using pexpect. Returns True if handled."""
+    user_id = get_user_id(update)
+    message = get_effective_message(update)
+    
+    if not user_id or not message or not message.text:
+        return False
+    
+    # Check if user is waiting for auth code
+    if not context.user_data.get('claude_auth_waiting'):
+        return False
+    
+    child = context.user_data.get('claude_auth_process')
+    start_time = context.user_data.get('claude_auth_start_time')
+    
+    if not child or not start_time:
+        return False
+    
+    # Check timeout (10 minutes)
+    if datetime.now() - start_time > timedelta(minutes=10):
+        timeout_msg = await t(context, user_id, "commands.claude.timeout") 
+        await message.reply_text(timeout_msg)
+        
+        # Clean up
+        try:
+            if child.isalive():
+                child.terminate()
+        except:
+            pass
+        
+        context.user_data.pop('claude_auth_process', None)
+        context.user_data.pop('claude_auth_waiting', None)
+        context.user_data.pop('claude_auth_start_time', None)
+        return True
+    
+    # Handle cancel command
+    if message.text.lower() in ['/cancel', 'cancel', 'скасувати', 'стоп']:
+        cancelled_msg = await t(context, user_id, "commands.claude.cancelled")
+        await message.reply_text(cancelled_msg)
+        
+        try:
+            if child.isalive():
+                child.terminate()
+        except:
+            pass
+        
+        context.user_data.pop('claude_auth_process', None)
+        context.user_data.pop('claude_auth_waiting', None) 
+        context.user_data.pop('claude_auth_start_time', None)
+        return True
+    
+    # Extract authentication code
+    auth_code = message.text.strip()
+    
+    # Basic validation of auth code format
+    if not auth_code or len(auth_code) < 6:
+        invalid_msg = await t(context, user_id, "commands.claude.error_invalid_code")
+        await message.reply_text(invalid_msg)
+        return True
+    
+    try:
+        logger.info("Processing Claude authentication code with pexpect", user_id=user_id)
+        
+        processing_msg = await t(context, user_id, "commands.claude.processing")
+        await message.reply_text(processing_msg)
+        
+        # Check if pexpect child is still alive
+        if not child.isalive():
+            session_expired_msg = await t(context, user_id, "commands.claude.session_expired")
+            await message.reply_text(session_expired_msg)
+            
+            # Clean up
+            context.user_data.pop('claude_auth_process', None)
+            context.user_data.pop('claude_auth_waiting', None)
+            context.user_data.pop('claude_auth_start_time', None)
+            return True
+        
+        # Send auth code through pexpect
+        success, result = await send_auth_code(child, auth_code, timeout=30)
+        
+        # Clean up user data first
+        context.user_data.pop('claude_auth_process', None)
+        context.user_data.pop('claude_auth_waiting', None)
+        context.user_data.pop('claude_auth_start_time', None)
+        
+        if success:
+            # Success
+            success_msg = await t(context, user_id, "commands.claude.success")
+            verified_msg = await t(context, user_id, "commands.claude.verified")
+            await message.reply_text(f"{success_msg}\n\n{verified_msg}")
+            logger.info("Claude authentication successful with pexpect", user_id=user_id)
+        else:
+            # Error - analyze and provide detailed feedback
+            error_key, format_args = analyze_claude_error(result, "")
+            error_msg = await t(context, user_id, error_key, **format_args)
+            await message.reply_text(error_msg)
+            
+            logger.warning("Claude authentication failed with pexpect", 
+                         user_id=user_id, 
+                         error=result[:500])
+        
+        return True
+        
+    except Exception as e:
+        # Clean up user data
+        context.user_data.pop('claude_auth_process', None)
+        context.user_data.pop('claude_auth_waiting', None)
+        context.user_data.pop('claude_auth_start_time', None)
+        
+        # Clean up pexpect process
+        try:
+            if child and child.isalive():
+                child.terminate()
+        except:
+            pass
+        
+        error_msg = await t(context, user_id, "commands.claude.error_generic")
+        await message.reply_text(f"{error_msg}\n\n_{str(e)}_")
+        logger.error("Exception during Claude authentication with pexpect", error=str(e), user_id=user_id)
+        return True
+
+
+# Registration function for handlers
+def register_handlers(application):
+    """Register all command handlers."""
+    from telegram.ext import CommandHandler
+    
+    # Register all command handlers
+    application.add_handler(CommandHandler("start", start_command))
+    application.add_handler(CommandHandler("help", help_handler))
+    application.add_handler(CommandHandler("new", new_handler))
+    application.add_handler(CommandHandler("status", status_handler))
+    application.add_handler(CommandHandler("actions", actions_handler))
+    application.add_handler(CommandHandler("pwd", pwd_handler))
+    application.add_handler(CommandHandler("projects", projects_handler))
+    application.add_handler(CommandHandler("ls", list_files))
+    application.add_handler(CommandHandler("cd", change_directory))
+    application.add_handler(CommandHandler("continue", continue_session))
+    application.add_handler(CommandHandler("end", end_session))
+    application.add_handler(CommandHandler("export", export_session))
+    application.add_handler(CommandHandler("git", git_handler))
+    application.add_handler(CommandHandler("claude", claude_auth_command))
+    application.add_handler(CommandHandler("schedules", schedules_command))
+    application.add_handler(CommandHandler("add_schedule", add_schedule_command))
+
+
+async def img_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /img command for image processing."""
+    # Get the image handler instance from bot data
+    image_handler = context.bot_data.get('image_command_handler')
+    if image_handler:
+        await image_handler.handle_img_command(update, context)
+    else:
+        # Fallback error message
+        user_id = get_user_id(update)
+        message = get_effective_message(update)
+        if user_id and message:
+            error_text = await t(context, user_id, "errors.image_processing_disabled")
+            await message.reply_text(error_text)

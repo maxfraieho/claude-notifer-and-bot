@@ -2,7 +2,7 @@
 # Built for remote server deployment with user: kroschu
 # Image: kroschu/claude-code-telegram:latest
 
-FROM python:3.11-slim
+FROM python:3.11.11-slim
 
 # Build arguments for flexibility
 ARG USER_UID=1000
