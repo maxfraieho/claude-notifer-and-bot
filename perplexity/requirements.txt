@@ -1,0 +1,3 @@
+# Telegram Bot Requirements
+python-telegram-bot>=21.0
+psutil>=5.9.0

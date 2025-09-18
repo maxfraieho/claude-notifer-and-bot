@@ -77,7 +77,8 @@ async def _format_progress_update(update_obj) -> Optional[str]:
     elif update_obj.type == "system":
         # System initialization or other system messages
         if update_obj.metadata and update_obj.metadata.get("subtype") == "init":
-            tools_count = len(update_obj.metadata.get("tools", []))
+            tools = update_obj.metadata.get("tools", [])
+            tools_count = len(tools) if tools is not None else 0
             model = update_obj.metadata.get("model", "Claude")
             return f"🚀 **Starting {model}** with {tools_count} tools available"
 
@@ -134,6 +135,9 @@ async def handle_text_message(
     """Handle regular text messages as Claude prompts."""
     user_id = update.effective_user.id
     message_text = update.message.text
+
+    logger.debug("handle_text_message called", user_id=user_id,
+                message_text=(message_text[:50] + "...") if message_text and len(message_text) > 50 else message_text)
     settings: Settings = context.bot_data["settings"]
 
     # Get services
@@ -150,10 +154,14 @@ async def handle_text_message(
 
     # Check if user has active image session and handle it
     if context.user_data and context.user_data.get('awaiting_images'):
+        logger.info("Text message for user with active image session", user_id=user_id, message_text=message_text)
         image_command_handler = context.bot_data.get('image_command_handler')
         if image_command_handler:
+            logger.info("Routing text message to image_command_handler", user_id=user_id)
             await image_command_handler.handle_text_message(update, context)
             return
+        else:
+            logger.error("Image command handler not found for text message", user_id=user_id)
 
     try:
         # Check rate limit with estimated cost for text processing
@@ -606,12 +614,33 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     user_id = update.effective_user.id
     settings: Settings = context.bot_data["settings"]
 
+    logger.debug("handle_photo called", user_id=user_id,
+                has_photo=update.message.photo is not None if update.message else False,
+                has_text=update.message.text is not None if update.message else False,
+                message_text=update.message.text if update.message and update.message.text else None,
+                message_type=type(update.message).__name__ if update.message else None)
+
     # Check if user has active image session
+    logger.debug("Checking image session",
+                 user_id=user_id,
+                 has_user_data=context.user_data is not None,
+                 user_data_keys=list(context.user_data.keys()) if context.user_data else [],
+                 awaiting_images=context.user_data.get('awaiting_images', False) if context.user_data else False,
+                 has_image_command_handler='image_command_handler' in context.bot_data)
+
     if context.user_data and context.user_data.get('awaiting_images'):
+        logger.info("User has active image session - routing to image_command_handler", user_id=user_id)
         image_command_handler = context.bot_data.get('image_command_handler')
         if image_command_handler:
+            logger.info("Calling image_command_handler.handle_image_upload", user_id=user_id)
             await image_command_handler.handle_image_upload(update, context)
             return
+        else:
+            logger.error("Image command handler not found in bot_data", user_id=user_id)
+    else:
+        logger.debug("No active image session for user", user_id=user_id,
+                    has_user_data=context.user_data is not None,
+                    awaiting_images=context.user_data.get('awaiting_images', False) if context.user_data else False)
 
     # Check if enhanced image handler is available
     features = context.bot_data.get("features")
@@ -625,6 +654,9 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             )
 
             # Get the largest photo size
+            if not update.message.photo:
+                await progress_msg.edit_text("❌ No photo found in message.")
+                return
             photo = update.message.photo[-1]
 
             # Process image with enhanced handler

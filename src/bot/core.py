@@ -44,9 +44,18 @@ class ClaudeCodeBot:
         """Initialize bot application."""
         logger.info("Initializing Telegram bot")
 
-        # Create application
+        # Create application with persistence
+        from telegram.ext import PicklePersistence
+        import os
+
+        # Set up persistence for user_data and context
+        persistence_file = os.path.join(os.getcwd(), "data", "telegram_persistence.pickle")
+        os.makedirs(os.path.dirname(persistence_file), exist_ok=True)
+        persistence = PicklePersistence(filepath=persistence_file)
+
         builder = Application.builder()
         builder.token(self.settings.telegram_token_str)
+        builder.persistence(persistence)
 
         # Configure connection settings
         builder.connect_timeout(30)
@@ -341,10 +350,13 @@ class ClaudeCodeBot:
         self, update: Update, context: ContextTypes.DEFAULT_TYPE
     ) -> None:
         """Handle errors globally."""
+        import traceback
         error = context.error
         logger.error(
             "Global error handler triggered",
             error=str(error),
+            error_type=type(error).__name__ if error else None,
+            traceback=traceback.format_exc(),
             update_type=type(update).__name__ if update else None,
             user_id=(
                 update.effective_user.id if update and update.effective_user else None

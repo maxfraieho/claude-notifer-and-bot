@@ -202,6 +202,7 @@ async def handle_action_callback(
     """Handle general action callbacks."""
     actions = {
         "help": _handle_help_action,
+        "full_help": _handle_full_help_action,
         "show_projects": _handle_show_projects_action,
         "new_session": _handle_new_session_action,
         "new": _handle_new_session_action,  # alias for new_session
@@ -222,7 +223,7 @@ async def handle_action_callback(
     if handler:
         await handler(query, context)
     else:
-        user_id = get_user_id(update)
+        user_id = query.from_user.id
         await query.edit_message_text(
             await t(context, user_id, "callback_errors.action_not_implemented") + f": {action_type}"
         )
@@ -283,6 +284,58 @@ async def _handle_help_action(query, context: ContextTypes.DEFAULT_TYPE) -> None
 
     await query.edit_message_text(
         help_text, parse_mode=None, reply_markup=reply_markup
+    )
+
+
+async def _handle_full_help_action(query, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle full help action."""
+    user_id = query.from_user.id
+    help_text = await get_localized_text(context, user_id, "commands.help.title")
+
+    # Build comprehensive help text
+    full_help_text = (
+        "🤖 **Детальна довідка Claude Code Telegram Bot**\n\n"
+        "**Команди навігації:**\n"
+        "• `/ls` - Показати файли і директорії\n"
+        "• `/cd <директорія>` - Змінити директорію\n"
+        "• `/pwd` - Показати поточну директорію\n"
+        "• `/projects` - Показати доступні проекти\n\n"
+        "**Команди сесії:**\n"
+        "• `/new` - Почати нову сесію Claude\n"
+        "• `/continue` - Продовжити останню сесію\n"
+        "• `/status` - Показати статус сесії\n"
+        "• `/export` - Експорт історії сесії\n\n"
+        "**Спеціальні команди:**\n"
+        "• `/actions` - Показати швидкі дії\n"
+        "• `/git` - Команди Git репозиторію\n"
+        "• `/claude` - Авторизувати Claude CLI\n"
+        "• `/img` - Обробка зображень з Claude\n\n"
+        "**MCP команди:**\n"
+        "• `/mcpadd` - Додати MCP сервер\n"
+        "• `/mcplist` - Список MCP серверів\n"
+        "• `/mcpselect` - Вибрати активний контекст\n"
+        "• `/mcpask` - Запит з MCP контекстом\n"
+        "• `/mcpremove` - Видалити MCP сервер\n"
+        "• `/mcpstatus` - Статус MCP системи\n\n"
+        "**Планувальник:**\n"
+        "• `/schedules` - Управління задачами\n"
+        "• `/add_schedule` - Додати нову задачу\n\n"
+        "**Поради:**\n"
+        "• Надсилайте текстові файли для перегляду\n"
+        "• Використовуйте конкретні запити\n"
+        "• Перевіряйте статус командою `/status`"
+    )
+
+    # Get back button text
+    main_menu_text = await get_localized_text(context, user_id, "buttons.main_menu")
+
+    keyboard = [
+        [InlineKeyboardButton(main_menu_text, callback_data="action:main_menu")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await query.edit_message_text(
+        full_help_text, parse_mode=None, reply_markup=reply_markup
     )
 
 

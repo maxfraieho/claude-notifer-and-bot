@@ -96,8 +96,8 @@ def estimate_message_cost(event: Any) -> float:
     # Base cost for any message
     base_cost = 0.01
 
-    # Additional cost based on message length
-    length_cost = len(message_text) * 0.0001
+    # Additional cost based on message length (handle None case)
+    length_cost = len(message_text or "") * 0.0001
 
     # Higher cost for certain types of messages
     if (message and message.document) or (message and message.photo):

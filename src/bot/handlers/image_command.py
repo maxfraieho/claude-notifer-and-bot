@@ -16,8 +16,9 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from ...claude.facade import ClaudeIntegration
+from ...claude.exceptions import ClaudeError, ClaudeTimeoutError, ClaudeProcessError
 from ...config.settings import Settings
-from ...exceptions import ClaudeError, SecurityError
+from ...exceptions import SecurityError
 from ...localization.util import t, get_user_id, get_effective_message
 from ..features.image_processor import ImageProcessor, ProcessedImage
 from ..utils.error_handler import safe_user_error
@@ -37,14 +38,20 @@ class ImageCommandHandler:
 
     async def handle_img_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Handle /img command to start image processing session."""
+        logger.debug("handle_img_command called", update_type=type(update).__name__)
+
         user_id = get_user_id(update)
         message = get_effective_message(update)
-        
+
+        logger.debug("handle_img_command data", user_id=user_id, has_message=message is not None)
+
         if not user_id or not message:
+            logger.warning("handle_img_command: missing user_id or message")
             return
 
         # Check if image processing is enabled
         if not self.settings.enable_image_processing:
+            logger.warning("Image processing disabled in settings")
             error_text = await t(context, user_id, "errors.image_processing_disabled")
             await message.reply_text(error_text)
             return
@@ -53,7 +60,7 @@ class ImageCommandHandler:
 
         # Extract initial instruction from command
         message_text = message.text or ""
-        parts = message_text.split(maxsplit=1)
+        parts = message_text.split(maxsplit=1) if message_text else []
         initial_instruction = parts[1] if len(parts) > 1 else None
 
         # Create new image session
@@ -72,24 +79,36 @@ class ImageCommandHandler:
         )
 
         # Set user state for image collection
-        if context.user_data:
+        if context.user_data is not None:
             context.user_data['awaiting_images'] = True
             context.user_data['image_session_id'] = session.session_id
+        else:
+            context.user_data = {
+                'awaiting_images': True,
+                'image_session_id': session.session_id
+            }
 
         # Schedule session cleanup
         asyncio.create_task(self._cleanup_session_after_timeout(user_id, session.session_id))
 
     async def handle_image_upload(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Handle image uploads during an active session."""
+        logger.debug("handle_image_upload called", update_type=type(update).__name__)
+
         user_id = get_user_id(update)
         message = get_effective_message(update)
-        
+
+        logger.debug("handle_image_upload data", user_id=user_id, has_message=message is not None,
+                     user_in_sessions=user_id in self.active_sessions if user_id else False)
+
         if not user_id or not message or user_id not in self.active_sessions:
+            logger.warning("handle_image_upload: missing user_id/message or no active session")
             return
 
         session = self.active_sessions[user_id]
 
         if not session.is_active():
+            logger.warning("Session expired for user", user_id=user_id)
             await self._cleanup_session(user_id)
             error_text = await t(context, user_id, "commands.img.session_expired")
             await message.reply_text(error_text)
@@ -97,7 +116,21 @@ class ImageCommandHandler:
 
         try:
             # Process the uploaded image
-            photo = message.photo[-1] if message.photo and len(message.photo) > 0 else None
+            logger.debug("Processing image upload", has_photo=hasattr(message, 'photo') and message.photo is not None,
+                        photo_type=type(message.photo).__name__ if hasattr(message, 'photo') and message.photo else None)
+
+            photo = None
+            logger.debug("Photo check details",
+                        has_photo=bool(message.photo),
+                        photo_type=type(message.photo).__name__ if message.photo else None,
+                        photo_length=len(message.photo) if message.photo else 0,
+                        is_list=isinstance(message.photo, list) if message.photo else False,
+                        is_tuple=isinstance(message.photo, tuple) if message.photo else False)
+
+            if message.photo and (isinstance(message.photo, (list, tuple))) and len(message.photo) > 0:
+                photo = message.photo[-1]
+                logger.debug("Selected photo", photo_id=photo.file_id if photo else None)
+
             if photo:
                 processed_image = await self.image_processor.process_telegram_photo(
                     photo, 
@@ -137,9 +170,11 @@ class ImageCommandHandler:
         message_text = (message.text or "").strip().lower()
 
         if message_text in ['done', 'готово', 'процес', 'process']:
+            logger.info("User requested processing", user_id=user_id, images_count=len(session.images))
             if session.images:
                 await self._process_session_images(update, context, session)
             else:
+                logger.info("No images in session for processing", user_id=user_id)
                 no_images_text = await t(context, user_id, "commands.img.no_images")
                 await message.reply_text(no_images_text)
         elif message_text in ['cancel', 'скасувати', 'відміна']:
@@ -214,7 +249,7 @@ class ImageCommandHandler:
             # Format and send response
             from ..utils.formatting import ResponseFormatter
             formatter = ResponseFormatter(self.settings)
-            formatted_messages = formatter.format_claude_response(str(claude_response))
+            formatted_messages = formatter.format_claude_response(claude_response.content)
 
             # Delete progress message
             await progress_msg.delete()
@@ -222,17 +257,30 @@ class ImageCommandHandler:
             # Send responses
             for i, response_msg in enumerate(formatted_messages):
                 await message.reply_text(
-                    str(response_msg),
-                    parse_mode=None,
+                    response_msg.text,
+                    parse_mode=response_msg.parse_mode,
+                    reply_markup=response_msg.reply_markup,
                     reply_to_message_id=message.message_id if i == 0 else None
                 )
 
                 if i < len(formatted_messages) - 1:
                     await asyncio.sleep(0.5)
 
-        except Exception as e:
-            logger.error("Error processing images with Claude", error=str(e))
+        except ClaudeTimeoutError as e:
+            logger.error("Claude timeout processing images", error=str(e))
+            error_text = await t(context, user_id, "commands.img.error", error="Timeout - спробуйте пізніше")
+            await progress_msg.edit_text(error_text)
+        except ClaudeProcessError as e:
+            logger.error("Claude process error processing images", error=str(e))
+            error_text = await t(context, user_id, "commands.img.error", error="Claude CLI недоступний")
+            await progress_msg.edit_text(error_text)
+        except ClaudeError as e:
+            logger.error("Claude error processing images", error=str(e))
             error_text = await t(context, user_id, "commands.img.error", error=str(e))
+            await progress_msg.edit_text(error_text)
+        except Exception as e:
+            logger.error("Unexpected error processing images with Claude", error=str(e))
+            error_text = await t(context, user_id, "commands.img.error", error="Непередбачена помилка")
             await progress_msg.edit_text(error_text)
 
         finally:

@@ -60,12 +60,18 @@ class ClaudeIntegration:
         on_stream: Optional[Callable[[StreamUpdate], None]] = None,
     ) -> ClaudeResponse:
         """Run Claude Code command with full integration."""
+        # Add Ukrainian language instruction to prompt
+        enhanced_prompt = f"""ВАЖЛИВО: Відповідай ТІЛЬКИ українською мовою. Користувач з України і очікує відповіді українською.
+
+{prompt}
+
+ОБОВ'ЯЗКОВО відповідай українською мовою!"""
         logger.info(
             "Running Claude command",
             user_id=user_id,
             working_directory=str(working_directory),
             session_id=session_id,
-            prompt_length=len(prompt),
+            prompt_length=len(enhanced_prompt),
         )
 
         # Get or create session
@@ -147,7 +153,7 @@ class ClaudeIntegration:
             )
 
             response = await self._execute_with_fallback(
-                prompt=prompt,
+                prompt=enhanced_prompt,
                 working_directory=working_directory,
                 session_id=claude_session_id,
                 continue_session=should_continue,
@@ -252,24 +258,157 @@ class ClaudeIntegration:
                 "Please contact the administrator to enable image support."
             )
 
-        # Create enhanced prompt with image context
-        enhanced_prompt = await self._create_image_prompt(prompt, images)
+        # Try SDK first if available and supports images
+        if self.config.use_sdk and self.sdk_manager:
+            try:
+                return await self._run_command_with_images_sdk(
+                    prompt, images, working_directory, user_id, session_id, on_stream
+                )
+            except Exception as e:
+                logger.warning("SDK image processing failed, falling back to CLI", error=str(e))
+                self._sdk_failed_count += 1
 
-        # For now, we'll use the regular command execution with enhanced prompt
-        # In the future, we can add specific image attachment support to the CLI integration
-        response = await self.run_command(
-            prompt=enhanced_prompt,
-            working_directory=working_directory,
-            user_id=user_id,
-            session_id=session_id,
-            on_stream=on_stream,
+        # Fallback to CLI with enhanced prompt and image copying
+        return await self._run_command_with_images_cli(
+            prompt, images, working_directory, user_id, session_id, on_stream
         )
 
-        # Track image usage for this response
-        if response.session_id:
-            await self._log_image_usage(user_id, response.session_id, images)
+    async def _run_command_with_images_sdk(
+        self,
+        prompt: str,
+        images: List["ProcessedImage"],
+        working_directory: Path,
+        user_id: int,
+        session_id: Optional[str] = None,
+        on_stream: Optional[Callable[[StreamUpdate], None]] = None,
+    ) -> ClaudeResponse:
+        """Run command with images using SDK with PROPER image support."""
+        import time
 
-        return response
+        # Перевірка API ключа
+        if not self.config.anthropic_api_key:
+            raise ClaudeToolValidationError("ANTHROPIC_API_KEY not configured")
+
+        try:
+            import anthropic
+        except ImportError:
+            logger.error("anthropic module not available, falling back to CLI")
+            raise ClaudeToolValidationError("anthropic module not installed")
+
+        client = anthropic.Anthropic(api_key=self.config.anthropic_api_key)
+
+        # Будуємо контент з зображеннями
+        content = []
+
+        # Додаємо зображення спочатку
+        for image in images:
+            base64_data = await image.get_base64_data()
+            content.append({
+                "type": "image",
+                "source": {
+                    "type": "base64",
+                    "media_type": f"image/{image.format.lower()}",
+                    "data": base64_data
+                }
+            })
+
+        # Додаємо текстовий промпт
+        content.append({
+            "type": "text",
+            "text": prompt
+        })
+
+        logger.info("Sending images to Claude API", image_count=len(images), user_id=user_id)
+
+        try:
+            # Прямий виклик Anthropic Messages API
+            api_response = client.messages.create(
+                model=self.config.claude_model or "claude-3-5-sonnet-20241022",
+                max_tokens=4000,
+                messages=[{"role": "user", "content": content}]
+            )
+
+            # Конвертуємо в ClaudeResponse
+            response_text = "".join([
+                block.text for block in api_response.content
+                if hasattr(block, 'text')
+            ])
+
+            response = ClaudeResponse(
+                content=response_text,
+                session_id=session_id or f"sdk_img_{user_id}_{int(time.time())}",
+                success=True,
+                working_directory=working_directory
+            )
+
+            logger.info("Claude API response received",
+                       response_length=len(response_text),
+                       session_id=response.session_id)
+
+            # Track image usage
+            if response.session_id:
+                await self._log_image_usage(user_id, response.session_id, images)
+
+            return response
+
+        except anthropic.APIError as e:
+            logger.error("Anthropic API error", error=str(e), user_id=user_id)
+            raise ClaudeToolValidationError(f"API error: {str(e)}")
+        except Exception as e:
+            logger.error("SDK image processing failed", error=str(e), user_id=user_id)
+            raise ClaudeToolValidationError(f"Failed to process images: {str(e)}")
+
+    async def _run_command_with_images_cli(
+        self,
+        prompt: str,
+        images: List["ProcessedImage"],
+        working_directory: Path,
+        user_id: int,
+        session_id: Optional[str] = None,
+        on_stream: Optional[Callable[[StreamUpdate], None]] = None,
+    ) -> ClaudeResponse:
+        """Run command with images using CLI (copies images to working directory)."""
+        # Copy images to working directory for Claude CLI access
+        copied_images = []
+        try:
+            for i, image in enumerate(images):
+                # Create unique filename in working directory
+                image_filename = f"uploaded_image_{i+1}_{image.filename}"
+                target_path = working_directory / image_filename
+
+                # Copy image file
+                import shutil
+                shutil.copy2(image.file_path, target_path)
+                copied_images.append((target_path, image))
+                logger.debug("Copied image for CLI", src=str(image.file_path), dst=str(target_path))
+
+            # Create enhanced prompt with references to copied images
+            enhanced_prompt = await self._create_image_prompt_with_paths(prompt, copied_images)
+
+            # Run command with CLI
+            response = await self.run_command(
+                prompt=enhanced_prompt,
+                working_directory=working_directory,
+                user_id=user_id,
+                session_id=session_id,
+                on_stream=on_stream,
+            )
+
+            # Track image usage
+            if response.session_id:
+                await self._log_image_usage(user_id, response.session_id, images)
+
+            return response
+
+        finally:
+            # Clean up copied images
+            for copied_path, _ in copied_images:
+                try:
+                    if copied_path.exists():
+                        copied_path.unlink()
+                        logger.debug("Cleaned up copied image", path=str(copied_path))
+                except Exception as e:
+                    logger.warning("Failed to cleanup copied image", path=str(copied_path), error=str(e))
 
     async def _create_image_prompt(
         self, 
@@ -287,19 +426,64 @@ class ClaudeIntegration:
                 info += f" - Caption: {img.caption}"
             image_info.append(info)
 
-        enhanced_prompt = f"""{prompt}
+        enhanced_prompt = f"""ВАЖЛИВО: Відповідай ТІЛЬКИ українською мовою. Користувач з України і очікує відповіді українською.
 
-I'm providing you with {len(images)} image(s) for analysis:
+{prompt}
+
+Я надаю тобі {len(images)} зображень для аналізу:
 {chr(10).join(image_info)}
 
-Please analyze these images in the context of my request above. Consider:
-1. The content and context of each image
-2. Any text, code, or UI elements visible
-3. Technical aspects if relevant (architecture, diagrams, code snippets)
-4. Relationships between images if multiple
-5. Specific actionable recommendations
+Будь ласка, проаналізуй ці зображення в контексті мого запиту вище. Врахуй:
+1. Зміст і контекст кожного зображення
+2. Будь-який текст, код або елементи UI, що видимі
+3. Технічні аспекти, якщо релевантні (архітектура, діаграми, фрагменти коду)
+4. Зв'язки між зображеннями, якщо їх кілька
+5. Конкретні практичні рекомендації
 
-Note: While I cannot directly attach the image files to this prompt, please provide your best analysis and recommendations based on the context and filenames provided."""
+Примітка: Хоча я не можу безпосередньо прикріпити файли зображень до цього промпту, будь ласка, надай свій найкращий аналіз і рекомендації на основі наданого контексту і назв файлів.
+
+ОБОВ'ЯЗКОВО відповідай українською мовою!"""
+
+        return enhanced_prompt
+
+    async def _create_image_prompt_with_paths(
+        self,
+        prompt: str,
+        copied_images: List[tuple]  # (Path, ProcessedImage)
+    ) -> str:
+        """Create enhanced prompt with image file paths for CLI access."""
+        if not copied_images:
+            return prompt
+
+        image_info = []
+        image_paths = []
+        for i, (path, img) in enumerate(copied_images, 1):
+            info = f"Image {i}: {path.name} ({img.format}, {img.dimensions[0]}x{img.dimensions[1]}, {img.file_size / 1024:.1f}KB)"
+            if img.caption:
+                info += f" - Caption: {img.caption}"
+            image_info.append(info)
+            image_paths.append(str(path.name))
+
+        enhanced_prompt = f"""ВАЖЛИВО: Відповідай ТІЛЬКИ українською мовою. Користувач з України і очікує відповіді українською.
+
+{prompt}
+
+Я надаю тобі {len(copied_images)} зображень для аналізу. Файли зображень доступні в робочій директорії:
+{chr(10).join(image_info)}
+
+Ти можеш використовувати Read tool для перегляду цих зображень:
+{', '.join(image_paths)}
+
+Будь ласка, проаналізуй ці зображення в контексті мого запиту вище. Врахуй:
+1. Зміст і контекст кожного зображення
+2. Будь-який текст, код або елементи UI, що видимі
+3. Технічні аспекти, якщо релевантні (архітектура, діаграми, фрагменти коду)
+4. Зв'язки між зображеннями, якщо їх кілька
+5. Конкретні практичні рекомендації
+
+Використай Read tool для перегляду зображень і надай детальний аналіз.
+
+ОБОВ'ЯЗКОВО відповідай українською мовою!"""
 
         return enhanced_prompt
 

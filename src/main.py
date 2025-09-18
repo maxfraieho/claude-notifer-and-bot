@@ -3,6 +3,7 @@
 import argparse
 import asyncio
 import logging
+import os
 import signal
 import sys
 from pathlib import Path
@@ -78,6 +79,40 @@ def setup_logging(debug: bool = False) -> None:
         wrapper_class=structlog.stdlib.BoundLogger,
         cache_logger_on_first_use=True,
     )
+
+
+def acquire_bot_lock() -> None:
+    """Ensure only one bot instance is running."""
+    lock_file = Path("/tmp/claude_bot.lock")
+
+    if lock_file.exists():
+        try:
+            with open(lock_file, "r") as f:
+                old_pid = int(f.read().strip())
+
+            # Check if process is still running
+            try:
+                os.kill(old_pid, 0)  # Signal 0 just checks if process exists
+                print(f"❌ Bot already running with PID {old_pid}")
+                print("Stop the existing instance first or wait for it to finish.")
+                sys.exit(1)
+            except OSError:
+                # Process doesn't exist, remove stale lock file
+                lock_file.unlink()
+        except (ValueError, FileNotFoundError):
+            # Invalid or missing lock file, remove it
+            lock_file.unlink(missing_ok=True)
+
+    # Create new lock file with current PID
+    with open(lock_file, "w") as f:
+        f.write(str(os.getpid()))
+
+    # Register cleanup function
+    def cleanup_lock():
+        lock_file.unlink(missing_ok=True)
+
+    import atexit
+    atexit.register(cleanup_lock)
 
 
 def parse_args() -> argparse.Namespace:
@@ -283,6 +318,10 @@ async def run_application(app: Dict[str, Any]) -> None:
 async def main() -> None:
     """Main application entry point."""
     args = parse_args()
+
+    # Acquire process lock to prevent multiple instances
+    acquire_bot_lock()
+
     setup_logging(debug=args.debug)
 
     logger = structlog.get_logger()
