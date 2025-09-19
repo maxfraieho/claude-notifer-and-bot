@@ -181,6 +181,12 @@ class ImageCommandHandler:
             await self._cleanup_session(user_id)
             cancelled_text = await t(context, user_id, "commands.img.cancelled")
             await message.reply_text(cancelled_text)
+        elif message_text in ['запит', 'query', 'fix', 'фікс']:
+            # Set special mode for UI/code improvement requests
+            session.set_ui_fix_mode(True)
+            session.set_instruction(message.text)
+            fix_mode_text = await t(context, user_id, "commands.img.fix_mode_activated")
+            await message.reply_text(fix_mode_text)
         else:
             # Update session instruction
             session.set_instruction(message.text)
@@ -246,22 +252,47 @@ class ImageCommandHandler:
             if context.user_data:
                 context.user_data['claude_session_id'] = claude_response.session_id
 
+            # Check if response is empty
+            if not claude_response.content or not claude_response.content.strip():
+                logger.warning("Empty response from Claude", user_id=user_id)
+                error_text = await t(context, user_id, "commands.img.error", error="Claude не повернув відповідь")
+                await self._safe_edit_or_send_error(progress_msg, message, error_text)
+                return
+
             # Format and send response
             from ..utils.formatting import ResponseFormatter
             formatter = ResponseFormatter(self.settings)
             formatted_messages = formatter.format_claude_response(claude_response.content)
 
-            # Delete progress message
-            await progress_msg.delete()
+            # Check if formatted messages are empty
+            if not formatted_messages or all(not msg.text.strip() for msg in formatted_messages):
+                logger.warning("Empty formatted messages", user_id=user_id)
+                error_text = await t(context, user_id, "commands.img.error", error="Відповідь не вдалося відформатувати")
+                await self._safe_edit_or_send_error(progress_msg, message, error_text)
+                return
+
+            # Delete progress message safely
+            try:
+                await progress_msg.delete()
+            except Exception as e:
+                logger.warning("Could not delete progress message", error=str(e))
 
             # Send responses
             for i, response_msg in enumerate(formatted_messages):
-                await message.reply_text(
-                    response_msg.text,
-                    parse_mode=response_msg.parse_mode,
-                    reply_markup=response_msg.reply_markup,
-                    reply_to_message_id=message.message_id if i == 0 else None
-                )
+                try:
+                    await message.reply_text(
+                        response_msg.text,
+                        parse_mode=response_msg.parse_mode,
+                        reply_markup=response_msg.reply_markup,
+                        reply_to_message_id=message.message_id if i == 0 else None
+                    )
+                except Exception as e:
+                    logger.error("Failed to send response message", error=str(e), message_index=i)
+                    # Try to send a fallback message
+                    try:
+                        await message.reply_text(f"Частина відповіді #{i+1}: {response_msg.text[:1000]}")
+                    except:
+                        pass
 
                 if i < len(formatted_messages) - 1:
                     await asyncio.sleep(0.5)
@@ -269,19 +300,19 @@ class ImageCommandHandler:
         except ClaudeTimeoutError as e:
             logger.error("Claude timeout processing images", error=str(e))
             error_text = await t(context, user_id, "commands.img.error", error="Timeout - спробуйте пізніше")
-            await progress_msg.edit_text(error_text)
+            await self._safe_edit_or_send_error(progress_msg, message, error_text)
         except ClaudeProcessError as e:
             logger.error("Claude process error processing images", error=str(e))
             error_text = await t(context, user_id, "commands.img.error", error="Claude CLI недоступний")
-            await progress_msg.edit_text(error_text)
+            await self._safe_edit_or_send_error(progress_msg, message, error_text)
         except ClaudeError as e:
             logger.error("Claude error processing images", error=str(e))
             error_text = await t(context, user_id, "commands.img.error", error=str(e))
-            await progress_msg.edit_text(error_text)
+            await self._safe_edit_or_send_error(progress_msg, message, error_text)
         except Exception as e:
             logger.error("Unexpected error processing images with Claude", error=str(e))
             error_text = await t(context, user_id, "commands.img.error", error="Непередбачена помилка")
-            await progress_msg.edit_text(error_text)
+            await self._safe_edit_or_send_error(progress_msg, message, error_text)
 
         finally:
             # Clean up session
@@ -298,7 +329,81 @@ class ImageCommandHandler:
                 info += f" (Caption: {img.caption})"
             image_info.append(info)
 
-        prompt = f"""{base_instruction}
+        if session.ui_fix_mode:
+            prompt = f"""{base_instruction}
+
+I'm providing you with {len(session.images)} screenshot(s) showing interface/code issues:
+{chr(10).join(image_info)}
+
+**ВАЖЛИВИЙ КОНТЕКСТ:**
+Ви Claude Code з повними можливостями розробки. Ви можете аналізувати скріншоти та модифікувати вихідний код для виправлення проблем.
+
+**Ваші можливості:**
+- Повний доступ до інструментів Read, Write, Edit, MultiEdit, Bash, Grep, Glob
+- Ви можете працювати з БУДЬ-ЯКОЮ кодовою базою в дозволеній директорії
+- Ви можете модифікувати файли, запускати тести, комітити зміни
+- Ви можете аналізувати проблеми UI та впроваджувати виправлення
+
+**ДЕТАЛЬНИЙ АНАЛІЗ - ОБОВ'ЯЗКОВО:**
+1. **Проаналізуйте скріншот(и) і детально опишіть ВСІ помічені проблеми:**
+   - Які конкретно елементи інтерфейсу мають проблеми?
+   - Що саме неправильно відображається?
+   - Які тексти, кнопки, елементи відсутні або некоректні?
+   - Чи є проблеми з локалізацією (мова інтерфейсу)?
+
+2. **Визначте технічні причини проблем:**
+   - Які файли вірогідно містять проблемний код?
+   - Які компоненти/модулі потребують змін?
+   - Чи це проблема коду, конфігурації, чи даних?
+
+3. **Запропонуйте КОНКРЕТНИЙ план виправлення:**
+   - Перелічіть ВСІ файли які потрібно змінити
+   - Опишіть ЩО саме потрібно змінити в кожному файлі
+   - Вкажіть порядок дій для впровадження змін
+
+4. **ОБОВ'ЯЗКОВО запитайте дозвіл перед впровадженням:**
+   - "Чи можу я почати впровадження цих змін?"
+   - "Чи потрібні додаткові уточнення перед початком роботи?"
+
+**ФОРМАТ ВІДПОВІДІ:**
+```
+## 🔍 АНАЛІЗ ПРОБЛЕМИ
+
+[детальний опис всіх помічених проблем]
+
+## ⚙️ ТЕХНІЧНІ ПРИЧИНИ
+
+[пояснення причин проблем]
+
+## 📋 ПЛАН ВИПРАВЛЕННЯ
+
+### Файли для зміни:
+1. `файл1.py` - [опис змін]
+2. `файл2.js` - [опис змін]
+
+### Порядок дій:
+1. [крок 1]
+2. [крок 2]
+
+## ❓ ЗАПИТ НА ДОЗВІЛ
+
+Чи можу я почати впровадження цих змін? Чи потрібні додаткові уточнення?
+```
+
+**Що ви можете виправити:**
+- Проблеми UI/інтерфейсу в веб-, мобільних, десктопних додатках
+- Помилки коду показані на скріншотах
+- Проблеми локалізації та перекладів
+- Неконсистентність дизайну
+- Повідомлення про помилки та UX
+- Проблеми продуктивності
+- Проблеми конфігурації
+- Будь-які проблеми коду видимі на скріншотах
+
+ВАЖЛИВО: Спочатку дайте ДЕТАЛЬНИЙ аналіз та план, потім запитайте дозвіл на впровадження!
+"""
+        else:
+            prompt = f"""{base_instruction}
 
 I'm providing you with {len(session.images)} image(s):
 {chr(10).join(image_info)}
@@ -344,9 +449,20 @@ Please analyze these images and help me with the request above. Consider:
         """Clean up session after timeout."""
         await asyncio.sleep(self.session_timeout)
 
-        if (user_id in self.active_sessions and 
+        if (user_id in self.active_sessions and
             self.active_sessions[user_id].session_id == session_id):
             await self._cleanup_session(user_id)
+
+    async def _safe_edit_or_send_error(self, progress_msg, message, error_text: str) -> None:
+        """Safely edit progress message or send new error message."""
+        try:
+            await progress_msg.edit_text(error_text)
+        except Exception as e:
+            logger.warning("Could not edit progress message, sending new message", error=str(e))
+            try:
+                await message.reply_text(error_text)
+            except Exception as e2:
+                logger.error("Could not send error message", error=str(e2))
 
 
 class ImageSession:
@@ -360,6 +476,7 @@ class ImageSession:
         self.images: List[ProcessedImage] = []
         self.created_at = asyncio.get_event_loop().time()
         self.timeout = timeout
+        self.ui_fix_mode = False
 
     def add_image(self, image: ProcessedImage) -> None:
         """Add processed image to session."""
@@ -368,6 +485,10 @@ class ImageSession:
     def set_instruction(self, instruction: str) -> None:
         """Set or update instruction."""
         self.instruction = instruction
+
+    def set_ui_fix_mode(self, enabled: bool) -> None:
+        """Enable or disable UI fix mode."""
+        self.ui_fix_mode = enabled
 
     def is_active(self) -> bool:
         """Check if session is still active."""

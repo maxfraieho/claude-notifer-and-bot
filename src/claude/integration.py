@@ -258,6 +258,7 @@ class ClaudeProcessManager:
 
                 # Check for final result
                 if msg.get("type") == "result":
+                    logger.debug("Found result message", message_keys=list(msg.keys()), message_sample=str(msg)[:500])
                     result = msg
 
             except json.JSONDecodeError as e:
@@ -518,6 +519,27 @@ class ClaudeProcessManager:
 
     def _parse_result(self, result: Dict, messages: List[Dict]) -> ClaudeResponse:
         """Parse final result message."""
+        # Debug: log the result structure
+        logger.debug("Parsing Claude result", result_keys=list(result.keys()), result_content=result.get("result", "NO_RESULT"))
+
+        # Extract actual content from messages if result field is empty
+        content = result.get("result", "")
+        if not content:
+            # Look for assistant messages with actual content
+            for msg in reversed(messages):  # Start from the last message
+                if msg.get("type") == "assistant":
+                    message = msg.get("message", {})
+                    if isinstance(message.get("content"), list):
+                        for block in message["content"]:
+                            if block.get("type") == "text" and block.get("text"):
+                                content = block["text"]
+                                break
+                    elif isinstance(message.get("content"), str):
+                        content = message["content"]
+
+                    if content:
+                        break
+
         # Extract tools used from messages
         tools_used = []
         for msg in messages:
@@ -532,14 +554,24 @@ class ClaudeProcessManager:
                             }
                         )
 
+        # Check if this is an error due to max turns
+        is_error = result.get("is_error", False)
+        error_type = result.get("subtype") if is_error else None
+
+        # Handle max_turns specially - it's not really an error, just a limit
+        if result.get("subtype") == "error_max_turns":
+            logger.info("Claude reached max turns limit", num_turns=result.get("num_turns", 0))
+            if not content:
+                content = "Claude досяг максимальної кількості ходів, але завершив обробку."
+
         return ClaudeResponse(
-            content=result.get("result", ""),
+            content=content,
             session_id=result.get("session_id", ""),
-            cost=result.get("cost_usd", 0.0),
+            cost=result.get("total_cost_usd", result.get("cost_usd", 0.0)),
             duration_ms=result.get("duration_ms", 0),
             num_turns=result.get("num_turns", 0),
-            is_error=result.get("is_error", False),
-            error_type=result.get("subtype") if result.get("is_error") else None,
+            is_error=is_error,
+            error_type=error_type,
             tools_used=tools_used,
         )
 

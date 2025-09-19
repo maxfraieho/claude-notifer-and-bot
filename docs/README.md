@@ -1,128 +1,270 @@
-# Claude Code Telegram Bot - MCP Integration
+# 📚 Claude Code Telegram Bot Documentation
 
-## 📚 Документація MCP системи
+Welcome to the comprehensive documentation for Claude Code Telegram Bot - a sophisticated remote access system for Claude CLI functionality through Telegram.
 
-### Користувацькі інструкції
+## 📖 Documentation Overview
 
-1. **[MCP User Guide](./MCP_USER_GUIDE.md)** - Повна інструкція користувача
-   - Що таке MCP і навіщо воно потрібно
-   - Доступні типи серверів (GitHub, FileSystem, PostgreSQL, тощо)
-   - Детальні приклади всіх команд
-   - Робочі процеси та поради
+This documentation provides complete information for users, developers, and system administrators working with the Claude Code Telegram Bot.
 
-2. **[MCP Examples](./MCP_EXAMPLES.md)** - Практичні приклади
-   - Готові сценарії для різних задач
-   - Комплексні workflow з кількома серверами
-   - Автоматизація рутинних процесів
-   - Приклади для DevOps, аналітики, розробки
+### 🚀 Quick Links
 
-3. **[MCP Technical Guide](./MCP_TECHNICAL_GUIDE.md)** - Технічна документація
-   - Архітектура системи
-   - API та структури даних
-   - Розширення функціональності
-   - Налагодження та тестування
+| Document | Purpose | Audience |
+|----------|---------|----------|
+| [**User Guide**](USER_GUIDE.md) | Complete user manual with all commands | End Users |
+| [**Image Processing Guide**](IMAGE_PROCESSING_GUIDE.md) | Detailed `/img` command and Code Fix Mode | Users, Developers |
+| [**MCP Integration Guide**](MCP_INTEGRATION_GUIDE.md) | Model Context Protocol usage and setup | Advanced Users, Admins |
+| [**Architecture Audit**](ARCHITECTURE_AUDIT.md) | Technical architecture analysis | Developers, Architects |
 
-## 🚀 Швидкий старт
+### 📋 What's New
 
-### Основні команди MCP
+#### ✨ Recent Features
+- **🔧 Code Fix Mode** - Revolutionary screenshot-based code fixing
+- **🌍 Full Localization** - Complete Ukrainian language support
+- **🔌 MCP Integration** - Model Context Protocol for enhanced capabilities
+- **📅 Scheduled Tasks** - Automated monitoring and operations
+- **⚡ Enhanced Performance** - Improved response times and reliability
 
-```bash
-/mcpadd        # Додати новий MCP сервер
-/mcplist       # Показати всі сервери
-/mcpselect     # Вибрати активний контекст
-/mcpask        # Запит з MCP контекстом
-/mcpremove     # Видалити сервер
-/mcpstatus     # Статус MCP системи
+## 🎯 Getting Started
+
+### For New Users
+1. **Start here:** [User Guide](USER_GUIDE.md) - Complete walkthrough of all features
+2. **Learn image processing:** [Image Processing Guide](IMAGE_PROCESSING_GUIDE.md) - Advanced visual analysis
+3. **Explore MCP:** [MCP Integration Guide](MCP_INTEGRATION_GUIDE.md) - Extended capabilities
+
+### For Developers
+1. **Architecture overview:** [Architecture Audit](ARCHITECTURE_AUDIT.md) - Technical deep dive
+2. **Configuration:** Check `src/config/settings.py` for all options
+3. **Development setup:** See main `README.md` for development workflow
+
+### For System Administrators
+1. **Security model:** Review security sections in [Architecture Audit](ARCHITECTURE_AUDIT.md)
+2. **Deployment:** Docker and configuration guides in main documentation
+3. **Monitoring:** Performance and logging information in architecture docs
+
+## 🎯 Feature Categories
+
+### 🤖 Core Bot Features
+- **Session Management** - Start, continue, and manage Claude conversations
+- **File Navigation** - Browse directories, manage files, project switching
+- **Git Integration** - Repository status, branch management, change tracking
+- **Authentication** - Secure access control and user management
+
+### 📸 Image Processing
+- **Multi-image Analysis** - Batch processing with Claude AI
+- **Code Fix Mode** - Revolutionary screenshot-based debugging
+- **Visual Recognition** - Document analysis, UI review, technical diagrams
+- **Batch Operations** - Process multiple images with context
+
+### 🔌 Advanced Integration
+- **MCP Protocol** - Extended capabilities through external tools
+- **Dual Claude Modes** - CLI subprocess and Python SDK integration
+- **Scheduled Tasks** - Automated operations and monitoring
+- **Multi-language** - Ukrainian and English localization
+
+### 🔒 Security & Administration
+- **Multi-layer Authentication** - Whitelist and token-based access
+- **Rate Limiting** - Smart usage controls and cost management
+- **Audit Logging** - Comprehensive activity tracking
+- **Permission System** - Granular access controls
+
+## 📊 System Architecture
+
+### High-Level Architecture
+```
+┌─────────────────────────────────────────┐
+│           Telegram Bot API              │
+├─────────────────────────────────────────┤
+│              Bot Layer                  │ ← Handlers, Middleware
+├─────────────────────────────────────────┤
+│           Claude Integration            │ ← CLI/SDK, Sessions
+├─────────────────────────────────────────┤
+│           Storage & Security            │ ← Database, Auth
+├─────────────────────────────────────────┤
+│         Infrastructure Layer            │ ← Config, Logging
+└─────────────────────────────────────────┘
 ```
 
-### Приклад використання
+### Key Components
+- **Bot Layer** - Telegram interface, commands, middleware
+- **Claude Integration** - Dual-mode execution with session management
+- **Storage Layer** - SQLite database with repository patterns
+- **Security Layer** - Authentication, authorization, rate limiting
+- **MCP Layer** - Model Context Protocol integration
 
+## 🔧 Configuration
+
+### Environment Variables
 ```bash
-# 1. Додайте GitHub сервер
-/mcpadd github
+# Required
+TELEGRAM_BOT_TOKEN=your_bot_token
+TELEGRAM_BOT_USERNAME=your_bot_username
+APPROVED_DIRECTORY=/app/target_project
 
-# 2. Налаштуйте сервер (введіть GitHub токен)
-# Токен отримайте на: https://github.com/settings/tokens
+# Security
+ALLOWED_USERS=123456789,987654321
+ENABLE_TOKEN_AUTH=true
+AUTH_TOKEN_SECRET=your_secret
 
-# 3. Активуйте контекст
-/mcpselect your-github-server
-
-# 4. Задайте питання
-/mcpask Покажи останні pull requests в моєму репозиторії
+# Features
+ENABLE_IMAGE_PROCESSING=true
+ENABLE_MCP=false
+ENABLE_LOCALIZATION=true
 ```
 
-## 🛠️ Доступні MCP сервери
+### Feature Flags
+```bash
+# Core features
+ENABLE_FILE_UPLOADS=true
+ENABLE_GIT_INTEGRATION=true
+ENABLE_QUICK_ACTIONS=true
 
-| Тип сервера | Призначення | Налаштування |
-|-------------|-------------|--------------|
-| **GitHub** | Доступ до репозиторіїв, issues, PR | GitHub Personal Access Token |
-| **FileSystem** | Читання/запис файлів | Шлях до дозволеної директорії |
-| **PostgreSQL** | Запити до PostgreSQL БД | Connection string |
-| **SQLite** | Робота з SQLite файлами | Шлях до .db файлу |
-| **Git** | Git операції | Шлях до git репозиторію |
-| **Playwright** | Веб-автоматизація | Не потрібна |
+# Advanced features
+CLAUDE_AVAILABILITY_MONITOR=true
+ENABLE_SESSION_EXPORT=true
+ENABLE_CONVERSATION_ENHANCEMENT=true
+```
 
-## 💡 Корисні сценарії
+## 🚨 Troubleshooting
 
-### 📊 Аналіз проекту
-Комбінуйте FileSystem + Git + GitHub для повного аналізу проекту
+### Common Issues
 
-### 🔍 Дослідження БД
-Використовуйте PostgreSQL/SQLite для аналізу даних та пошуку аномалій
+#### Authentication Problems
+```
+Error: "Access denied"
+Solution: Check ALLOWED_USERS configuration
+```
 
-### 🌐 Аудит веб-сайту
-Playwright для комплексної перевірки сайтів на доступність та безпеку
+#### Claude CLI Issues
+```
+Error: "Claude CLI недоступний"
+Solution: Use /claude command to re-authenticate
+```
 
-### 📈 Бізнес-аналітика
-PostgreSQL + FileSystem для створення звітів та візуалізацій
+#### Rate Limiting
+```
+Error: "Rate limit exceeded"
+Solution: Wait for rate limit window to reset
+```
 
-## 🔧 Технічні деталі
+#### Image Processing
+```
+Error: "Image processing disabled"
+Solution: Set ENABLE_IMAGE_PROCESSING=true
+```
 
-### Архітектура
-- **MCPManager** - управління серверами
-- **MCPContextHandler** - обробка контекстних запитів
-- **ServerConfigRegistry** - шаблони конфігурацій
-- **SQLite база даних** - зберігання налаштувань
+### Debug Mode
+```bash
+python -m src.main --debug
+```
 
-### Безпека
-- Валідація всіх вхідних даних
-- Ізоляція між користувачами
-- Обмеження доступу до файлів
-- Аудит всіх операцій
+### Getting Help
+- **In-bot:** `/help` command
+- **Status:** `/status` for current session info
+- **Documentation:** This docs folder
+- **Logs:** Enable debug mode for detailed information
 
-### Продуктивність
-- Кешування статусів серверів
-- Асинхронна обробка запитів
-- Пул з'єднань до БД
-- Оптимізовані SQL запити
+## 📈 Performance & Monitoring
 
-## 📝 Додаткова інформація
+### Key Metrics
+- **Response Time** - Average command response time
+- **Session Count** - Active concurrent sessions
+- **Rate Limits** - Usage tracking and limits
+- **Error Rates** - System reliability metrics
 
-### Обмеження
-- Максимум 10 серверів на користувача
-- Час відповіді до 60 секунд
-- Розмір запиту до 4000 символів
+### Monitoring Tools
+- **Structured Logging** - Comprehensive system logs
+- **Health Checks** - Automated system monitoring
+- **Usage Analytics** - User activity and feature usage
+- **Cost Tracking** - Claude API usage monitoring
 
-### Підтримка
-- Всі команди мають українську локалізацію
-- Інтерактивні майстри налаштування
-- Детальні повідомлення про помилки
-- Контекстні підказки
+## 🔮 Roadmap
 
-### Моніторинг
-- Статистика використання
-- Аналіз успішності запитів
-- Вартість операцій
-- Історія активності
+### Current Development (Q4 2024)
+- **Enhanced Testing** - Comprehensive test coverage
+- **Performance Optimization** - Caching and optimization
+- **Monitoring Dashboard** - Grafana integration
+
+### Upcoming Features (2025)
+- **Video Processing** - Support for video file analysis
+- **Real-time Collaboration** - Multi-user session support
+- **Advanced Analytics** - Usage insights and reporting
+- **Mobile App** - Dedicated mobile application
+
+### Long-term Vision
+- **Multi-tenant Architecture** - Organization and team support
+- **Plugin Ecosystem** - Third-party plugin marketplace
+- **AI Enhancement** - Advanced AI-powered features
+- **Enterprise Features** - SSO, RBAC, compliance
+
+## 🤝 Contributing
+
+### Development Workflow
+```bash
+# Setup development environment
+poetry install --with dev
+
+# Code quality checks
+poetry run black src/
+poetry run isort src/
+poetry run mypy src/
+
+# Testing
+poetry run pytest
+```
+
+### Documentation Updates
+- Update relevant documentation for any feature changes
+- Add examples for new functionality
+- Update configuration references
+- Keep troubleshooting guides current
+
+## 📞 Support
+
+### Documentation Hierarchy
+1. **Quick answers:** In-bot `/help` command
+2. **User questions:** [User Guide](USER_GUIDE.md)
+3. **Technical issues:** [Architecture Audit](ARCHITECTURE_AUDIT.md)
+4. **Advanced features:** Feature-specific guides
+
+### Bug Reports
+- Enable debug mode for detailed logs
+- Include configuration (without secrets)
+- Provide reproduction steps
+- Include error messages and logs
+
+## 📄 License & Legal
+
+This project follows standard open source practices with comprehensive documentation and transparent architecture.
+
+### Security Notice
+- Review security sections before production deployment
+- Follow configuration guidelines for production use
+- Enable appropriate monitoring and logging
+- Regular security updates recommended
 
 ---
 
-## 🎯 Корисні посилання
+## 📚 Document Index
 
-- [GitHub Tokens](https://github.com/settings/tokens) - створення токенів
-- [PostgreSQL Connection Strings](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING) - формат підключення
-- [Model Context Protocol](https://modelcontextprotocol.io/) - офіційна документація MCP
+### User Documentation
+- [**User Guide**](USER_GUIDE.md) - Complete user manual
+- [**Image Processing Guide**](IMAGE_PROCESSING_GUIDE.md) - Visual analysis features
+- [**MCP Integration Guide**](MCP_INTEGRATION_GUIDE.md) - Advanced integrations
 
----
+### Technical Documentation
+- [**Architecture Audit**](ARCHITECTURE_AUDIT.md) - System design and analysis
+- Main `README.md` - Development and deployment
+- `CLAUDE.md` - Development guidelines and commands
 
-**Створено з ❤️ для ефективної роботи з Claude через Telegram**
+### Quick Reference
+| Feature | Command | Documentation |
+|---------|---------|---------------|
+| Start session | `/new` | User Guide |
+| Image analysis | `/img` | Image Processing Guide |
+| Code fixing | `/img` → `запит` | Image Processing Guide |
+| MCP servers | `/mcpadd` | MCP Integration Guide |
+| Git operations | `/git` | User Guide |
+| System status | `/status` | User Guide |
+
+**Last Updated:** September 2025
+**Version:** 0.1.0

@@ -90,16 +90,14 @@ async def handle_callback_query(
         )
 
         try:
+            user_id = get_user_id(update)
             await query.edit_message_text(
-                "❌ **Error Processing Action**\n\n"
-                "An error occurred while processing your request.\n"
-                "Please try again or use text commands."
+                await t(context, user_id, "errors.unexpected_error")
             )
         except Exception:
             # If we can't edit the message, send a new one
             await query.message.reply_text(
-                "❌ **Error Processing Action**\n\n"
-                "An error occurred while processing your request."
+                await t(context, user_id, "errors.unexpected_error")
             )
 
 
@@ -135,7 +133,9 @@ async def handle_cd_callback(
                 str(new_path), settings.approved_directory
             )
             if not valid:
-                await query.edit_message_text(f"❌ **Access Denied**\n\n{error}")
+                await query.edit_message_text(
+                    await t(context, user_id, "errors_command.access_denied", error=error)
+                )
                 return
             # Use the validated path
             new_path = resolved_path
@@ -143,8 +143,7 @@ async def handle_cd_callback(
         # Check if directory exists
         if not new_path.exists() or not new_path.is_dir():
             await query.edit_message_text(
-                f"❌ **Directory Not Found**\n\n"
-                f"The directory `{project_name}` no longer exists or is not accessible."
+                await t(context, user_id, "errors_command.directory_not_found", path=project_name)
             )
             return
 
@@ -174,9 +173,7 @@ async def handle_cd_callback(
         reply_markup = InlineKeyboardMarkup(keyboard)
 
         await query.edit_message_text(
-            f"✅ **Directory Changed**\n\n"
-            f"📂 Current directory: `{relative_path}/`\n\n"
-            f"🔄 Claude session cleared. You can now start coding in this directory!",
+            await t(context, user_id, "commands_extended.cd.directory_changed", relative_path=relative_path),
             parse_mode=None,
             reply_markup=reply_markup,
         )
@@ -188,7 +185,9 @@ async def handle_cd_callback(
             )
 
     except Exception as e:
-        await query.edit_message_text(f"❌ **Error changing directory**\n\n{str(e)}")
+        await query.edit_message_text(
+            await t(context, user_id, "errors_command.error_changing_directory", error=str(e))
+        )
 
         if audit_logger:
             await audit_logger.log_command(
@@ -253,27 +252,41 @@ async def handle_confirm_callback(
 
 async def _handle_help_action(query, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle help action."""
-    help_text = (
-        "🤖 **Quick Help**\n\n"
-        "**Navigation:**\n"
-        "• `/ls` - List files\n"
-        "• `/cd <dir>` - Change directory\n"
-        "• `/projects` - Show projects\n\n"
-        "**Sessions:**\n"
-        "• `/new` - New Claude session\n"
-        "• `/status` - Session status\n\n"
-        "**Tips:**\n"
-        "• Send any text to interact with Claude\n"
-        "• Upload files for code review\n"
-        "• Use buttons for quick actions\n\n"
-        "Use `/help` for detailed help."
+    user_id = query.from_user.id
+
+    # Get localized help text
+    help_text = await get_localized_text(context, user_id, "help.quick_help_title")
+    navigation_text = await get_localized_text(context, user_id, "help.navigation_section")
+    sessions_text = await get_localized_text(context, user_id, "help.sessions_section")
+    tips_text = await get_localized_text(context, user_id, "help.tips_section")
+
+    # Get individual tip texts
+    send_text_tip = await get_localized_text(context, user_id, "help.send_text_tip")
+    upload_files_tip = await get_localized_text(context, user_id, "help.upload_files_tip")
+    use_buttons_tip = await get_localized_text(context, user_id, "help.use_buttons_tip")
+    detailed_help_note = await get_localized_text(context, user_id, "help.detailed_help_note")
+
+    # Build the help text
+    full_help_content = (
+        f"{help_text}\n\n"
+        f"{navigation_text}\n"
+        f"• `/ls` - {await get_localized_text(context, user_id, 'commands.ls.title')}\n"
+        f"• `/cd <dir>` - {await get_localized_text(context, user_id, 'commands.cd.usage')}\n"
+        f"• `/projects` - {await get_localized_text(context, user_id, 'commands.projects.title')}\n\n"
+        f"{sessions_text}\n"
+        f"• `/new` - {await get_localized_text(context, user_id, 'buttons.new_session')}\n"
+        f"• `/status` - {await get_localized_text(context, user_id, 'commands.status.title')}\n\n"
+        f"{tips_text}\n"
+        f"{send_text_tip}\n"
+        f"{upload_files_tip}\n"
+        f"{use_buttons_tip}\n\n"
+        f"{detailed_help_note}"
     )
 
     # Get localized button text
-    user_id = query.from_user.id
     full_help_text = await get_localized_text(context, user_id, "buttons.full_help")
     main_menu_text = await get_localized_text(context, user_id, "buttons.main_menu")
-    
+
     keyboard = [
         [
             InlineKeyboardButton(full_help_text, callback_data="action:full_help"),
@@ -283,7 +296,7 @@ async def _handle_help_action(query, context: ContextTypes.DEFAULT_TYPE) -> None
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     await query.edit_message_text(
-        help_text, parse_mode=None, reply_markup=reply_markup
+        full_help_content, parse_mode=None, reply_markup=reply_markup
     )
 
 
@@ -292,39 +305,8 @@ async def _handle_full_help_action(query, context: ContextTypes.DEFAULT_TYPE) ->
     user_id = query.from_user.id
     help_text = await get_localized_text(context, user_id, "commands.help.title")
 
-    # Build comprehensive help text
-    full_help_text = (
-        "🤖 **Детальна довідка Claude Code Telegram Bot**\n\n"
-        "**Команди навігації:**\n"
-        "• `/ls` - Показати файли і директорії\n"
-        "• `/cd <директорія>` - Змінити директорію\n"
-        "• `/pwd` - Показати поточну директорію\n"
-        "• `/projects` - Показати доступні проекти\n\n"
-        "**Команди сесії:**\n"
-        "• `/new` - Почати нову сесію Claude\n"
-        "• `/continue` - Продовжити останню сесію\n"
-        "• `/status` - Показати статус сесії\n"
-        "• `/export` - Експорт історії сесії\n\n"
-        "**Спеціальні команди:**\n"
-        "• `/actions` - Показати швидкі дії\n"
-        "• `/git` - Команди Git репозиторію\n"
-        "• `/claude` - Авторизувати Claude CLI\n"
-        "• `/img` - Обробка зображень з Claude\n\n"
-        "**MCP команди:**\n"
-        "• `/mcpadd` - Додати MCP сервер\n"
-        "• `/mcplist` - Список MCP серверів\n"
-        "• `/mcpselect` - Вибрати активний контекст\n"
-        "• `/mcpask` - Запит з MCP контекстом\n"
-        "• `/mcpremove` - Видалити MCP сервер\n"
-        "• `/mcpstatus` - Статус MCP системи\n\n"
-        "**Планувальник:**\n"
-        "• `/schedules` - Управління задачами\n"
-        "• `/add_schedule` - Додати нову задачу\n\n"
-        "**Поради:**\n"
-        "• Надсилайте текстові файли для перегляду\n"
-        "• Використовуйте конкретні запити\n"
-        "• Перевіряйте статус командою `/status`"
-    )
+    # Build comprehensive help text using localization
+    full_help_text = await t(context, user_id, "help.commands")
 
     # Get back button text
     main_menu_text = await get_localized_text(context, user_id, "buttons.main_menu")
@@ -354,9 +336,7 @@ async def _handle_show_projects_action(
 
         if not projects:
             await query.edit_message_text(
-                "📁 **No Projects Found**\n\n"
-                "No subdirectories found in your approved directory.\n"
-                "Create some directories to organize your projects!"
+                await t(context, user_id, "errors_command.no_projects_found")
             )
             return
 
@@ -389,16 +369,19 @@ async def _handle_show_projects_action(
         reply_markup = InlineKeyboardMarkup(keyboard)
         project_list = "\n".join([f"• `{project}/`" for project in projects])
 
+        available_projects_text = await t(context, user_id, "commands_extended.projects.available_projects_title")
+        click_navigate_text = await t(context, user_id, "commands_extended.projects.click_to_navigate")
+
         await query.edit_message_text(
-            f"📁 **Available Projects**\n\n"
-            f"{project_list}\n\n"
-            f"Click a project to navigate to it:",
+            f"{available_projects_text}\n\n{project_list}\n\n{click_navigate_text}",
             parse_mode=None,
             reply_markup=reply_markup,
         )
 
     except Exception as e:
-        await query.edit_message_text(f"❌ Error loading projects: {str(e)}")
+        await query.edit_message_text(
+            await t(context, user_id, "errors_command.error_loading_projects", error=str(e))
+        )
 
 
 async def _handle_new_session_action(query, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -433,10 +416,12 @@ async def _handle_new_session_action(query, context: ContextTypes.DEFAULT_TYPE) 
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
+    new_session_text = await t(context, user_id, "commands_extended.new_session.title")
+    working_dir_text = await t(context, user_id, "commands_extended.new_session.working_directory", relative_path=relative_path)
+    ready_message_text = await t(context, user_id, "commands_extended.new_session.ready_message")
+
     await query.edit_message_text(
-        f"🆕 **New Claude Code Session**\n\n"
-        f"📂 Working directory: `{relative_path}/`\n\n"
-        f"Ready to help you code! Send me a message to get started:",
+        f"{new_session_text}\n\n{working_dir_text}\n\n{ready_message_text}",
         parse_mode=None,
         reply_markup=reply_markup,
     )
@@ -450,21 +435,25 @@ async def _handle_end_session_action(query, context: ContextTypes.DEFAULT_TYPE) 
     claude_session_id = context.user_data.get("claude_session_id")
 
     if not claude_session_id:
+        no_active_session_text = await t(context, user_id, "commands_extended.export.no_active_session_title")
+        no_active_session_message = await t(context, user_id, "commands_extended.export.no_active_session_message")
+        what_you_can_do_text = await t(context, user_id, "commands_extended.export.what_you_can_do_title")
+        start_new_session_text = await t(context, user_id, "commands_extended.export.start_new_session")
+        check_status_text = await t(context, user_id, "commands_extended.export.check_status")
+
+        new_session_btn = await get_localized_text(context, user_id, "buttons.new_session")
+        status_btn = await get_localized_text(context, user_id, "buttons.status")
+
         await query.edit_message_text(
-            "ℹ️ **No Active Session**\n\n"
-            "There's no active Claude session to end.\n\n"
-            "**What you can do:**\n"
-            "• Use the button below to start a new session\n"
-            "• Check your session status\n"
-            "• Send any message to start a conversation",
+            f"{no_active_session_text}\n\n{no_active_session_message}\n\n{what_you_can_do_text}\n• {start_new_session_text}\n• {check_status_text}",
             reply_markup=InlineKeyboardMarkup(
                 [
                     [
                         InlineKeyboardButton(
-                            "🆕 New Session", callback_data="action:new_session"
+                            new_session_btn, callback_data="action:new_session"
                         )
                     ],
-                    [InlineKeyboardButton("📊 Status", callback_data="action:status")],
+                    [InlineKeyboardButton(status_btn, callback_data="action:status")],
                 ]
             ),
         )
@@ -818,14 +807,14 @@ async def _handle_quick_actions_action(
             InlineKeyboardButton("📊 Git Status", callback_data="quick:git_status"),
             InlineKeyboardButton("🔧 Lint Code", callback_data="quick:lint"),
         ],
-        [InlineKeyboardButton("⬅️ Back", callback_data="action:new_session")],
+        [InlineKeyboardButton("⬅️ " + await get_localized_text(context, user_id, "buttons.back"), callback_data="action:new_session")],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
+    quick_actions_text = await get_localized_text(context, user_id, "quick_actions.title")
+
     await query.edit_message_text(
-        "🛠️ **Quick Actions**\n\n"
-        "Choose a common development task:\n\n"
-        "_Note: These will be fully functional once Claude Code integration is complete._",
+        quick_actions_text,
         parse_mode=None,
         reply_markup=reply_markup,
     )
@@ -1656,42 +1645,101 @@ async def handle_save_code_callback(query, param: str, context: ContextTypes.DEF
         await query.edit_message_text(await t(context, query.from_user.id, "errors.save_failed", error=str(e)))
 
 async def handle_continue_callback(query, param: str, context: ContextTypes.DEFAULT_TYPE):
-    """Handle 'Continue Session' button."""
+    """Handle 'Continue Session' button - allows user to ask follow-up questions."""
     await query.answer()
     try:
         user_id = query.from_user.id
-        session_id = context.user_data.get('claude_session_id') if context.user_data else None
-        if session_id:
-            # Resume Claude session
-            claude = context.application.bot_data.get('claude_integration')
-            if claude:
-                # result = await claude.resume_session(session_id, "")
-                await query.edit_message_text(await t(context, user_id, "session.continued"))
-            else:
-                await query.edit_message_text(await t(context, user_id, "errors.service_unavailable"))
-        else:
-            await query.edit_message_text(await t(context, user_id, "session.no_active_session"))
+
+        # Remove buttons and prepare for continuation
+        continue_text = await t(
+            context, user_id, "buttons.continue_prompt",
+            fallback="✅ **Готовий до продовження!**\n\n"
+                     "Надішліть ваше питання або запит:\n"
+                     "• Додаткові уточнення щодо проблеми\n"
+                     "• Запит на впровадження змін\n"
+                     "• Питання про рішення\n"
+                     "• Інші побажання\n\n"
+                     "_Очікую ваше повідомлення..._"
+        )
+
+        await query.edit_message_text(continue_text)
+
+        # Set flag that user wants to continue conversation
+        if not context.user_data:
+            context.user_data = {}
+        context.user_data['awaiting_continuation'] = True
+
     except Exception as e:
-        await query.edit_message_text(await t(context, query.from_user.id, "errors.continue_failed"))
+        error_text = await t(context, query.from_user.id, "errors.continue_failed", fallback="❌ Помилка продовження діалогу")
+        await query.edit_message_text(error_text)
 
 async def handle_explain_callback(query, param: str, context: ContextTypes.DEFAULT_TYPE):
-    """Handle 'Explain' button."""
+    """Handle 'Explain' button - asks Claude to explain the previous response."""
     await query.answer()
     try:
         user_id = query.from_user.id
-        code = context.user_data.get('current_code', '') if context.user_data else ''
-        explain_text = await t(context, user_id, "explain.processing")
-        await query.edit_message_text(explain_text)
-        # Call Claude for explanation
-        claude = context.application.bot_data.get('claude_integration')
-        if claude:
-            # explanation = await claude.explain_code(code)
-            # await query.edit_message_text(explanation)
-            await query.edit_message_text("✅ " + await t(context, user_id, "explain.processing"))
+
+        # Show processing message
+        processing_text = await t(
+            context, user_id, "explain.processing",
+            fallback="🤔 **Пояснюю детальніше...**\n\n_Аналізую попередню відповідь та готую детальне пояснення..._"
+        )
+        await query.edit_message_text(processing_text)
+
+        # Get Claude integration
+        claude_integration = context.bot_data.get('claude_integration')
+        if not claude_integration:
+            error_text = await t(context, user_id, "errors.service_unavailable", fallback="❌ Сервіс недоступний")
+            await query.edit_message_text(error_text)
+            return
+
+        # Get current directory
+        settings = context.bot_data.get("settings")
+        if not settings:
+            current_dir = Path.cwd()
         else:
-            await query.edit_message_text(await t(context, user_id, "errors.service_unavailable"))
+            current_dir = context.user_data.get(
+                'current_directory',
+                settings.approved_directory
+            ) if context.user_data else settings.approved_directory
+
+        # Create explanation prompt in Ukrainian
+        explain_prompt = (
+            "Будь ласка, дайте детальне пояснення вашої попередньої відповіді:\n\n"
+            "1. **Поясніть кожен крок** який ви запропонували\n"
+            "2. **Чому саме такий підхід** є найкращим?\n"
+            "3. **Які альтернативи** можливі?\n"
+            "4. **Потенційні ризики** та як їх уникнути\n"
+            "5. **Що буде після впровадження** змін?\n\n"
+            "Дайте максимально детальне та зрозуміле пояснення українською мовою."
+        )
+
+        # Run Claude command for explanation
+        claude_response = await claude_integration.run_command(
+            prompt=explain_prompt,
+            working_directory=current_dir,
+            user_id=user_id,
+            session_id=context.user_data.get('claude_session_id') if context.user_data else None
+        )
+
+        if claude_response and claude_response.content:
+            # Format the explanation response
+            explanation_text = f"💡 **Детальне пояснення:**\n\n{claude_response.content}"
+
+            # Create new Continue button for further questions
+            from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+            keyboard = InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔄 Продовжити діалог", callback_data="continue")]
+            ])
+
+            await query.edit_message_text(explanation_text, reply_markup=keyboard, parse_mode='Markdown')
+        else:
+            error_text = await t(context, user_id, "explain.no_response", fallback="❌ Не вдалося отримати пояснення")
+            await query.edit_message_text(error_text)
+
     except Exception as e:
-        await query.edit_message_text(await t(context, query.from_user.id, "errors.explain_failed"))
+        error_text = await t(context, query.from_user.id, "errors.explain_failed", fallback="❌ Помилка отримання пояснення")
+        await query.edit_message_text(error_text)
 
 async def handle_refresh_callback(query, param: str, context: ContextTypes.DEFAULT_TYPE):
     """Fixed: Hardcoded '🔄 Оновити'."""

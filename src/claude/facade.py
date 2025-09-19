@@ -36,9 +36,16 @@ class ClaudeIntegration:
         self.config = config
 
         # Initialize both managers for fallback capability
-        self.sdk_manager = (
-            sdk_manager or ClaudeSDKManager(config) if config.use_sdk else None
-        )
+        # Always create SDK manager for image processing, even if USE_SDK=false
+        if sdk_manager:
+            self.sdk_manager = sdk_manager
+        else:
+            try:
+                self.sdk_manager = ClaudeSDKManager(config)
+                logger.debug("SDK manager initialized for image processing")
+            except Exception as e:
+                logger.warning("Failed to initialize SDK manager", error=str(e))
+                self.sdk_manager = None
         self.process_manager = process_manager or ClaudeProcessManager(config)
 
         # Use SDK by default if configured
@@ -195,7 +202,7 @@ class ClaudeIntegration:
                     response.content = (
                         f"🚫 **Tool Validation Failed**\n\n"
                         f"Tools failed security validation. Try different approach.\n\n"
-                        f"Details: {'; '.join(validation_errors)}"
+                        f"Details: {' | '.join(validation_errors)}"
                     )
 
             # Update session (this may change the session_id for new sessions)
@@ -258,17 +265,19 @@ class ClaudeIntegration:
                 "Please contact the administrator to enable image support."
             )
 
-        # Try SDK first if available and supports images
-        if self.config.use_sdk and self.sdk_manager:
+        # Always try SDK first for image processing if available
+        # Images require visual analysis which CLI cannot do
+        if self.sdk_manager:
             try:
                 return await self._run_command_with_images_sdk(
                     prompt, images, working_directory, user_id, session_id, on_stream
                 )
             except Exception as e:
-                logger.warning("SDK image processing failed, falling back to CLI", error=str(e))
+                logger.warning("SDK image processing failed, will try CLI fallback", error=str(e))
                 self._sdk_failed_count += 1
 
-        # Fallback to CLI with enhanced prompt and image copying
+        # CLI fallback (images won't be processed visually, only by filename)
+        logger.warning("Using CLI for image processing - images will not be analyzed visually")
         return await self._run_command_with_images_cli(
             prompt, images, working_directory, user_id, session_id, on_stream
         )
@@ -285,9 +294,29 @@ class ClaudeIntegration:
         """Run command with images using SDK with PROPER image support."""
         import time
 
-        # Перевірка API ключа
-        if not self.config.anthropic_api_key:
-            raise ClaudeToolValidationError("ANTHROPIC_API_KEY not configured")
+        # Перевірка API ключа - спробуємо отримати з конфігу або з CLI
+        api_key = self.config.anthropic_api_key
+        if not api_key:
+            try:
+                # Спробуємо отримати API ключ через Claude CLI token
+                import subprocess
+                result = subprocess.run(
+                    ['claude', 'config', 'get', 'api_key'],
+                    capture_output=True,
+                    text=True,
+                    timeout=10
+                )
+                if result.returncode == 0 and result.stdout.strip():
+                    api_key = result.stdout.strip()
+                    logger.debug("Using API key from Claude CLI config")
+            except Exception as e:
+                logger.debug("Could not get API key from Claude CLI", error=str(e))
+
+        if not api_key:
+            raise ClaudeToolValidationError(
+                "ANTHROPIC_API_KEY not configured. "
+                "Please set ANTHROPIC_API_KEY environment variable or authenticate Claude CLI"
+            )
 
         try:
             import anthropic
@@ -295,7 +324,7 @@ class ClaudeIntegration:
             logger.error("anthropic module not available, falling back to CLI")
             raise ClaudeToolValidationError("anthropic module not installed")
 
-        client = anthropic.Anthropic(api_key=self.config.anthropic_api_key)
+        client = anthropic.Anthropic(api_key=api_key)
 
         # Будуємо контент з зображеннями
         content = []
