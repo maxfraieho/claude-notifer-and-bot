@@ -93,6 +93,10 @@ class ClaudeCodeBot:
             from .features.availability_monitor import setup_availability_monitor
             await setup_availability_monitor(self.app, self.settings)
 
+        # TODO: Fix TaskScheduler import issues
+        # Initialize task scheduler for automated task execution
+        # await self._setup_task_scheduler()
+
         logger.info("Bot initialization complete")
 
     async def _set_bot_commands(self) -> None:
@@ -110,9 +114,17 @@ class ClaudeCodeBot:
             BotCommand("export", "Export current session"),
             BotCommand("actions", "Show quick actions"),
             BotCommand("git", "Git repository commands"),
-            BotCommand("claude", "Authenticate Claude CLI"),
+            BotCommand("login", "Authenticate Claude CLI"),
+            BotCommand("cancel", "Cancel authentication process"),
             BotCommand("schedules", "Manage scheduled tasks"),
             BotCommand("add_schedule", "Add new scheduled task"),
+            BotCommand("tasks", "Manage automated task queue"),
+            BotCommand("auto", "Toggle automation mode"),
+            BotCommand("schedule", "Schedule tasks for automation"),
+            BotCommand("restart", "Restart the bot"),
+            BotCommand("audit", "Intelligent bot code audit"),
+            BotCommand("dracon", "DRACON-YAML bot logic modeling"),
+            BotCommand("refactor", "Reverse engineer bot to DRACON schemas"),
         ]
 
         # Add image processing command if enabled
@@ -151,14 +163,27 @@ class ClaudeCodeBot:
             ("export", command.export_session),
             ("actions", command.actions_handler),
             ("git", command.git_handler),
-            ("claude", command.claude_auth_command),
+            ("login", command.login_command),
+            ("cancel", command.cancel_auth_command),
             ("schedules", command.schedules_command),
             ("add_schedule", command.add_schedule_command),
+            ("restart", command.restart_command),
+            ("audit", command.audit_command),
+            ("dracon", command.dracon_command),
+            ("refactor", command.refactor_command),
         ]
 
         # Add image processing command if enabled
         if self.settings.enable_image_processing:
             handlers.append(("img", command.img_command))
+
+        # Add task scheduler commands
+        from .handlers import task_commands
+        handlers.extend([
+            ("tasks", task_commands.task_queue_command),
+            ("auto", task_commands.auto_mode_command),
+            ("schedule", task_commands.schedule_command),
+        ])
 
         # Add MCP command handlers
         handlers.extend([
@@ -405,6 +430,34 @@ class ClaudeCodeBot:
                 )
             except Exception:
                 logger.exception("Failed to log error to audit system")
+
+    async def _setup_task_scheduler(self) -> None:
+        """Initialize task scheduler for automated execution."""
+        try:
+            logger.info("Setting up task scheduler")
+
+            # Initialize scheduled task repository
+            from ..storage.repositories.scheduled_task_repository import ScheduledTaskRepository
+            task_repository = ScheduledTaskRepository(self.deps["database"].db_path)
+            await task_repository.create_table()
+
+            # Initialize task scheduler
+            from .features.task_scheduler import TaskScheduler
+            task_scheduler = TaskScheduler(
+                repository=task_repository,
+                claude_integration=self.deps["claude_integration"],
+                settings=self.settings
+            )
+
+            # Store in bot context for access by handlers
+            self.app.bot_data["task_scheduler"] = task_scheduler
+            self.app.bot_data["task_repository"] = task_repository
+
+            logger.info("Task scheduler initialized successfully")
+
+        except Exception as e:
+            logger.error("Failed to setup task scheduler", error=str(e), exc_info=True)
+            # Don't raise - this is not critical for basic bot operation
 
     async def get_bot_info(self) -> Dict[str, Any]:
         """Get bot information."""

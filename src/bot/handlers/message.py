@@ -152,6 +152,11 @@ async def handle_text_message(
     if await handle_claude_auth_code(update, context):
         return
 
+    # Check if user is creating a scheduled task
+    if context.user_data and context.user_data.get('creating_task'):
+        await handle_task_creation_dialogue(update, context)
+        return
+
     # Check if user has active image session and handle it
     if context.user_data and context.user_data.get('awaiting_images'):
         logger.info("Text message for user with active image session", user_id=user_id, message_text=message_text)
@@ -322,6 +327,9 @@ async def handle_text_message(
 
                 # Check if we should show follow-up suggestions
                 if conversation_enhancer.should_show_suggestions(claude_response):
+                    # Get conversation context
+                    conversation_context = conversation_enhancer.get_context(user_id)
+
                     # Generate follow-up suggestions
                     suggestions = conversation_enhancer.generate_follow_up_suggestions(
                         claude_response.content,
@@ -927,3 +935,131 @@ def _update_working_directory_from_claude_response(
                     "Invalid path in Claude response", path=match, error=str(e)
                 )
                 continue
+
+
+async def handle_task_creation_dialogue(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle task creation multi-step dialogue."""
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+    from datetime import datetime, timedelta
+    import uuid
+
+    user_id = update.effective_user.id
+    message_text = update.message.text
+    task_data = context.user_data.get('creating_task', {})
+    step = task_data.get('step', 'prompt')
+
+    if step == 'prompt':
+        # Step 1: User sent prompt text
+        task_data['prompt'] = message_text
+        task_data['step'] = 'schedule'
+        context.user_data['creating_task'] = task_data
+
+        keyboard = [
+            [
+                InlineKeyboardButton("⏰ Зараз (під час DND)", callback_data="schedule:time:dnd"),
+                InlineKeyboardButton("🌅 Завтра вранці", callback_data="schedule:time:morning")
+            ],
+            [
+                InlineKeyboardButton("🕘 Завтра ввечері", callback_data="schedule:time:evening"),
+                InlineKeyboardButton("📅 Щоденно", callback_data="schedule:time:daily")
+            ],
+            [
+                InlineKeyboardButton("🔄 Щотижня", callback_data="schedule:time:weekly"),
+                InlineKeyboardButton("⚙️ Налаштувати час", callback_data="schedule:time:custom")
+            ],
+            [InlineKeyboardButton("❌ Скасувати", callback_data="schedule:cancel_create")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        await update.message.reply_text(
+            f"✅ **Промпт збережено:**\n`{message_text[:100]}{'...' if len(message_text) > 100 else ''}`\n\n"
+            f"**Крок 2 з 3: Коли виконувати?**\n\n"
+            f"Оберіть час виконання завдання:",
+            reply_markup=reply_markup
+        )
+
+    elif step == 'custom_time':
+        # Step 2b: User sent custom time
+        try:
+            # Parse time like "14:30", "9:00", "23:00"
+            import re
+            time_match = re.match(r'^(\d{1,2}):(\d{2})$', message_text.strip())
+            if not time_match:
+                await update.message.reply_text(
+                    "❌ **Невірний формат часу**\n\n"
+                    "Введіть час у форматі ГГ:ХХ (наприклад, 14:30, 09:00, 23:15)\n\n"
+                    "Або скасуйте створення завдання:",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton("❌ Скасувати", callback_data="schedule:cancel_create")]
+                    ])
+                )
+                return
+
+            hour, minute = int(time_match.group(1)), int(time_match.group(2))
+            if hour > 23 or minute > 59:
+                await update.message.reply_text(
+                    "❌ **Невірний час**\n\n"
+                    "Година повинна бути від 00 до 23, хвилини від 00 до 59\n\n"
+                    "Спробуйте ще раз або скасуйте:",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton("❌ Скасувати", callback_data="schedule:cancel_create")]
+                    ])
+                )
+                return
+
+            task_data['custom_time'] = f"{hour:02d}:{minute:02d}"
+            task_data['step'] = 'confirm'
+            context.user_data['creating_task'] = task_data
+
+            await _show_task_confirmation(update, task_data)
+
+        except Exception as e:
+            logger.error("Error parsing custom time", error=str(e))
+            await update.message.reply_text(
+                "❌ **Помилка обробки часу**\n\n"
+                "Спробуйте ще раз або скасуйте створення завдання:",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("❌ Скасувати", callback_data="schedule:cancel_create")]
+                ])
+            )
+
+
+async def _show_task_confirmation(update, task_data):
+    """Show task confirmation with all details."""
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+
+    prompt = task_data.get('prompt', '')
+    schedule_type = task_data.get('schedule_type', 'dnd')
+    custom_time = task_data.get('custom_time', '')
+
+    # Format schedule description
+    schedule_desc = {
+        'dnd': 'Під час DND періоду (23:00-08:00)',
+        'morning': 'Завтра о 08:00',
+        'evening': 'Завтра о 20:00',
+        'daily': 'Щоденно о 08:00',
+        'weekly': 'Щотижня (понеділок о 09:00)',
+        'custom': f'Щоденно о {custom_time}' if custom_time else 'Налаштований час'
+    }
+
+    message = (
+        f"📝 **Підтвердження створення завдання**\n\n"
+        f"**Завдання:**\n`{prompt[:200]}{'...' if len(prompt) > 200 else ''}`\n\n"
+        f"**Розклад:** {schedule_desc.get(schedule_type, 'Не вказано')}\n\n"
+        f"**Крок 3 з 3:** Підтвердіть створення завдання"
+    )
+
+    keyboard = [
+        [
+            InlineKeyboardButton("✅ Створити завдання", callback_data="schedule:confirm_task"),
+            InlineKeyboardButton("✏️ Редагувати", callback_data="schedule:edit_task")
+        ],
+        [InlineKeyboardButton("❌ Скасувати", callback_data="schedule:cancel_create")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    if hasattr(update, 'message') and update.message:
+        await update.message.reply_text(message, reply_markup=reply_markup)
+    else:
+        # Called from callback, need to edit message
+        await update.edit_message_text(message, reply_markup=reply_markup)

@@ -23,6 +23,21 @@ import uuid
 logger = structlog.get_logger()
 
 
+def safe_terminate_process(process: Optional[pexpect.spawn]) -> None:
+    """Безпечно завершує процес pexpect."""
+    if not process:
+        return
+    try:
+        if process.isalive():
+            process.terminate(force=True)
+    except Exception as e:
+        logger.debug("Error terminating process", error=str(e))
+        try:
+            process.close()
+        except:
+            pass
+
+
 # Pexpect functions for Claude CLI authentication
 async def claude_auth_with_pexpect(timeout: int = 30) -> Tuple[bool, str, Optional[pexpect.spawn]]:
     """
@@ -270,17 +285,26 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         check_status_text = await t(context, user_id, "buttons.check_status")
         language_settings_text = await t(context, user_id, "buttons.language_settings")
         
-        # Add quick action buttons with language switcher
+        # Enhanced unified menu with all essential functions
+        continue_session_text = await t(context, user_id, "buttons.continue_session")
+        export_session_text = await t(context, user_id, "buttons.export")
+        settings_text = await t(context, user_id, "buttons.settings")
+
         keyboard = [
             [
-                InlineKeyboardButton(show_projects_text, callback_data="action:show_projects"),
-                InlineKeyboardButton(get_help_text, callback_data="action:help"),
+                InlineKeyboardButton(new_session_text, callback_data="action:new_session"),
+                InlineKeyboardButton(continue_session_text, callback_data="action:continue"),
             ],
             [
-                InlineKeyboardButton(new_session_text, callback_data="action:new_session"),
+                InlineKeyboardButton(show_projects_text, callback_data="action:show_projects"),
                 InlineKeyboardButton(check_status_text, callback_data="action:status"),
             ],
             [
+                InlineKeyboardButton(export_session_text, callback_data="action:export"),
+                InlineKeyboardButton(settings_text, callback_data="action:settings"),
+            ],
+            [
+                InlineKeyboardButton(get_help_text, callback_data="action:help"),
                 InlineKeyboardButton(language_settings_text, callback_data="lang:select"),
             ]
         ]
@@ -308,12 +332,20 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         
         keyboard = [
             [
-                InlineKeyboardButton("📁 Show Projects", callback_data="action:show_projects"),
-                InlineKeyboardButton("❓ Get Help", callback_data="action:help"),
+                InlineKeyboardButton(await t(context, user_id, "buttons.new_session"), callback_data="action:new_session"),
+                InlineKeyboardButton(await t(context, user_id, "buttons.continue"), callback_data="action:continue"),
             ],
             [
-                InlineKeyboardButton("🆕 New Session", callback_data="action:new_session"),
-                InlineKeyboardButton("📊 Check Status", callback_data="action:status"),
+                InlineKeyboardButton(await t(context, user_id, "buttons.show_projects"), callback_data="action:show_projects"),
+                InlineKeyboardButton(await t(context, user_id, "buttons.check_status"), callback_data="action:status"),
+            ],
+            [
+                InlineKeyboardButton(await t(context, user_id, "buttons.export"), callback_data="action:export"),
+                InlineKeyboardButton(await t(context, user_id, "buttons.settings"), callback_data="action:settings"),
+            ],
+            [
+                InlineKeyboardButton(await t(context, user_id, "buttons.get_help"), callback_data="action:help"),
+                InlineKeyboardButton(await t(context, user_id, "buttons.language_settings"), callback_data="lang:select"),
             ],
         ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -767,16 +799,16 @@ async def list_files(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         if current_dir != settings_typed.approved_directory:
             keyboard.append(
                 [
-                    InlineKeyboardButton("⬆️ Go Up", callback_data="cd:.."),
-                    InlineKeyboardButton("🏠 Go to Root", callback_data="cd:/"),
+                    InlineKeyboardButton(await t(context, user_id, "buttons.go_up"), callback_data="cd:.."),
+                    InlineKeyboardButton(await t(context, user_id, "buttons.root"), callback_data="cd:/"),
                 ]
             )
 
         keyboard.append(
             [
-                InlineKeyboardButton("🔄 Refresh", callback_data="action:refresh_ls"),
+                InlineKeyboardButton(await t(context, user_id, "buttons.refresh"), callback_data="action:refresh_ls"),
                 InlineKeyboardButton(
-                    "📁 Projects", callback_data="action:show_projects"
+                    await t(context, user_id, "buttons.projects"), callback_data="action:show_projects"
                 ),
             ]
         )
@@ -1214,18 +1246,24 @@ async def end_session(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         context.user_data["session_started"] = False
         context.user_data["last_message"] = None
 
-    # Create quick action buttons
+    # Create full main menu keyboard (8 buttons in 4 rows)
     keyboard = [
         [
-            InlineKeyboardButton("🆕 New Session", callback_data="action:new_session"),
-            InlineKeyboardButton(
-                "📁 Change Project", callback_data="action:show_projects"
-            ),
+            InlineKeyboardButton(await t(context, user_id, "buttons.new_session"), callback_data="action:new_session"),
+            InlineKeyboardButton(await t(context, user_id, "buttons.continue_session"), callback_data="action:continue")
         ],
         [
-            InlineKeyboardButton("📊 Status", callback_data="action:status"),
-            InlineKeyboardButton("❓ Help", callback_data="action:help"),
+            InlineKeyboardButton(await t(context, user_id, "buttons.show_projects"), callback_data="action:show_projects"),
+            InlineKeyboardButton(await t(context, user_id, "buttons.status"), callback_data="action:status")
         ],
+        [
+            InlineKeyboardButton(await t(context, user_id, "buttons.export"), callback_data="action:export"),
+            InlineKeyboardButton(await t(context, user_id, "buttons.settings"), callback_data="action:settings")
+        ],
+        [
+            InlineKeyboardButton(await t(context, user_id, "buttons.help"), callback_data="action:help"),
+            InlineKeyboardButton(await t(context, user_id, "buttons.language_settings"), callback_data="lang:select")
+        ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -1236,10 +1274,8 @@ async def end_session(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         f"• Directory: `{relative_path}/`\n"
         f"• Session: None\n"
         f"• Ready for new commands\n\n"
-        f"**Next Steps:**\n"
-        f"• Start a new session with `/new`\n"
-        f"• Check status with `/status`\n"
-        f"• Send any message to begin a new conversation",
+        f"**Main Menu:**\n"
+        f"Choose your next action from the full menu below, or send any message to begin a new conversation.",
         parse_mode=None,
         reply_markup=reply_markup,
     )
@@ -1780,252 +1816,416 @@ def analyze_claude_error(error_text: str, stderr: str = "") -> tuple[str, dict]:
         return "commands.claude.error_generic", {}
 
 
-async def claude_auth_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle /claude command for interactive Claude CLI authentication using pexpect."""
-    user_id = get_user_id(update)
-    message = get_effective_message(update)
-    
+# New Claude login helper functions
+async def extract_auth_url_from_claude_login() -> Tuple[bool, str, Optional[pexpect.spawn]]:
+    """Запускає `claude login` та витягує URL для авторизації."""
+    try:
+        logger.info("Starting claude login to extract auth URL")
+
+        # Запускаємо процес claude login
+        child = pexpect.spawn('claude login', encoding='utf-8', timeout=30)
+
+        # Паттерни для пошуку URL
+        url_patterns = [
+            r'https://claude\.ai/login\?[^\s]*',  # Claude login URL
+            r'https://[^\s]*anthropic[^\s]*',     # Anthropic URL
+            r'https://[^\s]+',                    # Будь-який HTTPS URL
+            pexpect.TIMEOUT,
+            pexpect.EOF
+        ]
+
+        output_buffer = ""
+        start_time = time.time()
+
+        while time.time() - start_time < 30:  # 30 секунд timeout
+            try:
+                index = child.expect(url_patterns, timeout=5)
+
+                # Збираємо весь вивід
+                if child.before:
+                    output_buffer += child.before
+                if child.after and index < 3:  # URL знайдено
+                    output_buffer += child.after
+
+                logger.debug("Claude login output", index=index, output=output_buffer[-200:])
+
+                if index < 3:  # URL знайдено
+                    # Витягуємо URL з output_buffer
+                    url_match = re.search(r'https://[^\s]+', output_buffer)
+                    if url_match:
+                        auth_url = url_match.group(0)
+                        logger.info("Auth URL extracted successfully", url=auth_url[:50] + "...")
+                        return True, auth_url, child
+
+                elif index == 3:  # TIMEOUT
+                    continue
+
+                elif index == 4:  # EOF
+                    break
+
+            except pexpect.TIMEOUT:
+                continue
+
+        # Якщо URL не знайдено, перевіримо весь output
+        url_match = re.search(r'https://[^\s]+', output_buffer)
+        if url_match:
+            auth_url = url_match.group(0)
+            logger.info("Auth URL found in buffer", url=auth_url[:50] + "...")
+            return True, auth_url, child
+
+        logger.error("No auth URL found in claude login output", output=output_buffer)
+        try:
+            if child and child.isalive():
+                child.terminate(force=True)
+        except:
+            pass
+        return False, f"No authentication URL found. Output: {output_buffer}", None
+
+    except Exception as e:
+        logger.error("Error extracting auth URL", error=str(e))
+        try:
+            if 'child' in locals() and child and child.isalive():
+                child.terminate(force=True)
+        except:
+            pass
+        return False, f"Error starting claude login: {str(e)}", None
+
+
+async def submit_auth_code_to_claude(child: pexpect.spawn, auth_code: str) -> Tuple[bool, str]:
+    """Надсилає код авторизації до процесу claude login."""
+    try:
+        logger.info("Submitting auth code to claude login")
+
+        # Надсилаємо код
+        child.sendline(auth_code)
+
+        # Паттерни для очікування результату
+        result_patterns = [
+            r'(?i)success',           # Успіх
+            r'(?i)authenticated',     # Автентифіковано
+            r'(?i)logged.*in',        # Залогінено
+            r'(?i)invalid.*code',     # Невірний код
+            r'(?i)expired.*code',     # Код просрочений
+            r'(?i)error',             # Помилка
+            r'(?i)failed',            # Невдача
+            pexpect.TIMEOUT,
+            pexpect.EOF
+        ]
+
+        output_buffer = ""
+        start_time = time.time()
+
+        while time.time() - start_time < 60:  # 60 секунд на авторизацію
+            try:
+                index = child.expect(result_patterns, timeout=10)
+
+                # Збираємо вивід
+                if child.before:
+                    output_buffer += child.before
+                if child.after and index < 7:
+                    output_buffer += child.after
+
+                logger.debug("Auth code response", index=index, output=output_buffer[-200:])
+
+                if index in [0, 1, 2]:  # Успіх
+                    logger.info("Authentication successful")
+                    safe_terminate_process(child)
+                    return True, "Authentication successful"
+
+                elif index in [3, 4, 5, 6]:  # Помилка
+                    logger.warning("Authentication failed", output=output_buffer)
+                    safe_terminate_process(child)
+                    return False, f"Authentication failed: {output_buffer}"
+
+                elif index == 7:  # TIMEOUT
+                    continue
+
+                elif index == 8:  # EOF
+                    # Перевіряємо exit code
+                    if child.exitstatus == 0:
+                        logger.info("Process exited successfully")
+                        return True, "Authentication completed successfully"
+                    else:
+                        logger.warning("Process exited with error", exit_code=child.exitstatus)
+                        return False, f"Process failed with exit code {child.exitstatus}: {output_buffer}"
+
+            except pexpect.TIMEOUT:
+                logger.debug("Waiting for auth response...")
+                continue
+
+        # Timeout
+        logger.error("Authentication timeout", output=output_buffer)
+        safe_terminate_process(child)
+        return False, f"Authentication timed out: {output_buffer}"
+
+    except Exception as e:
+        logger.error("Error submitting auth code", error=str(e))
+        safe_terminate_process(child)
+        return False, f"Error during authentication: {str(e)}"
+
+
+async def check_claude_auth_status() -> Tuple[bool, str]:
+    """Перевіряє поточний статус авторизації Claude CLI."""
+    try:
+        logger.info("Checking Claude CLI auth status")
+
+        # Перевіряємо файл з креденшиалами
+        credentials_path = Path.home() / ".claude" / ".credentials.json"
+
+        if not credentials_path.exists():
+            return False, "Файл креденшиалів не знайдено"
+
+        # Перевіряємо термін дії токену
+        import json
+        try:
+            with open(credentials_path, 'r') as f:
+                creds = json.load(f)
+                oauth_data = creds.get("claudeAiOauth", {})
+                expires_at = oauth_data.get("expiresAt", 0)
+                current_time = time.time() * 1000
+
+                if expires_at == 0:
+                    return False, "Некоректні креденшиали (немає expiresAt)"
+
+                if current_time >= expires_at:
+                    return False, f"Токен просрочений"
+
+                # Якщо токен валідний по часу, припускаємо що авторизація працює
+                hours_remaining = (expires_at - current_time) / (1000 * 3600)
+                return True, f"Авторизований (залишилось {hours_remaining:.1f} годин)"
+
+        except (json.JSONDecodeError, KeyError) as e:
+            return False, f"Помилка читання креденшиалів: {str(e)}"
+
+    except Exception as e:
+        logger.error("Error checking auth status", error=str(e))
+        return False, f"Помилка перевірки: {str(e)}"
+
+
+async def login_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Обробляє команду /login для авторизації Claude CLI."""
+    user_id = update.effective_user.id
+    message = update.effective_message
+
     if not user_id or not message:
         return
 
     try:
-        # Check if already waiting for auth code
+        # Перевіряємо чи не очікуємо вже код авторизації
         if context.user_data.get('claude_auth_waiting'):
-            already_waiting_msg = await t(context, user_id, "commands.claude.already_waiting")
-            await message.reply_text(already_waiting_msg)
+            await message.reply_text(
+                "⏳ **Вже очікую код авторизації**\n\n"
+                "Надішліть код авторизації з браузера або використайте /cancel для скасування."
+            )
             return
-        
-        # First check current Claude CLI authentication status
-        logger.info("Checking Claude CLI authentication status", user_id=user_id)
-        try:
-            import json
-            credentials_path = Path.home() / ".claude" / ".credentials.json"
-            logger.info("Checking credentials file", path=str(credentials_path), exists=credentials_path.exists())
-            if credentials_path.exists():
-                with open(credentials_path, 'r') as f:
-                    creds = json.load(f)
-                    oauth_data = creds.get("claudeAiOauth", {})
-                    expires_at = oauth_data.get("expiresAt", 0)
-                    current_time = time.time() * 1000
-                    
-                    logger.info("Token status check", current_time=current_time, expires_at=expires_at, 
-                               expired=current_time > expires_at)
-                    
-                    if current_time < expires_at:
-                        # Token is not expired, test connectivity
-                        logger.info("Token valid, testing Claude CLI connectivity", user_id=user_id)
-                        test_result = await asyncio.create_subprocess_exec(
-                            "timeout", "10", "claude", "auth", "status",
-                            stdout=asyncio.subprocess.PIPE,
-                            stderr=asyncio.subprocess.PIPE
-                        )
-                        stdout, stderr = await test_result.communicate()
-                        
-                        logger.info("Claude CLI connectivity test result", return_code=test_result.returncode,
-                                   stdout=stdout.decode()[:100], stderr=stderr.decode()[:100])
-                        
-                        if test_result.returncode == 0:
-                            # Claude CLI works fine
-                            logger.info("Claude CLI verified working", user_id=user_id)
-                            verified_msg = await t(context, user_id, "commands.claude.verified")
-                            await message.reply_text(verified_msg)
-                            return
-                        else:
-                            # Token exists but CLI doesn't work - connectivity issue
-                            hours_remaining = (expires_at - current_time) / (1000 * 3600)
-                            logger.info("Claude CLI connectivity issue detected", user_id=user_id, 
-                                       hours_remaining=hours_remaining, return_code=test_result.returncode)
-                            connectivity_msg = await t(context, user_id, "commands.claude.connectivity_issue", 
-                                                     hours=f"{hours_remaining:.1f}")
-                            await message.reply_text(connectivity_msg)
-                            return
-                    else:
-                        # Token is expired
-                        logger.info("Claude CLI token expired", user_id=user_id, expires_at=expires_at)
-                        expired_msg = await t(context, user_id, "commands.claude.token_expired")
-                        await message.reply_text(expired_msg)
-                        # Continue with authentication process
-            else:
-                logger.info("No Claude CLI credentials file found", user_id=user_id)
-        except Exception as e:
-            logger.warning("Could not check Claude CLI status", error=str(e), user_id=user_id)
-            # Continue with authentication process anyway
-        
-        # Start claude login process with pexpect
-        logger.info("Starting Claude authentication process with pexpect", user_id=user_id)
-        
-        starting_msg = await t(context, user_id, "commands.claude.starting")
-        await message.reply_text(starting_msg)
-        
-        # Use pexpect to capture authentication URL
-        success, result, child = await claude_auth_with_pexpect(timeout=30)
-        
-        if not success:
-            # Authentication failed
-            error_key, format_args = analyze_claude_error(result, "")
-            error_msg = await t(context, user_id, error_key, **format_args)
-            await message.reply_text(error_msg)
-            logger.error("Failed to start Claude authentication with pexpect", 
-                        user_id=user_id, error=result)
+
+        # Перевіряємо поточний статус авторизації
+        await message.reply_text("🔍 **Перевіряю поточний статус авторизації...**")
+
+        is_auth, status_msg = await check_claude_auth_status()
+
+        if is_auth:
+            await message.reply_text(
+                f"✅ **Claude CLI вже авторизований**\n\n"
+                f"📊 Статус: {status_msg}\n\n"
+                f"Авторизація не потрібна!"
+            )
             return
-        
-        # Success - we have the authentication URL
-        auth_url = result
-        
-        # Send instructions to user
-        title = await t(context, user_id, "commands.claude.title")
-        step1 = await t(context, user_id, "commands.claude.step1")
-        step2 = await t(context, user_id, "commands.claude.step2") 
-        step3 = await t(context, user_id, "commands.claude.step3")
-        step4 = await t(context, user_id, "commands.claude.step4")
-        waiting = await t(context, user_id, "commands.claude.waiting")
-        
-        instructions = (
-            f"{title}\n\n"
-            f"{step1}\n"
-            f"🔗 {auth_url}\n\n"
-            f"{step2}\n"
-            f"{step3}\n"
-            f"{step4}\n\n"
-            f"{waiting}"
+
+        # Починаємо процес авторизації
+        await message.reply_text(
+            f"❌ **Claude CLI не авторизований**\n\n"
+            f"📊 Статус: {status_msg}\n\n"
+            f"🚀 Починаю процес авторизації..."
         )
-        
-        await message.reply_text(instructions)
-        
-        # Store authentication state with pexpect child process
-        context.user_data['claude_auth_process'] = child
+
+        # Витягуємо URL авторизації
+        success, result, child = await extract_auth_url_from_claude_login()
+
+        if not success:
+            await message.reply_text(
+                f"❌ **Помилка запуску авторизації**\n\n"
+                f"```\n{result}\n```\n\n"
+                f"Спробуйте ще раз або зверніться до адміністратора."
+            )
+            return
+
+        # Зберігаємо процес для подальшого використання
         context.user_data['claude_auth_waiting'] = True
-        context.user_data['claude_auth_start_time'] = datetime.now()
-        
-        logger.info("Claude authentication instructions sent with pexpect", 
-                   user_id=user_id, auth_url=auth_url)
-        
+        context.user_data['claude_auth_process'] = child
+        context.user_data['claude_auth_url'] = result
+
+        # Надсилаємо інструкції користувачу
+        auth_url = result
+        instructions = (
+            f"🔐 **Авторизація Claude CLI**\n\n"
+            f"**Крок 1:** Відкрийте це посилання у браузері:\n"
+            f"👆 {auth_url}\n\n"
+            f"**Крок 2:** Увійдіть у свій акаунт Claude\n\n"
+            f"**Крок 3:** Скопіюйте код авторизації\n\n"
+            f"**Крок 4:** Надішліть код у це повідомлення\n\n"
+            f"⏳ **Очікую код авторизації...**\n\n"
+            f"💡 Використайте /cancel для скасування"
+        )
+
+        await message.reply_text(instructions)
+
+        logger.info("Claude login process started", user_id=user_id, url_length=len(auth_url))
+
     except Exception as e:
-        error_msg = await t(context, user_id, "commands.claude.error_process")
-        await message.reply_text(f"{error_msg}\n\n_{str(e)}_")
-        logger.error("Failed to start Claude authentication", error=str(e), user_id=user_id)
+        logger.error("Error in login command", error=str(e), user_id=user_id, exc_info=True)
+
+        # Очищуємо стан в разі помилки
+        context.user_data.pop('claude_auth_waiting', None)
+        if 'claude_auth_process' in context.user_data:
+            try:
+                context.user_data['claude_auth_process'].close()
+            except:
+                pass
+            context.user_data.pop('claude_auth_process', None)
+
+        await message.reply_text(
+            f"❌ **Помилка виконання команди**\n\n"
+            f"```\n{str(e)}\n```\n\n"
+            f"Спробуйте ще раз."
+        )
+
+
+# Alias for backward compatibility
+async def claude_auth_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Deprecated: Use /login instead. Redirects to login_command."""
+    await login_command(update, context)
 
 
 async def handle_claude_auth_code(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
-    """Handle authentication code input for Claude CLI using pexpect. Returns True if handled."""
-    user_id = get_user_id(update)
-    message = get_effective_message(update)
-    
+    """
+    Обробляє повідомлення з кодом авторизації.
+    Returns: True якщо повідомлення оброблено як код авторизації, False інакше
+    """
+    user_id = update.effective_user.id
+    message = update.effective_message
+
     if not user_id or not message or not message.text:
         return False
-    
-    # Check if user is waiting for auth code
+
+    # Перевіряємо чи очікуємо код авторизації
     if not context.user_data.get('claude_auth_waiting'):
         return False
-    
-    child = context.user_data.get('claude_auth_process')
-    start_time = context.user_data.get('claude_auth_start_time')
-    
-    if not child or not start_time:
-        return False
-    
-    # Check timeout (10 minutes)
-    if datetime.now() - start_time > timedelta(minutes=10):
-        timeout_msg = await t(context, user_id, "commands.claude.timeout") 
-        await message.reply_text(timeout_msg)
-        
-        # Clean up
-        try:
-            if child.isalive():
-                child.terminate()
-        except:
-            pass
-        
-        context.user_data.pop('claude_auth_process', None)
-        context.user_data.pop('claude_auth_waiting', None)
-        context.user_data.pop('claude_auth_start_time', None)
-        return True
-    
-    # Handle cancel command
-    if message.text.lower() in ['/cancel', 'cancel', 'скасувати', 'стоп']:
-        cancelled_msg = await t(context, user_id, "commands.claude.cancelled")
-        await message.reply_text(cancelled_msg)
-        
-        try:
-            if child.isalive():
-                child.terminate()
-        except:
-            pass
-        
-        context.user_data.pop('claude_auth_process', None)
-        context.user_data.pop('claude_auth_waiting', None) 
-        context.user_data.pop('claude_auth_start_time', None)
-        return True
-    
-    # Extract authentication code
+
     auth_code = message.text.strip()
-    
-    # Basic validation of auth code format
-    if not auth_code or len(auth_code) < 6:
-        invalid_msg = await t(context, user_id, "commands.claude.error_invalid_code")
-        await message.reply_text(invalid_msg)
+
+    # Перевіряємо формат коду (зазвичай це довгий рядок)
+    if len(auth_code) < 10:
+        await message.reply_text(
+            "🤔 **Код занадто короткий**\n\n"
+            "Код авторизації зазвичай довгий рядок.\n"
+            "Перевірте та надішліть правильний код.\n\n"
+            "💡 Використайте /cancel для скасування"
+        )
         return True
-    
+
     try:
-        logger.info("Processing Claude authentication code with pexpect", user_id=user_id)
-        
-        processing_msg = await t(context, user_id, "commands.claude.processing")
-        await message.reply_text(processing_msg)
-        
-        # Check if pexpect child is still alive
-        if not child.isalive():
-            session_expired_msg = await t(context, user_id, "commands.claude.session_expired")
-            await message.reply_text(session_expired_msg)
-            
-            # Clean up
-            context.user_data.pop('claude_auth_process', None)
+        await message.reply_text("🔄 **Обробляю код авторизації...**")
+
+        # Отримуємо збережений процес
+        child = context.user_data.get('claude_auth_process')
+        if not child or not child.isalive():
+            await message.reply_text(
+                "❌ **Сесія авторизації втрачена**\n\n"
+                "Процес авторизації більше не активний.\n"
+                "Виконайте /login знову."
+            )
+            # Очищуємо стан
             context.user_data.pop('claude_auth_waiting', None)
-            context.user_data.pop('claude_auth_start_time', None)
+            context.user_data.pop('claude_auth_process', None)
             return True
-        
-        # Send auth code through pexpect
-        success, result = await send_auth_code(child, auth_code, timeout=30)
-        
-        # Clean up user data first
-        context.user_data.pop('claude_auth_process', None)
+
+        # Надсилаємо код до Claude CLI
+        success, result = await submit_auth_code_to_claude(child, auth_code)
+
+        # Очищуємо стан авторизації
         context.user_data.pop('claude_auth_waiting', None)
-        context.user_data.pop('claude_auth_start_time', None)
-        
+        context.user_data.pop('claude_auth_process', None)
+        context.user_data.pop('claude_auth_url', None)
+
         if success:
-            # Success
-            success_msg = await t(context, user_id, "commands.claude.success")
-            verified_msg = await t(context, user_id, "commands.claude.verified")
-            await message.reply_text(f"{success_msg}\n\n{verified_msg}")
-            logger.info("Claude authentication successful with pexpect", user_id=user_id)
+            await message.reply_text(
+                f"✅ **Авторизація успішна!**\n\n"
+                f"🎉 Claude CLI тепер авторизований\n"
+                f"📊 Результат: {result}\n\n"
+                f"Тепер ви можете користуватися всіма функціями бота!"
+            )
+            logger.info("Claude CLI authentication successful", user_id=user_id)
         else:
-            # Error - analyze and provide detailed feedback
-            error_key, format_args = analyze_claude_error(result, "")
-            error_msg = await t(context, user_id, error_key, **format_args)
-            await message.reply_text(error_msg)
-            
-            logger.warning("Claude authentication failed with pexpect", 
-                         user_id=user_id, 
-                         error=result[:500])
-        
+            await message.reply_text(
+                f"❌ **Помилка авторизації**\n\n"
+                f"```\n{result}\n```\n\n"
+                f"Спробуйте /login знову з новим кодом."
+            )
+            logger.warning("Claude CLI authentication failed", user_id=user_id, error=result)
+
         return True
-        
+
     except Exception as e:
-        # Clean up user data
-        context.user_data.pop('claude_auth_process', None)
+        logger.error("Error processing auth code", error=str(e), user_id=user_id, exc_info=True)
+
+        # Очищуємо стан
         context.user_data.pop('claude_auth_waiting', None)
-        context.user_data.pop('claude_auth_start_time', None)
-        
-        # Clean up pexpect process
-        try:
-            if child and child.isalive():
-                child.terminate()
-        except:
-            pass
-        
-        error_msg = await t(context, user_id, "commands.claude.error_generic")
-        await message.reply_text(f"{error_msg}\n\n_{str(e)}_")
-        logger.error("Exception during Claude authentication with pexpect", error=str(e), user_id=user_id)
+        if 'claude_auth_process' in context.user_data:
+            try:
+                context.user_data['claude_auth_process'].close()
+            except:
+                pass
+            context.user_data.pop('claude_auth_process', None)
+
+        await message.reply_text(
+            f"❌ **Помилка обробки коду**\n\n"
+            f"```\n{str(e)}\n```\n\n"
+            f"Спробуйте /login знову."
+        )
         return True
+
+
+async def cancel_auth_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Скасовує поточний процес авторизації."""
+    user_id = update.effective_user.id
+    message = update.effective_message
+
+    if not user_id or not message:
+        return
+
+    if not context.user_data.get('claude_auth_waiting'):
+        await message.reply_text(
+            "ℹ️ **Немає активного процесу авторизації**\n\n"
+            "Немає що скасовувати."
+        )
+        return
+
+    try:
+        # Закриваємо процес якщо він є
+        if 'claude_auth_process' in context.user_data:
+            process = context.user_data['claude_auth_process']
+            safe_terminate_process(process)
+            context.user_data.pop('claude_auth_process', None)
+
+        # Очищуємо стан
+        context.user_data.pop('claude_auth_waiting', None)
+        context.user_data.pop('claude_auth_url', None)
+
+        await message.reply_text(
+            "✅ **Авторизація скасована**\n\n"
+            "Процес авторизації Claude CLI скасовано.\n"
+            "Використайте /login для нової спроби."
+        )
+
+        logger.info("Claude CLI authentication cancelled", user_id=user_id)
+
+    except Exception as e:
+        logger.error("Error cancelling auth", error=str(e), user_id=user_id)
+        await message.reply_text(
+            f"❌ **Помилка скасування**\n\n"
+            f"```\n{str(e)}\n```"
+        )
 
 
 # Registration function for handlers
@@ -2065,3 +2265,964 @@ async def img_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if user_id and message:
             error_text = await t(context, user_id, "errors.image_processing_disabled")
             await message.reply_text(error_text)
+
+
+async def restart_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /restart command to restart the bot."""
+    import subprocess
+    import os
+
+    user_id = get_user_id(update)
+    message = get_effective_message(update)
+
+    if not user_id or not message:
+        return
+
+    try:
+        # Check if user has admin privileges or is authorized
+        auth_manager = context.bot_data.get("auth_manager")
+        if auth_manager and not auth_manager.is_authenticated(user_id):
+            access_denied_text = await t(context, user_id, "commands.restart.access_denied")
+            await message.reply_text(access_denied_text)
+            return
+
+        # Send confirmation message
+        restarting_text = await t(context, user_id, "commands.restart.restarting")
+        status_msg = await message.reply_text(restarting_text)
+
+        # Run the restart script
+        script_path = "/home/vokov/claude-notifer-and-bot/restart-bot.sh"
+        if os.path.exists(script_path):
+            # Execute restart script in background
+            subprocess.Popen([script_path], cwd="/home/vokov/claude-notifer-and-bot")
+
+            # The current process will be killed by the script, so this might not send
+            initiated_text = await t(context, user_id, "commands.restart.initiated")
+            await status_msg.edit_text(initiated_text)
+        else:
+            script_not_found_text = await t(context, user_id, "commands.restart.script_not_found")
+            await status_msg.edit_text(script_not_found_text)
+
+    except Exception as e:
+        logger.error("Error in restart command", error=str(e), user_id=user_id)
+        failed_text = await t(context, user_id, "commands.restart.failed")
+        await message.reply_text(f"{failed_text}\n\nError: {str(e)}")
+
+
+async def audit_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Запустити інтелектуальний аудит бота"""
+    user_id = get_user_id(update)
+    message = get_effective_message(update)
+
+    if not user_id or not message:
+        return
+
+    logger.info("Starting intelligent bot audit", user_id=user_id)
+
+    try:
+        # Перевірити права доступу (тільки адміністратори)
+        auth_manager = context.bot_data.get("auth_manager")
+        if not auth_manager or not auth_manager.is_authenticated(user_id):
+            await message.reply_text("❌ Доступ заборонено. Аудит доступний тільки адміністраторам.")
+            return
+
+        # Парсинг аргументів команди
+        message_text = message.text or ""
+        parts = message_text.split()
+
+        focus_area = None
+        if len(parts) > 1:
+            focus_area = parts[1].lower()
+            if focus_area not in ["callbacks", "localization", "security", "architecture", "quick"]:
+                await message.reply_text(
+                    "❌ Невідома область аудиту.\n\n"
+                    "Доступні опції:\n"
+                    "• `/audit` - повний аудит\n"
+                    "• `/audit quick` - швидкий аналіз\n"
+                    "• `/audit callbacks` - аналіз callback handlers\n"
+                    "• `/audit localization` - аналіз перекладів\n"
+                    "• `/audit security` - аналіз безпеки\n"
+                    "• `/audit architecture` - аналіз архітектури"
+                )
+                return
+
+        # Показати повідомлення про початок аудиту
+        if focus_area == "quick":
+            status_text = "🔍 **Швидкий аудит коду...**\n\nЗапускаю базовий аналіз..."
+        elif focus_area:
+            status_text = f"🔍 **Фокусований аудит: {focus_area}**\n\nАналізую {focus_area}..."
+        else:
+            status_text = "🔍 **Повний інтелектуальний аудит**\n\nАналізую код, архітектуру та логіку..."
+
+        status_msg = await message.reply_text(status_text)
+
+        # Отримати Claude інтеграцію
+        claude_integration = context.bot_data.get("claude_integration")
+        settings = context.bot_data.get("settings")
+
+        if not settings:
+            await status_msg.edit_text("❌ Конфігурація бота недоступна")
+            return
+
+        # Запустити аудитор
+        from ..features.intelligent_auditor import IntelligentTelegramBotAuditor, format_audit_report
+
+        auditor = IntelligentTelegramBotAuditor(
+            project_root=str(settings.approved_directory),
+            claude_integration=claude_integration if focus_area != "quick" else None
+        )
+
+        # Налаштування для швидкого аудиту
+        if focus_area == "quick":
+            auditor.analysis_config["enable_claude_analysis"] = False
+            auditor.analysis_config["group_similar_issues"] = False
+
+        await status_msg.edit_text(f"{status_text}\n\n⏳ Виконую аналіз коду...")
+
+        # Запустити аудит
+        result = await auditor.run_audit(focus_area)
+
+        # Згенерувати звіт
+        report = format_audit_report(result)
+
+        # Відправити звіт
+        if len(report) > 4096:
+            # Розбити на частини для Telegram
+            chunks = [report[i:i+4000] for i in range(0, len(report), 4000)]
+
+            await status_msg.edit_text(f"✅ **Аудит завершено!**\n\nЗнайдено {result.total_issues} проблем.\nВідправляю звіт...")
+
+            for i, chunk in enumerate(chunks):
+                if i == 0:
+                    await message.reply_text(chunk, parse_mode=None)
+                else:
+                    await message.reply_text(f"**Частина {i+1}:**\n\n{chunk}", parse_mode=None)
+
+                if i < len(chunks) - 1:
+                    await asyncio.sleep(1)  # Уникнути rate limit
+        else:
+            await status_msg.edit_text(report, parse_mode=None)
+
+        # Додатковий аналіз для критичних проблем
+        critical_issues = [i for i in result.issues if i.severity == "CRITICAL"]
+        if critical_issues and focus_area != "quick":
+            await message.reply_text(
+                f"🚨 **УВАГА!** Знайдено {len(critical_issues)} критичних проблем.\n\n"
+                f"Рекомендую негайно виправити ці проблеми, оскільки вони можуть впливати на роботу бота."
+            )
+
+        logger.info("Audit completed",
+                   user_id=user_id,
+                   total_issues=result.total_issues,
+                   critical=result.critical_count,
+                   focus_area=focus_area)
+
+    except Exception as e:
+        logger.error("Error in audit command", error=str(e), user_id=user_id, exc_info=True)
+        error_msg = f"❌ **Помилка під час аудиту**\n\n`{str(e)}`"
+
+        try:
+            await status_msg.edit_text(error_msg)
+        except:
+            await message.reply_text(error_msg)
+
+
+async def dracon_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """DRACON-YAML bot logic modeling command."""
+    user_id = get_user_id(update)
+    message = get_effective_message(update)
+
+    if not message:
+        logger.warning("No message in dracon command", user_id=user_id)
+        return
+
+    logger.info("DRACON command invoked", user_id=user_id)
+
+    try:
+        from ..features.dracon_yaml import DraconYamlProcessor, EXAMPLE_MENU_SCHEMA
+        from ..features.dracon_storage import DraconStorageManager
+
+        # Parse command arguments
+        args = context.args if context.args else []
+        command_text = " ".join(args) if args else ""
+
+        # Initialize storage manager
+        settings = context.bot_data.get("settings")
+        if not settings:
+            await message.reply_text("❌ Налаштування бота недоступні")
+            return
+
+        storage = DraconStorageManager(str(settings.approved_directory))
+
+        # Show help if no arguments
+        if not command_text or command_text.lower() in ["help", "допомога"]:
+            help_text = """🔧 **Enhanced DRACON-YAML Bot Logic Modeling**
+
+DRACON (Дружелюбные Русские Алгоритмы, Которые Обеспечивают Надежность) - професійна система моделирования логіки бота з візуальними діаграмами.
+
+**Основні команди:**
+• `/dracon help` - Ця довідка
+• `/dracon example` - Показати приклад схеми
+• `/dracon analyze <yaml>` - Аналізувати YAML-схему
+• `/dracon generate <yaml>` - Згенерувати компоненти
+• `/dracon validate <yaml>` - Перевірити схему
+• `/dracon diagram <category> <filename>` - 🎨 Візуальна діаграма
+
+**Файлові операції:**
+• `/dracon list [category]` - Список збережених схем
+• `/dracon load <category> <filename>` - Завантажити схему
+• `/dracon save <category> <name>` - Зберегти схему
+• `/dracon copy <from_cat> <filename> <to_cat>` - Копіювати схему
+• `/dracon delete <category> <filename>` - Видалити схему
+• `/dracon stats` - Статистика зберігання
+
+**Категорії схем:**
+📁 `reverse` - Схеми з реверс-інжинірингу
+📁 `build` - Базові схеми для розбудови
+📁 `audit` - Схеми для тестування
+📁 `library` - Бібліотека компонентів
+📁 `active` - Активні схеми
+📁 `archive` - Архівні версії
+
+**Приклад:**
+```
+/dracon save reverse my_bot_schema
+/dracon list reverse
+/dracon load reverse my_bot_schema_20241219_143022.yaml
+```"""
+
+            await message.reply_text(help_text, parse_mode="Markdown")
+            return
+
+        # Handle visual diagram generation
+        if command_text.lower().startswith("diagram"):
+            parts = command_text.split()
+            if len(parts) < 3:
+                await message.reply_text("❌ Використання: `/dracon diagram <category> <filename>`")
+                return
+
+            category = parts[1]
+            filename = parts[2]
+
+            try:
+                # Load schema
+                schema_content = storage.load_schema(category, filename)
+                if not schema_content:
+                    await message.reply_text(f"❌ Схема `{filename}` не знайдена в категорії `{category}`")
+                    return
+
+                # Process with enhanced processor
+                from ..features.dracon_enhanced import EnhancedDraconProcessor
+                processor = EnhancedDraconProcessor()
+
+                # Create temporary file for processing
+                temp_file = storage.temp_dir / f"temp_{filename}"
+                with open(temp_file, 'w', encoding='utf-8') as f:
+                    f.write(schema_content)
+
+                # Process schema
+                result = await processor.process_schema_file(temp_file)
+
+                if not result["success"]:
+                    error_msg = "❌ Помилка обробки схеми:\n" + "\n".join(result.get("errors", []))
+                    await message.reply_text(error_msg)
+                    return
+
+                # Send visual diagram if available
+                if result.get("svg_diagram"):
+                    try:
+                        # Convert SVG to PNG for Telegram
+                        import io
+                        from PIL import Image
+                        import cairosvg
+
+                        png_data = cairosvg.svg2png(bytestring=result["svg_diagram"].encode('utf-8'))
+
+                        await message.reply_photo(
+                            photo=io.BytesIO(png_data),
+                            caption=f"📊 **Візуальна схема:** {result['metadata']['name']}\n"
+                                   f"🔧 Вузлів: {result['metadata']['node_count']}\n"
+                                   f"➡️ З'єднань: {result['metadata']['edge_count']}\n"
+                                   f"⚡ Складність: {result['metadata']['complexity']}"
+                        )
+                    except Exception as e:
+                        logger.warning("Failed to convert SVG to PNG", error=str(e))
+                        # Fallback to text description
+                        await message.reply_text(
+                            f"📊 **Схема проаналізована:** {result['metadata']['name']}\n"
+                            f"🔧 Вузлів: {result['metadata']['node_count']}\n"
+                            f"➡️ З'єднань: {result['metadata']['edge_count']}\n"
+                            f"⚡ Складність: {result['metadata']['complexity']}\n\n"
+                            f"*Візуалізація недоступна (потрібен cairosvg)*"
+                        )
+
+                # Cleanup
+                temp_file.unlink(missing_ok=True)
+
+            except Exception as e:
+                logger.error("Diagram generation failed", error=str(e))
+                await message.reply_text(f"❌ Помилка генерації діаграми: {str(e)}")
+            return
+
+        # Handle file operations first
+        if command_text.lower().startswith("list"):
+            parts = command_text.split()
+            category = parts[1] if len(parts) > 1 else None
+
+            try:
+                schemas = storage.list_schemas(category)
+
+                if not any(schemas.values()):
+                    await message.reply_text("📁 **Немає збережених схем**\n\nВикористайте команди для створення та збереження схем.")
+                    return
+
+                report = "📋 **Збережені DRACON Схеми**\n\n"
+
+                for cat, schema_list in schemas.items():
+                    if not schema_list:
+                        continue
+
+                    report += f"📁 **{cat}** ({len(schema_list)} схем):\n"
+                    for schema in schema_list[:5]:  # Show first 5
+                        report += f"• `{schema['filename']}`\n"
+                        if 'metadata' in schema and 'description' in schema['metadata']:
+                            report += f"  📝 {schema['metadata']['description'][:50]}...\n"
+                        report += f"  📅 {schema['created'][:10]}\n"
+
+                    if len(schema_list) > 5:
+                        report += f"  ... та ще {len(schema_list) - 5} схем\n"
+                    report += "\n"
+
+                await message.reply_text(report)
+
+            except Exception as e:
+                await message.reply_text(f"❌ **Помилка отримання списку:**\n\n`{str(e)}`")
+            return
+
+        elif command_text.lower().startswith("load"):
+            parts = command_text.split()
+            if len(parts) < 3:
+                await message.reply_text("❌ **Використання:** `/dracon load <category> <filename>`")
+                return
+
+            category, filename = parts[1], parts[2]
+
+            try:
+                schema_yaml, metadata = storage.load_schema(category, filename)
+
+                # Show schema info
+                info = f"✅ **Схема завантажена:** `{filename}`\n"
+                info += f"📁 Категорія: `{category}`\n"
+
+                if metadata:
+                    if 'description' in metadata:
+                        info += f"📝 Опис: {metadata['description']}\n"
+                    if 'saved_at' in metadata:
+                        info += f"📅 Збережено: {metadata['saved_at'][:10]}\n"
+
+                await message.reply_text(info)
+
+                # Send schema content
+                await message.reply_text(f"📋 **Вміст схеми:**\n\n```yaml\n{schema_yaml}\n```", parse_mode="Markdown")
+
+            except Exception as e:
+                await message.reply_text(f"❌ **Помилка завантаження:**\n\n`{str(e)}`")
+            return
+
+        elif command_text.lower().startswith("stats"):
+            try:
+                stats = storage.get_storage_stats()
+
+                report = f"📊 **Статистика DRACON Сховища**\n\n"
+                report += f"**Загальна інформація:**\n"
+                report += f"• Всього схем: {stats['total_schemas']}\n"
+                report += f"• Загальний розмір: {stats['total_size'] / 1024:.1f} KB\n\n"
+
+                report += f"**По категоріях:**\n"
+                for category, info in stats['categories'].items():
+                    report += f"📁 {category}: {info['count']} схем ({info['size'] / 1024:.1f} KB)\n"
+
+                if stats['newest_schema']:
+                    from pathlib import Path
+                    report += f"\n🆕 Найновіша: `{Path(stats['newest_schema']).name}`\n"
+                if stats['oldest_schema']:
+                    report += f"📜 Найстаріша: `{Path(stats['oldest_schema']).name}`"
+
+                await message.reply_text(report)
+
+            except Exception as e:
+                await message.reply_text(f"❌ **Помилка статистики:**\n\n`{str(e)}`")
+            return
+
+        elif command_text.lower().startswith("copy"):
+            parts = command_text.split()
+            if len(parts) < 4:
+                await message.reply_text("❌ **Використання:** `/dracon copy <source_category> <filename> <target_category>`")
+                return
+
+            source_cat, filename, target_cat = parts[1], parts[2], parts[3]
+
+            try:
+                new_path = storage.copy_schema(source_cat, filename, target_cat)
+                await message.reply_text(f"✅ **Схему скопійовано!**\n\n📂 З: `{source_cat}/{filename}`\n📁 До: `{target_cat}/{Path(new_path).name}`")
+
+            except Exception as e:
+                await message.reply_text(f"❌ **Помилка копіювання:**\n\n`{str(e)}`")
+            return
+
+        elif command_text.lower().startswith("delete"):
+            parts = command_text.split()
+            if len(parts) < 3:
+                await message.reply_text("❌ **Використання:** `/dracon delete <category> <filename>`")
+                return
+
+            category, filename = parts[1], parts[2]
+
+            try:
+                storage.delete_schema(category, filename, archive_first=True)
+                await message.reply_text(f"✅ **Схему видалено!**\n\n📁 Категорія: `{category}`\n📄 Файл: `{filename}`\n💾 Збережено в архіві")
+
+            except Exception as e:
+                await message.reply_text(f"❌ **Помилка видалення:**\n\n`{str(e)}`")
+            return
+
+        elif command_text.lower().startswith("save"):
+            parts = command_text.split()
+            if len(parts) < 3:
+                await message.reply_text("❌ **Використання:** `/dracon save <category> <name> [yaml_content]`\n\nАбо надішліть YAML схему після команди.")
+                return
+
+            category, name = parts[1], parts[2]
+
+            # Check if YAML content is provided in same message
+            remaining_text = " ".join(parts[3:]) if len(parts) > 3 else ""
+
+            if "version:" in remaining_text and ("nodes:" in remaining_text or "edges:" in remaining_text):
+                yaml_content = remaining_text
+            else:
+                await message.reply_text(f"📝 **Надішліть YAML схему для збереження в категорію `{category}` з ім'ям `{name}`:**")
+                # Store pending save operation in user context
+                if not hasattr(context, 'user_data'):
+                    context.user_data = {}
+                context.user_data['pending_save'] = {'category': category, 'name': name}
+                return
+
+            try:
+                # Create metadata
+                metadata = {
+                    'name': name,
+                    'description': f"DRACON schema saved via bot interface",
+                    'created_by': user_id,
+                    'source': 'bot_interface'
+                }
+
+                file_path, filename = storage.save_schema(yaml_content, category, name, metadata)
+                await message.reply_text(f"✅ **Схему збережено!**\n\n📁 Категорія: `{category}`\n📄 Файл: `{filename}`\n💾 Шлях: `{file_path}`")
+
+            except Exception as e:
+                await message.reply_text(f"❌ **Помилка збереження:**\n\n`{str(e)}`")
+            return
+
+        # Handle different subcommands
+        if command_text.lower().startswith("example"):
+            await message.reply_text(
+                "📋 **Приклад DRACON схеми:**\n\n```yaml\n" +
+                EXAMPLE_MENU_SCHEMA +
+                "\n```",
+                parse_mode="Markdown"
+            )
+            return
+
+        # Process YAML content from user message
+        yaml_content = None
+
+        # Check if user sent YAML in the same message
+        if "version:" in command_text and ("nodes:" in command_text or "edges:" in command_text):
+            yaml_content = command_text
+        else:
+            # Ask user to send YAML content
+            await message.reply_text(
+                "📝 **Надішліть YAML-схему DRACON для аналізу:**\n\n"
+                "Використовуйте `/dracon example` для перегляду прикладу схеми."
+            )
+            return
+
+        # Initialize processor
+        processor = DraconYamlProcessor()
+
+        # Determine action
+        action = "analyze"  # default
+        if command_text.lower().startswith("generate"):
+            action = "generate"
+            yaml_content = command_text[8:].strip()  # Remove "generate"
+        elif command_text.lower().startswith("validate"):
+            action = "validate"
+            yaml_content = command_text[8:].strip()  # Remove "validate"
+        elif command_text.lower().startswith("analyze"):
+            yaml_content = command_text[7:].strip()  # Remove "analyze"
+
+        # Show processing status
+        status_msg = await message.reply_text("🔄 **Обробляю DRACON схему...**\n\nЗавантажую та перевіряю YAML...")
+
+        # Process based on action
+        if action == "validate":
+            try:
+                schema = processor.load_schema(yaml_content)
+                await status_msg.edit_text(
+                    f"✅ **Схема валідна!**\n\n"
+                    f"📋 Назва: {schema.name}\n"
+                    f"📝 Опис: {schema.description or 'Не вказано'}\n"
+                    f"🔗 Вузлів: {len(schema.nodes)}\n"
+                    f"➡️ Зв'язків: {len(schema.edges)}"
+                )
+            except Exception as e:
+                await status_msg.edit_text(f"❌ **Помилка валідації:**\n\n`{str(e)}`")
+            return
+
+        elif action == "generate":
+            await status_msg.edit_text("🔄 **Генерую компоненти...**\n\nАналізую схему та створюю код...")
+
+            components = await processor.generate_components(yaml_content)
+
+            if not components:
+                await status_msg.edit_text("❌ **Не вдалося згенерувати компоненти**")
+                return
+
+            # Show generated components
+            report = f"✅ **Згенеровано {len(components)} компонентів:**\n\n"
+
+            for comp in components[:5]:  # Show first 5 components
+                report += f"🔧 **{comp.type}**: `{comp.name}`\n"
+                if comp.properties.get('description'):
+                    report += f"   📝 {comp.properties['description']}\n"
+                report += "\n"
+
+            if len(components) > 5:
+                report += f"... та ще {len(components) - 5} компонентів\n\n"
+
+            report += "💾 Код компонентів готовий до інтеграції!"
+
+            await status_msg.edit_text(report)
+
+            # Send code examples for first few components
+            for i, comp in enumerate(components[:3]):
+                await message.reply_text(
+                    f"**{comp.type}: {comp.name}**\n\n```python\n{comp.code}\n```",
+                    parse_mode="Markdown"
+                )
+                if i < 2:
+                    await asyncio.sleep(1)  # Avoid rate limit
+
+            return
+
+        # Default: analyze
+        await status_msg.edit_text("🔄 **Аналізую граф...**\n\nПеревіряю топологію та логічну цілісність...")
+
+        # Perform analysis
+        result = await processor.analyze_graph(yaml_content)
+
+        # Generate analysis report
+        report = f"📊 **Аналіз DRACON схеми**\n\n"
+
+        if result.is_valid:
+            report += "✅ **Схема валідна та готова до використання!**\n\n"
+        else:
+            report += "⚠️ **Знайдено проблеми в схемі:**\n\n"
+
+        # Status indicators
+        report += f"🔒 Замкнений граф: {'✅' if result.is_closed else '❌'}\n"
+        report += f"🎯 Досяжність: {'✅' if result.is_reachable else '❌'}\n\n"
+
+        # Issues
+        if result.issues:
+            report += "🔴 **Проблеми:**\n"
+            for issue in result.issues[:5]:
+                report += f"• {issue}\n"
+            if len(result.issues) > 5:
+                report += f"... та ще {len(result.issues) - 5} проблем\n"
+            report += "\n"
+
+        # Warnings
+        if result.warnings:
+            report += "🟡 **Попередження:**\n"
+            for warning in result.warnings[:3]:
+                report += f"• {warning}\n"
+            report += "\n"
+
+        # Suggestions
+        if result.suggestions:
+            report += "💡 **Рекомендації:**\n"
+            for suggestion in result.suggestions[:3]:
+                report += f"• {suggestion}\n"
+            report += "\n"
+
+        # Components summary
+        total_components = sum(len(comps) for comps in result.components.values())
+        if total_components > 0:
+            report += f"🔧 **Компоненти:** {total_components} елементів готові до генерації\n"
+            for comp_type, items in result.components.items():
+                if items:
+                    report += f"   • {comp_type}: {len(items)}\n"
+
+        await status_msg.edit_text(report)
+
+        # Send Claude analysis if available
+        if result.claude_analysis and len(result.claude_analysis) > 100:
+            claude_report = f"🤖 **Аналіз Claude:**\n\n{result.claude_analysis}"
+
+            if len(claude_report) > 4096:
+                # Split into chunks
+                chunks = [claude_report[i:i+4000] for i in range(0, len(claude_report), 4000)]
+                for i, chunk in enumerate(chunks):
+                    await message.reply_text(chunk)
+                    if i < len(chunks) - 1:
+                        await asyncio.sleep(1)
+            else:
+                await message.reply_text(claude_report)
+
+        logger.info("DRACON analysis completed",
+                   user_id=user_id,
+                   is_valid=result.is_valid,
+                   issues_count=len(result.issues),
+                   components_count=total_components)
+
+    except Exception as e:
+        logger.error("Error in DRACON command", error=str(e), user_id=user_id, exc_info=True)
+        error_msg = f"❌ **Помилка DRACON:**\n\n`{str(e)}`"
+
+        try:
+            await message.reply_text(error_msg)
+        except:
+            # Fallback if message fails
+            pass
+
+
+async def refactor_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Reverse engineer bot code into DRACON schemas for refactoring."""
+    user_id = get_user_id(update)
+    message = get_effective_message(update)
+
+    if not message:
+        logger.warning("No message in refactor command", user_id=user_id)
+        return
+
+    logger.info("Refactor command invoked", user_id=user_id)
+
+    try:
+        # Check admin access
+        auth_manager = context.bot_data.get("auth_manager")
+        if not auth_manager or not auth_manager.is_authenticated(user_id):
+            await message.reply_text("❌ Доступ заборонено. Рефакторинг доступний тільки адміністраторам.")
+            return
+
+        from ..features.dracon_reverse_engineer import DraconReverseEngineer
+        from ..features.dracon_storage import DraconStorageManager
+
+        # Parse command arguments
+        args = context.args if context.args else []
+        command_text = " ".join(args) if args else ""
+
+        # Show help if no arguments
+        if not command_text or command_text.lower() in ["help", "допомога"]:
+            help_text = """🔄 **DRACON Рефакторинг Системи**
+
+Зворотний інжиніринг існуючого коду бота в DRACON схеми для модернізації та аналізу.
+
+**Команди:**
+• `/refactor help` - Ця довідка
+• `/refactor analyze` - Аналізувати архітектуру бота
+• `/refactor generate` - Створити DRACON схему з коду
+• `/refactor suggest` - Рекомендації з рефакторингу
+• `/refactor handlers` - Аналіз тільки handlers
+• `/refactor flows` - Аналіз логічних потоків
+
+**Процес:**
+1. 📖 Парсинг всіх Python файлів з handlers
+2. 🔍 Виявлення логічних зв'язків між функціями
+3. 🧠 Інтелектуальний аналіз з Claude
+4. 📊 Генерація DRACON схеми
+5. 💡 Рекомендації з покращення
+
+**Що аналізується:**
+• Command handlers та callback handlers
+• Логічні потоки між функціями
+• Складність коду та помилки
+• Паттерни навігації та стани
+• Можливості модернізації"""
+
+            await message.reply_text(help_text, parse_mode="Markdown")
+            return
+
+        # Get settings for project root
+        settings = context.bot_data.get("settings")
+        if not settings:
+            await message.reply_text("❌ Налаштування бота недоступні")
+            return
+
+        # Show processing status
+        status_msg = await message.reply_text("🔄 **Аналізую архітектуру бота...**\n\nПарсинг Python файлів та виявлення handlers...")
+
+        # Initialize reverse engineer and storage
+        claude_integration = context.bot_data.get("claude_integration")
+        engineer = DraconReverseEngineer(str(settings.approved_directory), claude_integration)
+        storage = DraconStorageManager(str(settings.approved_directory))
+
+        # Determine analysis type
+        if command_text.lower().startswith("handlers"):
+            await status_msg.edit_text("🔄 **Аналізую handlers...**\n\nВиявляю command та callback handlers...")
+
+            # Focus only on handlers analysis
+            architecture = await engineer.analyze_bot_architecture(focus_path="src/bot/handlers")
+
+            # Generate handlers report
+            report = f"📋 **Аналіз Handlers**\n\n"
+            report += f"**Загальна статистика:**\n"
+            report += f"• Handlers: {len(architecture.handlers)}\n"
+            report += f"• Логічних зв'язків: {len(architecture.flows)}\n"
+            report += f"• Точок входу: {len(architecture.entry_points)}\n"
+            report += f"• Відокремлених handlers: {len(architecture.orphaned_handlers)}\n\n"
+
+            # Show complexity distribution
+            complexity = architecture.complexity_metrics['complexity_distribution']
+            report += f"**Розподіл складності:**\n"
+            report += f"• Прості: {complexity['simple']}\n"
+            report += f"• Середні: {complexity['medium']}\n"
+            report += f"• Складні: {complexity['complex']}\n\n"
+
+            # Show handler types
+            handler_types = architecture.complexity_metrics['handler_types']
+            report += f"**Типи handlers:**\n"
+            for htype, count in handler_types.items():
+                report += f"• {htype}: {count}\n"
+
+            await status_msg.edit_text(report)
+
+        elif command_text.lower().startswith("flows"):
+            await status_msg.edit_text("🔄 **Аналізую логічні потоки...**\n\nВідстежую зв'язки між handlers...")
+
+            architecture = await engineer.analyze_bot_architecture()
+
+            # Generate flows report
+            report = f"🔗 **Аналіз Логічних Потоків**\n\n"
+            report += f"**Загальна статистика:**\n"
+            report += f"• Всього потоків: {len(architecture.flows)}\n"
+            report += f"• Handlers: {len(architecture.handlers)}\n"
+            report += f"• Точки входу: {len(architecture.entry_points)}\n\n"
+
+            if architecture.flows:
+                report += f"**Приклади потоків:**\n"
+                for flow in architecture.flows[:5]:
+                    report += f"• {flow.from_handler} → {flow.to_handler}\n"
+                    if flow.trigger_value:
+                        report += f"  Trigger: {flow.trigger_value}\n"
+
+                if len(architecture.flows) > 5:
+                    report += f"... та ще {len(architecture.flows) - 5} потоків\n"
+            else:
+                report += "❌ **Логічних потоків не виявлено**\n"
+                report += "Рекомендується додати більше інтерактивності між handlers."
+
+            await status_msg.edit_text(report)
+
+        elif command_text.lower().startswith("suggest"):
+            await status_msg.edit_text("🔄 **Генерую рекомендації...**\n\nАналізую можливості покращення...")
+
+            architecture = await engineer.analyze_bot_architecture()
+            suggestions = await engineer.suggest_refactoring(architecture)
+
+            # Save suggestions to audit directory
+            try:
+                suggestions_metadata = {
+                    'name': 'refactoring_suggestions',
+                    'description': f"Refactoring suggestions for bot with {len(architecture.handlers)} handlers",
+                    'created_by': user_id,
+                    'source': 'refactoring_analysis',
+                    'suggestions': suggestions,
+                    'handlers_analyzed': len(architecture.handlers),
+                    'flows_analyzed': len(architecture.flows)
+                }
+
+                import json
+                suggestions_yaml = f"""# Refactoring Suggestions Report
+# Generated: {datetime.now().isoformat()}
+# User: {user_id}
+
+suggestions:
+{json.dumps(suggestions, indent=2, ensure_ascii=False)}
+
+architecture_summary:
+  handlers: {len(architecture.handlers)}
+  flows: {len(architecture.flows)}
+  complexity_metrics: {architecture.complexity_metrics}
+"""
+
+                storage.save_schema(suggestions_yaml, 'audit', 'refactoring_suggestions', suggestions_metadata)
+
+            except Exception as e:
+                logger.warning("Failed to save refactoring suggestions", error=str(e))
+
+            # Generate suggestions report
+            report = f"💡 **Рекомендації з Рефакторингу**\n\n"
+
+            # Complexity issues
+            if suggestions['complexity_issues']:
+                report += f"🔴 **Проблеми складності ({len(suggestions['complexity_issues'])}):**\n"
+                for issue in suggestions['complexity_issues'][:3]:
+                    report += f"• {issue['handler']}: {issue['issue']}\n"
+                    report += f"  💡 {issue['recommendation']}\n"
+                report += "\n"
+
+            # Flow improvements
+            if suggestions['flow_improvements']:
+                report += f"🔗 **Покращення потоків:**\n"
+                for improvement in suggestions['flow_improvements']:
+                    report += f"• {improvement['issue']}\n"
+                    report += f"  💡 {improvement['recommendation']}\n"
+                report += "\n"
+
+            # Modernization opportunities
+            if suggestions['modernization_opportunities']:
+                report += f"🚀 **Можливості модернізації:**\n"
+                for opportunity in suggestions['modernization_opportunities']:
+                    report += f"• {opportunity['opportunity']}\n"
+                    report += f"  💡 {opportunity['recommendation']}\n"
+                report += "\n"
+
+            if not any(suggestions.values()):
+                report += "🎉 **Чудово!** Архітектура бота виглядає добре організованою."
+
+            await status_msg.edit_text(report)
+
+        elif command_text.lower().startswith("generate"):
+            await status_msg.edit_text("🔄 **Генерую DRACON схему...**\n\nЗворотний інжиніринг коду в YAML...")
+
+            architecture = await engineer.analyze_bot_architecture()
+            schema_yaml = await engineer.generate_dracon_schema(architecture, "Reverse Engineered Bot")
+
+            # Automatically save to reverse directory
+            try:
+                metadata = {
+                    'name': 'reverse_engineered_bot',
+                    'description': f"Reverse engineered DRACON schema with {len(architecture.handlers)} handlers and {len(architecture.flows)} flows",
+                    'created_by': user_id,
+                    'source': 'reverse_engineering',
+                    'handlers_count': len(architecture.handlers),
+                    'flows_count': len(architecture.flows),
+                    'complexity_metrics': architecture.complexity_metrics
+                }
+
+                file_path, filename = storage.save_schema(schema_yaml, 'reverse', 'bot_architecture', metadata)
+
+                # Also save analysis metadata
+                analysis_metadata = {
+                    'analysis_type': 'full_reverse_engineering',
+                    'handlers': [{'name': h.name, 'type': h.handler_type, 'complexity': h.complexity_score} for h in architecture.handlers],
+                    'flows': [{'from': f.from_handler, 'to': f.to_handler, 'type': f.trigger_type} for f in architecture.flows],
+                    'suggestions_count': len((await engineer.suggest_refactoring(architecture))['complexity_issues']),
+                    'created_by': user_id,
+                    'timestamp': datetime.now().isoformat()
+                }
+
+                analysis_path = file_path.replace('.yaml', '_analysis.json')
+                with open(analysis_path, 'w', encoding='utf-8') as f:
+                    import json
+                    json.dump(analysis_metadata, f, indent=2, ensure_ascii=False)
+
+                # Send schema with save confirmation
+                await status_msg.edit_text(f"✅ **DRACON схема згенерована та збережена!**\n\n"
+                                         f"📊 Вузлів: {len(architecture.handlers) + 2}\n"
+                                         f"🔗 Зв'язків: {len(architecture.flows)}\n"
+                                         f"💾 Збережено: `drn/reverse/{filename}`\n"
+                                         f"📋 Готова для аналізу та модернізації")
+
+            except Exception as e:
+                logger.error("Failed to save reverse engineered schema", error=str(e))
+                await status_msg.edit_text(f"✅ **DRACON схема згенерована!**\n\n"
+                                         f"📊 Вузлів: {len(architecture.handlers) + 2}\n"
+                                         f"🔗 Зв'язків: {len(architecture.flows)}\n"
+                                         f"⚠️ Помилка збереження: {str(e)}")
+
+            # Send YAML content
+            await message.reply_text(
+                f"📋 **Згенерована DRACON схема:**\n\n```yaml\n{schema_yaml}\n```",
+                parse_mode="Markdown"
+            )
+
+            # Suggest next steps with file operations
+            await message.reply_text(
+                "🔧 **Наступні кроки:**\n\n"
+                "• `/dracon list reverse` - Переглянути збережені схеми\n"
+                f"• `/dracon load reverse {filename}` - Завантажити схему\n"
+                "• `/dracon analyze` - Аналізувати завантажену схему\n"
+                "• `/dracon save build my_framework` - Зберегти як фреймворк\n"
+                "• `/refactor suggest` - Отримати рекомендації з покращення"
+            )
+
+        else:
+            # Default: comprehensive analysis
+            await status_msg.edit_text("🔄 **Повний аналіз архітектури...**\n\nПарсинг файлів, аналіз логіки, Claude аналіз...")
+
+            architecture = await engineer.analyze_bot_architecture()
+
+            # Generate comprehensive report
+            report = f"📊 **Аналіз Архітектури Бота**\n\n"
+
+            # Basic stats
+            report += f"**Основна статистика:**\n"
+            report += f"• Handlers: {len(architecture.handlers)}\n"
+            report += f"• Логічних потоків: {len(architecture.flows)}\n"
+            report += f"• Точок входу: {len(architecture.entry_points)}\n"
+            report += f"• Середня складність: {architecture.complexity_metrics['average_complexity']}\n\n"
+
+            # Architecture quality
+            quality_score = "Добра" if len(architecture.orphaned_handlers) < 3 else "Потребує покращення"
+            report += f"**Якість архітектури:** {quality_score}\n\n"
+
+            # Issues summary
+            error_handling_ratio = architecture.complexity_metrics['has_error_handling'] / len(architecture.handlers)
+            if error_handling_ratio < 0.5:
+                report += f"⚠️ **Попередження:** Низький рівень обробки помилок ({error_handling_ratio:.0%})\n"
+
+            if architecture.orphaned_handlers:
+                report += f"⚠️ **Попередження:** {len(architecture.orphaned_handlers)} відокремлених handlers\n"
+
+            report += f"\n💡 **Рекомендації:**\n"
+            report += f"• Використайте `/refactor generate` для створення DRACON схеми\n"
+            report += f"• Використайте `/refactor suggest` для детальних рекомендацій\n"
+            report += f"• Розгляньте модернізацію складних handlers"
+
+            await status_msg.edit_text(report)
+
+            # Send Claude analysis if available
+            if architecture.claude_analysis and len(architecture.claude_analysis) > 100:
+                claude_report = f"🤖 **Аналіз Claude:**\n\n{architecture.claude_analysis}"
+
+                if len(claude_report) > 4096:
+                    chunks = [claude_report[i:i+4000] for i in range(0, len(claude_report), 4000)]
+                    for i, chunk in enumerate(chunks):
+                        await message.reply_text(chunk)
+                        if i < len(chunks) - 1:
+                            await asyncio.sleep(1)
+                else:
+                    await message.reply_text(claude_report)
+
+        logger.info("Refactor analysis completed",
+                   user_id=user_id,
+                   handlers_count=len(architecture.handlers),
+                   flows_count=len(architecture.flows))
+
+    except Exception as e:
+        logger.error("Error in refactor command", error=str(e), user_id=user_id, exc_info=True)
+        error_msg = f"❌ **Помилка рефакторинга:**\n\n`{str(e)}`"
+
+        try:
+            await message.reply_text(error_msg)
+        except:
+            # Fallback if message fails
+            pass
+
+
+
+async def schedule_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Alias for schedules_command - manage scheduled tasks."""
+    await schedules_command(update, context)
