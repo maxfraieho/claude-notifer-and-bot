@@ -12,7 +12,8 @@ from ..config.settings import Settings
 from .exceptions import ClaudeToolValidationError
 from .integration import ClaudeProcessManager, ClaudeResponse, StreamUpdate
 from .monitor import ToolMonitor
-from .sdk_integration import ClaudeSDKManager
+# Temporarily disable SDK integration
+# from .sdk_integration import ClaudeSDKManager
 from .session import SessionManager
 
 if TYPE_CHECKING:
@@ -28,7 +29,7 @@ class ClaudeIntegration:
         self,
         config: Settings,
         process_manager: Optional[ClaudeProcessManager] = None,
-        sdk_manager: Optional[ClaudeSDKManager] = None,
+        sdk_manager: Optional[Any] = None,
         session_manager: Optional[SessionManager] = None,
         tool_monitor: Optional[ToolMonitor] = None,
     ):
@@ -36,16 +37,9 @@ class ClaudeIntegration:
         self.config = config
 
         # Initialize both managers for fallback capability
-        # Always create SDK manager for image processing, even if USE_SDK=false
-        if sdk_manager:
-            self.sdk_manager = sdk_manager
-        else:
-            try:
-                self.sdk_manager = ClaudeSDKManager(config)
-                logger.debug("SDK manager initialized for image processing")
-            except Exception as e:
-                logger.warning("Failed to initialize SDK manager", error=str(e))
-                self.sdk_manager = None
+        # SDK manager temporarily disabled
+        self.sdk_manager = None
+        logger.debug("SDK manager disabled for CLI-only mode")
         self.process_manager = process_manager or ClaudeProcessManager(config)
 
         # Use SDK by default if configured

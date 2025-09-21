@@ -80,7 +80,18 @@ class ScheduledPromptsManager:
                     "max_execution_time_minutes": 30,
                     "retry_attempts": 3,
                     "notification_chat_ids": [],
-                    "enabled": True
+                    "enabled": True,
+                    "auto_response": {
+                        "enabled": True,
+                        "default_response": "y",
+                        "custom_responses": {
+                            "commit": "y",
+                            "create": "y",
+                            "delete": "n",
+                            "overwrite": "y",
+                            "proceed": "y"
+                        }
+                    }
                 }
             }
             self.prompts_file.write_text(json.dumps(default_prompts, ensure_ascii=False, indent=2))
@@ -173,40 +184,185 @@ class ScheduledPromptsManager:
         except Exception:
             return False
     
-    async def _execute_claude_prompt(self, prompt: str, working_dir: str = "/app/target_project") -> tuple[bool, str]:
-        """Execute a Claude CLI prompt and return result."""
+    async def _execute_claude_prompt(self, prompt: str, working_dir: str = "/app/target_project", prompt_title: str = "Невідоме завдання") -> tuple[bool, str]:
+        """Execute a Claude CLI prompt with auto-response capability."""
         try:
             import os
+            import pexpect
+            import asyncio
+            from concurrent.futures import ThreadPoolExecutor
+
             env = os.environ.copy()
             env['PATH'] = f"/home/claudebot/.local/bin:{env.get('PATH', '')}"
-            
-            # Change to working directory and execute prompt
-            cmd = f"cd {working_dir} && echo '{prompt}' | claude"
-            
-            proc = await asyncio.create_subprocess_shell(
-                cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-                env=env,
-            )
-            
-            # Set timeout for execution
-            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=1800)  # 30 minutes
-            
-            stdout_text = stdout.decode('utf-8', errors='ignore') if stdout else ""
-            stderr_text = stderr.decode('utf-8', errors='ignore') if stderr else ""
-            
-            if proc.returncode == 0:
-                return True, stdout_text
+
+            # Load auto-response settings
+            config = await self.load_prompts()
+            auto_response_settings = config.get("settings", {}).get("auto_response", {})
+            auto_response_enabled = auto_response_settings.get("enabled", True)
+            default_response = auto_response_settings.get("default_response", "y")
+            custom_responses = auto_response_settings.get("custom_responses", {})
+
+            # Run pexpect in a thread to avoid blocking
+            def run_interactive_claude():
+                try:
+                    # Start Claude CLI with interactive session
+                    child = pexpect.spawn(
+                        'bash',
+                        ['-c', f'cd {working_dir} && claude'],
+                        env=env,
+                        timeout=1800,  # 30 minutes timeout
+                        encoding='utf-8'
+                    )
+
+                    # Send the prompt
+                    child.sendline(prompt)
+
+                    output_lines = []
+
+                    while True:
+                        try:
+                            # Wait for output or interactive prompts
+                            index = child.expect([
+                                pexpect.EOF,
+                                pexpect.TIMEOUT,
+                                r'(?i)\(y/n\)',  # Yes/No questions
+                                r'(?i)continue\s*\?',  # Continue questions
+                                r'(?i)proceed\s*\?',  # Proceed questions
+                                r'(?i)confirm\s*\?',  # Confirm questions
+                                r'(?i)do you want',  # "Do you want to..." questions
+                                r'(?i)should i',  # "Should I..." questions
+                                r'(?i)would you like',  # "Would you like to..." questions
+                                r'(?i)press enter',  # Press enter prompts
+                                r'.*',  # Any other output
+                            ], timeout=30)
+
+                            if index == 0:  # EOF
+                                break
+                            elif index == 1:  # TIMEOUT
+                                logger.warning("Claude CLI timeout waiting for response")
+                                break
+                            elif index in [2, 3, 4, 5, 6, 7, 8]:  # Interactive prompts
+                                # Capture the question
+                                question = child.before + child.after
+                                output_lines.append(question)
+
+                                if auto_response_enabled:
+                                    # Determine response based on question content
+                                    response = default_response
+                                    question_lower = question.lower()
+
+                                    # Check for custom responses
+                                    for keyword, custom_response in custom_responses.items():
+                                        if keyword.lower() in question_lower:
+                                            response = custom_response
+                                            break
+
+                                    # Special handling for dangerous operations
+                                    if any(danger_word in question_lower for danger_word in ['delete', 'remove', 'destroy', 'drop']):
+                                        response = custom_responses.get('delete', 'n')
+
+                                    child.sendline(response)
+                                    logger.info(f"Auto-responded '{response}' to Claude prompt: {question.strip()}")
+                                else:
+                                    # If auto-response is disabled, default to 'n' for safety
+                                    child.sendline('n')
+                                    logger.warning("Auto-response disabled, defaulting to 'n' for safety")
+
+                            elif index == 9:  # Press enter
+                                # Auto-press enter
+                                child.sendline('')
+                                logger.info("Auto-pressed enter for Claude prompt")
+
+                            elif index == 10:  # Regular output
+                                output_lines.append(child.before + child.after)
+
+                        except pexpect.TIMEOUT:
+                            # If we timeout waiting, just continue
+                            logger.debug("Timeout waiting for Claude response, continuing...")
+                            break
+                        except pexpect.EOF:
+                            break
+
+                    # Get any remaining output
+                    try:
+                        child.read_nonblocking(size=1000, timeout=1)
+                    except:
+                        pass
+
+                    # Close the session
+                    child.close()
+
+                    # Combine all output
+                    full_output = ''.join(output_lines)
+
+                    return child.exitstatus == 0, full_output
+
+                except Exception as e:
+                    logger.error(f"Error in interactive Claude session: {e}")
+                    return False, f"Interactive session error: {str(e)}"
+
+            # Run in thread pool to avoid blocking the event loop
+            with ThreadPoolExecutor() as executor:
+                future = executor.submit(run_interactive_claude)
+                success, output = await asyncio.get_event_loop().run_in_executor(None, lambda: future.result())
+
+            if success:
+                # Save result to .md file
+                await self._save_execution_result(prompt, prompt_title, output)
+                return True, output
             else:
-                error_msg = f"Exit code {proc.returncode}: {stderr_text}"
-                return False, error_msg
-                
-        except asyncio.TimeoutError:
-            return False, "Execution timed out after 30 minutes"
+                return False, output
+
         except Exception as e:
+            logger.error(f"Error executing Claude prompt: {e}")
             return False, f"Execution error: {str(e)}"
-    
+
+    async def _save_execution_result(self, prompt: str, prompt_title: str, result: str):
+        """Save execution result to .md file with task citation."""
+        try:
+            import aiofiles
+            from pathlib import Path
+
+            # Create results directory structure
+            results_dir = Path("./data/task_results")
+            results_dir.mkdir(parents=True, exist_ok=True)
+
+            # Generate filename with timestamp
+            timestamp = datetime.now(ZoneInfo("Europe/Kyiv")).strftime("%Y%m%d_%H%M%S")
+            safe_title = "".join(c for c in prompt_title if c.isalnum() or c in (' ', '-', '_')).rstrip()
+            safe_title = safe_title.replace(' ', '_')[:50]  # Limit length and replace spaces
+            filename = f"{timestamp}_{safe_title}.md"
+            filepath = results_dir / filename
+
+            # Format content with task citation at the beginning
+            content = f"""# Результат виконання автоматичного завдання
+
+## Цитування завдання
+**Назва:** {prompt_title}
+**Промпт:** {prompt}
+**Час виконання:** {datetime.now(ZoneInfo("Europe/Kyiv")).strftime("%d.%m.%Y %H:%M:%S")}
+**Файл результату:** {filename}
+
+---
+
+## Результат виконання
+
+{result}
+
+---
+
+*Згенеровано автоматично системою планування завдань Claude Code Telegram Bot*
+"""
+
+            # Save to file
+            async with aiofiles.open(filepath, 'w', encoding='utf-8') as f:
+                await f.write(content)
+
+            logger.info(f"Execution result saved to: {filepath}")
+
+        except Exception as e:
+            logger.error(f"Failed to save execution result: {e}")
+
     async def _should_execute_prompt(self, prompt: Dict[str, Any]) -> tuple[bool, str]:
         """Check if a prompt should be executed based on conditions."""
         if not prompt.get("enabled", False):
@@ -291,7 +447,8 @@ class ScheduledPromptsManager:
             
             # Execute the prompt
             prompt_text = prompt.get("prompt", "")
-            success, output = await self._execute_claude_prompt(prompt_text)
+            prompt_title = prompt.get("title", "Автоматичне завдання")
+            success, output = await self._execute_claude_prompt(prompt_text, "/app/target_project", prompt_title)
             
             if success:
                 logger.info(f"Successfully executed prompt {prompt_id}")

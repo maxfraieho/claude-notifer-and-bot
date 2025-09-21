@@ -1,0 +1,560 @@
+version: "1.0"
+name: "Claude Code Telegram Bot Architecture"
+description: "Comprehensive DRACON schema representing the Claude Code Telegram bot architecture with all major components and flows"
+metadata:
+  generated_from: "code_analysis"
+  project: "claude-code-telegram"
+  analysis_timestamp: "2025-09-19"
+  complexity_level: "high"
+  total_modules: 70
+  total_classes: 257
+  total_functions: 1393
+  total_lines: 26728
+
+nodes:
+  # Entry Points
+  - id: "start"
+    type: "start"
+    name: "Bot Initialization"
+    description: "Application startup and dependency injection"
+    position: [0, 0]
+    properties:
+      file: "src/main.py"
+      function: "run"
+
+  - id: "telegram_start"
+    type: "command"
+    name: "Telegram /start Command"
+    description: "User starts interaction with bot"
+    position: [200, 0]
+    properties:
+      command: "start"
+      file: "src/bot/handlers/command.py"
+
+  # Core Bot Layer
+  - id: "bot_core"
+    type: "process"
+    name: "Bot Core Orchestrator"
+    description: "Main bot orchestrator with handler registration"
+    position: [100, 100]
+    properties:
+      file: "src/bot/core.py"
+      class: "ClaudeCodeBot"
+
+  # Command Handlers
+  - id: "help_command"
+    type: "command"
+    name: "Help Command Handler"
+    description: "Display help information"
+    position: [300, 50]
+    properties:
+      command: "help"
+      file: "src/bot/handlers/command.py"
+
+  - id: "settings_command"
+    type: "command"
+    name: "Settings Command Handler"
+    description: "Bot configuration and settings"
+    position: [300, 100]
+    properties:
+      command: "settings"
+      file: "src/bot/handlers/command.py"
+
+  - id: "status_command"
+    type: "command"
+    name: "Status Command Handler"
+    description: "Display bot and Claude status"
+    position: [300, 150]
+    properties:
+      command: "status"
+      file: "src/bot/handlers/command.py"
+
+  - id: "img_command"
+    type: "command"
+    name: "Image Processing Command"
+    description: "Process and analyze images with Claude"
+    position: [300, 200]
+    properties:
+      command: "img"
+      file: "src/bot/handlers/image_command.py"
+
+  # Message Processing
+  - id: "message_handler"
+    type: "process"
+    name: "Message Handler"
+    description: "Process text messages and forward to Claude"
+    position: [400, 100]
+    properties:
+      file: "src/bot/handlers/message.py"
+
+  - id: "image_processor"
+    type: "process"
+    name: "Image Processor"
+    description: "Process and prepare images for Claude analysis"
+    position: [400, 200]
+    properties:
+      file: "src/bot/features/image_processor.py"
+
+  # Claude Integration Layer
+  - id: "claude_facade"
+    type: "process"
+    name: "Claude Integration Facade"
+    description: "High-level Claude Code integration interface"
+    position: [500, 150]
+    properties:
+      file: "src/claude/facade.py"
+      class: "ClaudeIntegration"
+
+  - id: "claude_sdk"
+    type: "process"
+    name: "Claude SDK Manager"
+    description: "Python SDK integration for Claude"
+    position: [600, 100]
+    properties:
+      file: "src/claude/sdk_integration.py"
+      class: "ClaudeSDKManager"
+
+  - id: "claude_process"
+    type: "process"
+    name: "Claude Process Manager"
+    description: "CLI subprocess management for Claude"
+    position: [600, 200]
+    properties:
+      file: "src/claude/integration.py"
+      class: "ClaudeProcessManager"
+
+  # Session Management
+  - id: "session_manager"
+    type: "process"
+    name: "Session Manager"
+    description: "Manage Claude sessions and persistence"
+    position: [700, 150]
+    properties:
+      file: "src/claude/session.py"
+      class: "SessionManager"
+
+  # Security Layer
+  - id: "auth_middleware"
+    type: "handler"
+    name: "Authentication Middleware"
+    description: "User authentication and authorization"
+    position: [200, 300]
+    properties:
+      file: "src/bot/middleware/auth.py"
+
+  - id: "rate_limiter"
+    type: "handler"
+    name: "Rate Limiting Middleware"
+    description: "Token bucket rate limiting"
+    position: [300, 300]
+    properties:
+      file: "src/bot/middleware/rate_limit.py"
+
+  - id: "security_validator"
+    type: "handler"
+    name: "Security Validator"
+    description: "Path and command validation"
+    position: [400, 300]
+    properties:
+      file: "src/security/validators.py"
+
+  # Storage Layer
+  - id: "storage_facade"
+    type: "process"
+    name: "Storage Facade"
+    description: "Unified storage interface"
+    position: [500, 350]
+    properties:
+      file: "src/storage/facade.py"
+
+  - id: "database_manager"
+    type: "process"
+    name: "Database Manager"
+    description: "SQLite database management"
+    position: [600, 350]
+    properties:
+      file: "src/storage/database.py"
+
+  - id: "repositories"
+    type: "process"
+    name: "Data Repositories"
+    description: "Data access objects for entities"
+    position: [700, 350]
+    properties:
+      file: "src/storage/repositories.py"
+
+  # Features
+  - id: "availability_monitor"
+    type: "process"
+    name: "Availability Monitor"
+    description: "Monitor Claude CLI availability and status"
+    position: [800, 100]
+    properties:
+      file: "src/bot/features/availability_monitor.py"
+
+  - id: "conversation_mode"
+    type: "process"
+    name: "Conversation Mode"
+    description: "Enhanced conversation experience"
+    position: [800, 200]
+    properties:
+      file: "src/bot/features/conversation_mode.py"
+
+  - id: "git_integration"
+    type: "process"
+    name: "Git Integration"
+    description: "Git repository operations"
+    position: [800, 300]
+    properties:
+      file: "src/bot/features/git_integration.py"
+
+  # MCP System
+  - id: "mcp_manager"
+    type: "process"
+    name: "MCP Manager"
+    description: "Model Context Protocol management"
+    position: [500, 450]
+    properties:
+      file: "src/mcp/manager.py"
+
+  - id: "mcp_context"
+    type: "process"
+    name: "MCP Context Handler"
+    description: "Context handling for MCP"
+    position: [600, 450]
+    properties:
+      file: "src/mcp/context_handler.py"
+
+  # Configuration
+  - id: "config_loader"
+    type: "process"
+    name: "Configuration Loader"
+    description: "Load and validate configuration"
+    position: [100, 400]
+    properties:
+      file: "src/config/loader.py"
+
+  - id: "settings"
+    type: "process"
+    name: "Settings Management"
+    description: "Pydantic settings with environment variables"
+    position: [200, 400]
+    properties:
+      file: "src/config/settings.py"
+
+  # Localization
+  - id: "localization"
+    type: "process"
+    name: "Localization Manager"
+    description: "Multi-language support system"
+    position: [300, 450]
+    properties:
+      file: "src/localization/manager.py"
+
+  # Callback Handlers
+  - id: "callback_handler"
+    type: "callback"
+    name: "Callback Query Handler"
+    description: "Process inline keyboard callbacks"
+    position: [400, 50]
+    properties:
+      file: "src/bot/handlers/callback.py"
+
+  # Quick Actions
+  - id: "quick_actions"
+    type: "process"
+    name: "Quick Actions"
+    description: "Predefined quick action buttons"
+    position: [500, 50]
+    properties:
+      file: "src/bot/features/quick_actions.py"
+
+  # DRACON System
+  - id: "dracon_yaml"
+    type: "process"
+    name: "DRACON YAML Processor"
+    description: "DRACON schema processing and validation"
+    position: [900, 100]
+    properties:
+      file: "src/bot/features/dracon_yaml.py"
+
+  - id: "dracon_reverse"
+    type: "process"
+    name: "DRACON Reverse Engineer"
+    description: "Convert code to DRACON schemas"
+    position: [900, 200]
+    properties:
+      file: "src/bot/features/dracon_reverse_engineer.py"
+
+  # End Points
+  - id: "success_end"
+    type: "end"
+    name: "Successful Response"
+    description: "User receives successful response"
+    position: [1000, 150]
+
+  - id: "error_end"
+    type: "end"
+    name: "Error Response"
+    description: "User receives error response"
+    position: [1000, 250]
+
+edges:
+  # Main Flow
+  - id: "start_to_bot"
+    from_node: "start"
+    to_node: "bot_core"
+    type: "sequence"
+
+  - id: "telegram_start_to_core"
+    from_node: "telegram_start"
+    to_node: "bot_core"
+    type: "sequence"
+
+  # Command Processing Flow
+  - id: "core_to_auth"
+    from_node: "bot_core"
+    to_node: "auth_middleware"
+    type: "sequence"
+
+  - id: "auth_to_rate_limit"
+    from_node: "auth_middleware"
+    to_node: "rate_limiter"
+    type: "sequence"
+
+  - id: "rate_limit_to_security"
+    from_node: "rate_limiter"
+    to_node: "security_validator"
+    type: "sequence"
+
+  # Command Routing
+  - id: "security_to_help"
+    from_node: "security_validator"
+    to_node: "help_command"
+    type: "condition"
+    condition: "command == 'help'"
+
+  - id: "security_to_settings"
+    from_node: "security_validator"
+    to_node: "settings_command"
+    type: "condition"
+    condition: "command == 'settings'"
+
+  - id: "security_to_status"
+    from_node: "security_validator"
+    to_node: "status_command"
+    type: "condition"
+    condition: "command == 'status'"
+
+  - id: "security_to_img"
+    from_node: "security_validator"
+    to_node: "img_command"
+    type: "condition"
+    condition: "command == 'img'"
+
+  - id: "security_to_message"
+    from_node: "security_validator"
+    to_node: "message_handler"
+    type: "condition"
+    condition: "message_type == 'text'"
+
+  # Claude Integration Flow
+  - id: "message_to_claude"
+    from_node: "message_handler"
+    to_node: "claude_facade"
+    type: "sequence"
+
+  - id: "img_to_processor"
+    from_node: "img_command"
+    to_node: "image_processor"
+    type: "sequence"
+
+  - id: "processor_to_claude"
+    from_node: "image_processor"
+    to_node: "claude_facade"
+    type: "sequence"
+
+  # Claude Execution Modes
+  - id: "facade_to_sdk"
+    from_node: "claude_facade"
+    to_node: "claude_sdk"
+    type: "condition"
+    condition: "use_sdk == true"
+
+  - id: "facade_to_process"
+    from_node: "claude_facade"
+    to_node: "claude_process"
+    type: "condition"
+    condition: "use_sdk == false"
+
+  # Session Management
+  - id: "sdk_to_session"
+    from_node: "claude_sdk"
+    to_node: "session_manager"
+    type: "sequence"
+
+  - id: "process_to_session"
+    from_node: "claude_process"
+    to_node: "session_manager"
+    type: "sequence"
+
+  # Storage Operations
+  - id: "session_to_storage"
+    from_node: "session_manager"
+    to_node: "storage_facade"
+    type: "sequence"
+
+  - id: "storage_to_db"
+    from_node: "storage_facade"
+    to_node: "database_manager"
+    type: "sequence"
+
+  - id: "db_to_repos"
+    from_node: "database_manager"
+    to_node: "repositories"
+    type: "sequence"
+
+  # Configuration Flow
+  - id: "start_to_config"
+    from_node: "start"
+    to_node: "config_loader"
+    type: "sequence"
+
+  - id: "config_to_settings"
+    from_node: "config_loader"
+    to_node: "settings"
+    type: "sequence"
+
+  - id: "settings_to_localization"
+    from_node: "settings"
+    to_node: "localization"
+    type: "sequence"
+
+  # Feature Integrations
+  - id: "claude_to_monitor"
+    from_node: "claude_facade"
+    to_node: "availability_monitor"
+    type: "sequence"
+
+  - id: "message_to_conversation"
+    from_node: "message_handler"
+    to_node: "conversation_mode"
+    type: "sequence"
+
+  # Callback Flow
+  - id: "callback_to_quick"
+    from_node: "callback_handler"
+    to_node: "quick_actions"
+    type: "condition"
+    condition: "callback_data.startswith('quick:')"
+
+  # MCP Flow
+  - id: "claude_to_mcp"
+    from_node: "claude_facade"
+    to_node: "mcp_manager"
+    type: "sequence"
+
+  - id: "mcp_to_context"
+    from_node: "mcp_manager"
+    to_node: "mcp_context"
+    type: "sequence"
+
+  # DRACON System Flow
+  - id: "settings_to_dracon_yaml"
+    from_node: "settings_command"
+    to_node: "dracon_yaml"
+    type: "condition"
+    condition: "action == 'generate_schema'"
+
+  - id: "dracon_yaml_to_reverse"
+    from_node: "dracon_yaml"
+    to_node: "dracon_reverse"
+    type: "sequence"
+
+  # Success Flows
+  - id: "help_to_success"
+    from_node: "help_command"
+    to_node: "success_end"
+    type: "sequence"
+
+  - id: "settings_to_success"
+    from_node: "settings_command"
+    to_node: "success_end"
+    type: "sequence"
+
+  - id: "status_to_success"
+    from_node: "status_command"
+    to_node: "success_end"
+    type: "sequence"
+
+  - id: "session_to_success"
+    from_node: "session_manager"
+    to_node: "success_end"
+    type: "sequence"
+
+  - id: "conversation_to_success"
+    from_node: "conversation_mode"
+    to_node: "success_end"
+    type: "sequence"
+
+  - id: "git_to_success"
+    from_node: "git_integration"
+    to_node: "success_end"
+    type: "sequence"
+
+  # Error Handling Flows
+  - id: "auth_error"
+    from_node: "auth_middleware"
+    to_node: "error_end"
+    type: "error"
+    condition: "authentication_failed"
+
+  - id: "rate_limit_error"
+    from_node: "rate_limiter"
+    to_node: "error_end"
+    type: "error"
+    condition: "rate_limit_exceeded"
+
+  - id: "security_error"
+    from_node: "security_validator"
+    to_node: "error_end"
+    type: "error"
+    condition: "security_violation"
+
+  - id: "claude_error"
+    from_node: "claude_facade"
+    to_node: "error_end"
+    type: "error"
+    condition: "claude_execution_failed"
+
+  - id: "storage_error"
+    from_node: "storage_facade"
+    to_node: "error_end"
+    type: "error"
+    condition: "storage_operation_failed"
+
+  # Timeout Flows
+  - id: "claude_timeout"
+    from_node: "claude_sdk"
+    to_node: "error_end"
+    type: "timeout"
+    condition: "execution_timeout"
+
+  - id: "process_timeout"
+    from_node: "claude_process"
+    to_node: "error_end"
+    type: "timeout"
+    condition: "process_timeout"
+
+  # Fallback Flows
+  - id: "sdk_fallback"
+    from_node: "claude_sdk"
+    to_node: "claude_process"
+    type: "error"
+    condition: "sdk_json_decode_error"
+
+  - id: "availability_fallback"
+    from_node: "availability_monitor"
+    to_node: "error_end"
+    type: "error"
+    condition: "claude_unavailable"

@@ -1321,10 +1321,19 @@ async def quick_actions(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             )
             return
 
-        # Get context-aware actions
-        actions = await quick_action_manager.get_suggestions(
-            session_data={"working_directory": str(current_dir), "user_id": user_id}
+        # Create a mock session for quick actions context
+        from ...storage.models import SessionModel
+        from datetime import datetime
+        mock_session = SessionModel(
+            session_id="quick_actions_mock",
+            user_id=user_id,
+            project_path=str(current_dir),
+            created_at=datetime.now(),
+            last_used=datetime.now()
         )
+
+        # Get context-aware actions
+        actions = await quick_action_manager.get_suggestions(mock_session)
 
         if not actions:
             await message.reply_text(
@@ -1558,6 +1567,10 @@ async def schedules_command(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             [
                 InlineKeyboardButton("⚙️ Налаштування", callback_data="schedule:settings"),
                 InlineKeyboardButton("📊 Статистика", callback_data="schedule:stats")
+            ],
+            [
+                InlineKeyboardButton("🔄 Оновити", callback_data="schedule:refresh"),
+                InlineKeyboardButton("▶️ Запустити всі", callback_data="schedule:run_all")
             ]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -1671,18 +1684,9 @@ async def new_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await safe_user_error(update, context, "errors.session_new_failed", e)
 
 async def actions_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Show available quick actions."""
-    user_id = get_user_id(update)
-    message = get_effective_message(update)
-    
-    if not user_id or not message:
-        return
-    
-    try:
-        actions_text = await t(context, user_id, "actions.title")
-        await message.reply_text(actions_text)
-    except Exception as e:
-        await safe_user_error(update, context, "errors.actions_failed", e)
+    """Show available quick actions with interactive buttons."""
+    # Delegate to the existing quick actions implementation
+    await quick_actions(update, context)
 
 async def pwd_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Show current directory."""
@@ -3226,3 +3230,266 @@ architecture_summary:
 async def schedule_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Alias for schedules_command - manage scheduled tasks."""
     await schedules_command(update, context)
+
+
+async def claude_status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Команда /claude_status - показати поточний статус Claude CLI."""
+    user_id = update.effective_user.id
+    message = get_effective_message(update)
+
+    logger.info("Claude status command started", user_id=user_id)
+
+    try:
+        # Отримати availability monitor
+        availability_monitor = context.bot_data.get("claude_availability_monitor")
+        if not availability_monitor:
+            await message.reply_text(
+                "❌ **Моніторинг Claude недоступний**\n\n"
+                "Система моніторингу не налаштована.",
+                parse_mode=None
+            )
+            return
+
+        # Показати статус "перевіряємо"
+        status_msg = await message.reply_text(
+            await t(context, user_id, "claude_status.checking"),
+            parse_mode=None
+        )
+
+        # Виконати детальну перевірку
+        is_available, details = await availability_monitor.check_availability_with_details()
+
+        # Побудувати детальне повідомлення
+        status_lines = []
+        status_lines.append(await t(context, user_id, "claude_status.title"))
+        status_lines.append("")
+
+        # Поточний статус
+        current_status = await t(context, user_id, "claude_status.current_status")
+        status_message = details.get("status_message", "❓ Невідомо")
+        status_lines.append(f"**{current_status}** {status_message}")
+
+        # Остання перевірка
+        last_check = await t(context, user_id, "claude_status.last_check")
+        check_time = details.get("last_check")
+        if check_time:
+            from zoneinfo import ZoneInfo
+            kyiv_time = check_time.astimezone(ZoneInfo("Europe/Kyiv"))
+            status_lines.append(f"**{last_check}** {kyiv_time.strftime('%H:%M:%S')}")
+
+        # Прогноз відновлення
+        if "estimated_recovery" in details:
+            recovery_text = await t(context, user_id, "claude_status.recovery_prediction")
+            status_lines.append(f"**{recovery_text}** {details['estimated_recovery']}")
+
+        status_lines.append("")
+        status_lines.append(await t(context, user_id, "claude_status.check_again"))
+
+        # Створити кнопки
+        keyboard = [
+            [
+                InlineKeyboardButton("🔄 Оновити", callback_data="claude_status:refresh"),
+                InlineKeyboardButton("📊 Історія", callback_data="claude_status:history")
+            ],
+            [
+                InlineKeyboardButton("🔔 Сповіщення", callback_data="claude_status:notifications"),
+                InlineKeyboardButton("⚙️ Налаштування", callback_data="claude_status:settings")
+            ]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        full_message = "\n".join(status_lines)
+
+        await status_msg.edit_text(full_message, reply_markup=reply_markup, parse_mode=None)
+
+        logger.info("Claude status displayed", user_id=user_id, is_available=is_available)
+
+    except Exception as e:
+        logger.error("Error in claude_status command", error=str(e), user_id=user_id, exc_info=True)
+        await safe_critical_error(message, context, e, "claude_status")
+
+
+async def claude_notifications_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Команда /claude_notifications - керування сповіщеннями про статус."""
+    user_id = update.effective_user.id
+    message = get_effective_message(update)
+
+    logger.info("Claude notifications command started", user_id=user_id)
+
+    try:
+        settings: Settings = context.bot_data["settings"]
+
+        # Перевірити поточні налаштування
+        notifications_enabled = settings.claude_availability.enabled
+        notify_chats = settings.claude_availability.notify_chat_ids
+        check_interval = settings.claude_availability.check_interval_seconds
+
+        # Побудувати повідомлення
+        status_lines = []
+        status_lines.append("⚙️ **Налаштування сповіщень Claude**")
+        status_lines.append("")
+
+        if notifications_enabled:
+            status_lines.append("🔔 **Статус:** ✅ Увімкнено")
+        else:
+            status_lines.append("🔔 **Статус:** ❌ Вимкнено")
+
+        if notify_chats:
+            chat_count = len(notify_chats)
+            status_lines.append(f"📢 **Групи сповіщень:** {chat_count} налаштовано")
+        else:
+            status_lines.append("📢 **Групи сповіщень:** Не налаштовано")
+
+        status_lines.append(f"⏰ **Інтервал перевірки:** {check_interval // 60} хвилин")
+        status_lines.append("")
+
+        # Додати інформацію про можливості
+        status_lines.append("💡 **Можливості сповіщень:**")
+        status_lines.append("• Автоматичні повідомлення про недоступність")
+        status_lines.append("• Сповіщення про відновлення роботи")
+        status_lines.append("• Прогноз часу відновлення")
+        status_lines.append("• Режим DND (без сповіщень вночі)")
+
+        # Створити кнопки
+        keyboard = []
+
+        if notifications_enabled:
+            keyboard.append([InlineKeyboardButton("❌ Вимкнути сповіщення", callback_data="claude_notifications:disable")])
+        else:
+            keyboard.append([InlineKeyboardButton("✅ Увімкнути сповіщення", callback_data="claude_notifications:enable")])
+
+        keyboard.extend([
+            [
+                InlineKeyboardButton("📊 Історія", callback_data="claude_notifications:history"),
+                InlineKeyboardButton("🔄 Статус", callback_data="claude_status:refresh")
+            ],
+            [InlineKeyboardButton("⬅️ Назад", callback_data="claude_status:main")]
+        ])
+
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        full_message = "\n".join(status_lines)
+
+        await message.reply_text(full_message, reply_markup=reply_markup, parse_mode=None)
+
+        logger.info("Claude notifications settings displayed", user_id=user_id, enabled=notifications_enabled)
+
+    except Exception as e:
+        logger.error("Error in claude_notifications command", error=str(e), user_id=user_id, exc_info=True)
+        await safe_critical_error(message, context, e, "claude_notifications")
+
+
+async def claude_history_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Команда /claude_history - історія доступності за 24 години."""
+    user_id = update.effective_user.id
+    message = get_effective_message(update)
+
+    logger.info("Claude history command started", user_id=user_id)
+
+    try:
+        # Показати повідомлення "завантаження"
+        status_msg = await message.reply_text("📊 Завантажую історію доступності...", parse_mode=None)
+
+        # Читати файл transitions.jsonl
+        from pathlib import Path
+        import json
+        from datetime import datetime, timedelta
+        from zoneinfo import ZoneInfo
+
+        transitions_file = Path("./data/transitions.jsonl")
+
+        if not transitions_file.exists():
+            await status_msg.edit_text(
+                "📊 **Історія доступності Claude**\n\n"
+                "❌ Файл історії не знайдено.\n"
+                "Моніторинг буде створювати історію з наступних перевірок.",
+                parse_mode=None
+            )
+            return
+
+        # Читати останні 24 години
+        now = datetime.now(ZoneInfo("UTC"))
+        cutoff_time = now - timedelta(hours=24)
+
+        transitions = []
+        try:
+            with open(transitions_file, 'r', encoding='utf-8') as f:
+                for line in f:
+                    try:
+                        record = json.loads(line.strip())
+                        record_time = datetime.fromisoformat(record['timestamp'])
+                        if record_time >= cutoff_time:
+                            transitions.append(record)
+                    except (json.JSONDecodeError, KeyError, ValueError):
+                        continue
+        except Exception as e:
+            logger.error(f"Error reading transitions file: {e}")
+
+        # Побудувати звіт
+        report_lines = []
+        report_lines.append("📊 **Історія доступності Claude за 24 години**")
+        report_lines.append("")
+
+        if not transitions:
+            report_lines.append("ℹ️ Змін статусу за останні 24 години не було.")
+        else:
+            report_lines.append(f"📈 **Всього змін статусу:** {len(transitions)}")
+            report_lines.append("")
+
+            # Показати останні 5 переходів
+            recent_transitions = sorted(transitions, key=lambda x: x['timestamp'], reverse=True)[:5]
+
+            report_lines.append("🕒 **Останні зміни:**")
+            for i, trans in enumerate(recent_transitions):
+                try:
+                    trans_time = datetime.fromisoformat(trans['timestamp'])
+                    kyiv_time = trans_time.astimezone(ZoneInfo("Europe/Kyiv"))
+
+                    from_state = trans.get('from', 'unknown')
+                    to_state = trans.get('to', 'unknown')
+
+                    # Перекласти статуси
+                    state_translations = {
+                        'available': '🟢 доступний',
+                        'limited': '⏳ обмежений',
+                        'unavailable': '🔴 недоступний',
+                        'auth_error': '🔑 помилка авторизації'
+                    }
+
+                    from_emoji = state_translations.get(from_state, f"❓ {from_state}")
+                    to_emoji = state_translations.get(to_state, f"❓ {to_state}")
+
+                    time_str = kyiv_time.strftime('%H:%M')
+                    report_lines.append(f"{i+1}. **{time_str}** {from_emoji} → {to_emoji}")
+
+                    # Додати тривалість якщо є
+                    if 'duration_unavailable' in trans and trans['duration_unavailable']:
+                        duration_minutes = int(trans['duration_unavailable'] / 60)
+                        if duration_minutes > 0:
+                            report_lines.append(f"   ⏱️ _Недоступність: {duration_minutes} хв_")
+
+                except (ValueError, KeyError) as e:
+                    logger.warning(f"Error processing transition: {e}")
+                    continue
+
+        report_lines.append("")
+        report_lines.append("🔄 Використайте /claude_status для поточного статусу")
+
+        # Створити кнопки
+        keyboard = [
+            [
+                InlineKeyboardButton("🔄 Оновити", callback_data="claude_status:history"),
+                InlineKeyboardButton("📊 Статус", callback_data="claude_status:refresh")
+            ],
+            [InlineKeyboardButton("⬅️ Назад", callback_data="claude_status:main")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        full_report = "\n".join(report_lines)
+
+        await status_msg.edit_text(full_report, reply_markup=reply_markup, parse_mode=None)
+
+        logger.info("Claude history displayed", user_id=user_id, transitions_count=len(transitions))
+
+    except Exception as e:
+        logger.error("Error in claude_history command", error=str(e), user_id=user_id, exc_info=True)
+        await safe_critical_error(message, context, e, "claude_history")

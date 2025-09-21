@@ -157,6 +157,11 @@ async def handle_text_message(
         await handle_task_creation_dialogue(update, context)
         return
 
+    # Check if user is in file editing workflow
+    if context.user_data and context.user_data.get('file_action'):
+        await handle_file_action_message(update, context)
+        return
+
     # Check if user has active image session and handle it
     if context.user_data and context.user_data.get('awaiting_images'):
         logger.info("Text message for user with active image session", user_id=user_id, message_text=message_text)
@@ -178,6 +183,14 @@ async def handle_text_message(
             )
             if not allowed:
                 await update.message.reply_text(f"⏱️ {limit_message}")
+                return
+
+        # Перевірка доступності Claude (згідно з планом)
+        availability_monitor = context.bot_data.get("claude_availability_monitor")
+        if availability_monitor:
+            is_available, status_details = await availability_monitor.check_availability_with_details()
+            if not is_available:
+                await send_unavailable_message(update, status_details)
                 return
 
         # Send typing indicator
@@ -393,6 +406,11 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     user_id = update.effective_user.id
     document = update.message.document
     settings: Settings = context.bot_data["settings"]
+
+    # First check if user is in file editing workflow
+    if context.user_data and context.user_data.get('file_action'):
+        await handle_document_message(update, context)
+        return
 
     # Get services
     security_validator: Optional[SecurityValidator] = context.bot_data.get(
@@ -1063,3 +1081,400 @@ async def _show_task_confirmation(update, task_data):
     else:
         # Called from callback, need to edit message
         await update.edit_message_text(message, reply_markup=reply_markup)
+
+
+async def handle_file_action_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle text messages during file editing workflow."""
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+    from pathlib import Path
+
+    user_id = update.effective_user.id
+    message_text = update.message.text
+    file_action = context.user_data.get('file_action', {})
+    action_type = file_action.get('type')
+    step = file_action.get('step')
+
+    settings: Settings = context.bot_data["settings"]
+    current_dir = context.user_data.get("current_directory", settings.approved_directory)
+
+    logger.info("Handling file action message", user_id=user_id, action_type=action_type, step=step, filename=message_text)
+
+    if step == "waiting_filename":
+        # User sent filename for reading or editing
+        filename = message_text.strip()
+
+        # Basic filename validation
+        if not filename:
+            await update.message.reply_text(
+                "❌ **Порожня назва файлу**\n\n"
+                "Введіть назву файлу:",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("❌ Скасувати", callback_data="action:quick_actions")]
+                ])
+            )
+            return
+
+        # Security check - prevent path traversal
+        if ".." in filename or filename.startswith("/"):
+            await update.message.reply_text(
+                "❌ **Недозволена назва файлу**\n\n"
+                "Назва файлу не може містити '..' або починатися з '/'.\n"
+                "Введіть відносну назву файлу в поточній директорії:",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("❌ Скасувати", callback_data="action:quick_actions")]
+                ])
+            )
+            return
+
+        file_path = current_dir / filename
+
+        if action_type == "read":
+            # Handle file reading
+            try:
+                if not file_path.exists():
+                    await update.message.reply_text(
+                        f"❌ **Файл не знайдено**\n\n"
+                        f"Файл `{filename}` не існує в поточній директорії.\n"
+                        f"Перевірте назву та спробуйте ще раз:",
+                        reply_markup=InlineKeyboardMarkup([
+                            [InlineKeyboardButton("🔙 Назад", callback_data="file_edit:select_read")]
+                        ])
+                    )
+                    return
+
+                if not file_path.is_file():
+                    await update.message.reply_text(
+                        f"❌ **Це не файл**\n\n"
+                        f"`{filename}` є директорією, а не файлом.\n"
+                        f"Введіть назву файлу:",
+                        reply_markup=InlineKeyboardMarkup([
+                            [InlineKeyboardButton("🔙 Назад", callback_data="file_edit:select_read")]
+                        ])
+                    )
+                    return
+
+                # Check file size
+                file_size = file_path.stat().st_size
+                if file_size > 1024 * 1024:  # 1MB limit for reading
+                    await update.message.reply_text(
+                        f"❌ **Файл занадто великий**\n\n"
+                        f"Файл `{filename}` має розмір {file_size:,} байт.\n"
+                        f"Максимальний розмір для читання: 1MB.\n\n"
+                        f"Використайте команди Claude для роботи з великими файлами.",
+                        reply_markup=InlineKeyboardMarkup([
+                            [InlineKeyboardButton("🔙 Назад", callback_data="file_edit:select_read")]
+                        ])
+                    )
+                    return
+
+                # Read file content
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                except UnicodeDecodeError:
+                    # Try with different encoding
+                    with open(file_path, 'r', encoding='latin-1') as f:
+                        content = f.read()
+
+                # Truncate content if too long for Telegram message
+                max_length = 3500  # Leave room for formatting
+                if len(content) > max_length:
+                    content = content[:max_length] + "\n\n... (файл обрізано)"
+
+                response_text = (
+                    f"📖 **Вміст файлу:** `{filename}`\n\n"
+                    f"```\n{content}\n```\n\n"
+                    f"📏 **Розмір:** {file_size:,} байт"
+                )
+
+                await update.message.reply_text(
+                    response_text,
+                    reply_markup=InlineKeyboardMarkup([
+                        [
+                            InlineKeyboardButton("✏️ Редагувати файл", callback_data="file_edit:select_edit"),
+                            InlineKeyboardButton("📋 Меню", callback_data="action:quick_actions")
+                        ]
+                    ])
+                )
+
+                # Clear file action state
+                context.user_data.pop("file_action", None)
+
+            except Exception as e:
+                logger.error("Error reading file", error=str(e), filename=filename)
+                await update.message.reply_text(
+                    f"❌ **Помилка читання файлу**\n\n"
+                    f"Не вдалося прочитати файл `{filename}`:\n"
+                    f"```\n{str(e)}\n```",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton("🔙 Назад", callback_data="file_edit:select_read")]
+                    ])
+                )
+
+        elif action_type == "edit":
+            # Handle file editing - download file for user
+            try:
+                if not file_path.exists():
+                    await update.message.reply_text(
+                        f"❌ **Файл не знайдено**\n\n"
+                        f"Файл `{filename}` не існує в поточній директорії.\n"
+                        f"Перевірте назву та спробуйте ще раз:",
+                        reply_markup=InlineKeyboardMarkup([
+                            [InlineKeyboardButton("🔙 Назад", callback_data="file_edit:select_edit")]
+                        ])
+                    )
+                    return
+
+                if not file_path.is_file():
+                    await update.message.reply_text(
+                        f"❌ **Це не файл**\n\n"
+                        f"`{filename}` є директорією, а не файлом.\n"
+                        f"Введіть назву файлу:",
+                        reply_markup=InlineKeyboardMarkup([
+                            [InlineKeyboardButton("🔙 Назад", callback_data="file_edit:select_edit")]
+                        ])
+                    )
+                    return
+
+                # Check file size
+                file_size = file_path.stat().st_size
+                if file_size > 20 * 1024 * 1024:  # 20MB limit for editing
+                    await update.message.reply_text(
+                        f"❌ **Файл занадто великий**\n\n"
+                        f"Файл `{filename}` має розмір {file_size:,} байт.\n"
+                        f"Максимальний розмір для редагування: 20MB.",
+                        reply_markup=InlineKeyboardMarkup([
+                            [InlineKeyboardButton("🔙 Назад", callback_data="file_edit:select_edit")]
+                        ])
+                    )
+                    return
+
+                # Send file for editing
+                progress_msg = await update.message.reply_text(
+                    f"📤 **Надсилаю файл для редагування...**\n\n"
+                    f"📁 Файл: `{filename}`\n"
+                    f"📏 Розмір: {file_size:,} байт"
+                )
+
+                def _format_file_size(size: int) -> str:
+                    """Format file size in human-readable format."""
+                    for unit in ["B", "KB", "MB", "GB"]:
+                        if size < 1024:
+                            return f"{size:.1f}{unit}" if unit != "B" else f"{size}B"
+                        size /= 1024
+                    return f"{size:.1f}TB"
+
+                # Send the file
+                with open(file_path, 'rb') as file:
+                    await update.message.reply_document(
+                        document=file,
+                        filename=filename,
+                        caption=(
+                            f"✏️ **Файл для редагування**\n\n"
+                            f"📁 Назва: `{filename}`\n"
+                            f"📏 Розмір: {_format_file_size(file_size)}\n\n"
+                            f"🔄 **Як редагувати:**\n"
+                            f"1. Завантажте цей файл\n"
+                            f"2. Відредагуйте у вашому редакторі\n"
+                            f"3. Надішліть відредагований файл назад як документ\n"
+                            f"4. Я збережу зміни\n\n"
+                            f"💾 Очікую відредагований файл..."
+                        )
+                    )
+
+                # Update state to wait for edited file
+                context.user_data["file_action"] = {
+                    "type": "edit",
+                    "step": "waiting_edited_file",
+                    "filename": filename,
+                    "original_path": str(file_path)
+                }
+
+                # Update progress message
+                await progress_msg.edit_text(
+                    f"✅ **Файл надіслано**\n\n"
+                    f"📁 Файл `{filename}` надіслано вище.\n\n"
+                    f"📝 Відредагуйте файл та надішліть його назад як документ.\n\n"
+                    f"💡 **Підказка:** Переконайтеся що зберегли файл з тією ж назвою!",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton("❌ Скасувати редагування", callback_data="file_edit:cancel")]
+                    ])
+                )
+
+            except Exception as e:
+                logger.error("Error preparing file for editing", error=str(e), filename=filename)
+                await update.message.reply_text(
+                    f"❌ **Помилка обробки файлу**\n\n"
+                    f"Не вдалося підготувати файл `{filename}` для редагування:\n"
+                    f"```\n{str(e)}\n```",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton("🔙 Назад", callback_data="file_edit:select_edit")]
+                    ])
+                )
+
+    else:
+        # Unknown step or state
+        logger.warning("Unknown file action step", user_id=user_id, step=step, action_type=action_type)
+        context.user_data.pop("file_action", None)
+        await update.message.reply_text(
+            "❌ **Помилка стану**\n\n"
+            "Стан редагування файлу порушено. Почніть спочатку.",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("📋 Швидкі дії", callback_data="action:quick_actions")]
+            ])
+        )
+
+
+async def handle_document_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle document uploads for file editing workflow."""
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+    from pathlib import Path
+    import shutil
+
+    user_id = update.effective_user.id
+    file_action = context.user_data.get('file_action', {})
+
+    # Check if user is in file editing workflow
+    if not file_action or file_action.get('step') != 'waiting_edited_file':
+        # User sent document but not in editing workflow - ignore or provide guidance
+        await update.message.reply_text(
+            "📄 **Документ отримано**\n\n"
+            "Щоб редагувати файл, використайте швидкі дії:\n"
+            "1. Натисніть 📋 Швидкі дії\n"
+            "2. Оберіть ✏️ Редагувати файл\n"
+            "3. Введіть назву файлу\n\n"
+            "Документ не збережено.",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("📋 Швидкі дії", callback_data="action:quick_actions")]
+            ])
+        )
+        return
+
+    settings: Settings = context.bot_data["settings"]
+    current_dir = context.user_data.get("current_directory", settings.approved_directory)
+    expected_filename = file_action.get('filename')
+    original_path = Path(file_action.get('original_path', ''))
+
+    document = update.message.document
+    uploaded_filename = document.file_name
+
+    logger.info("Processing uploaded document", user_id=user_id,
+                uploaded_filename=uploaded_filename, expected_filename=expected_filename)
+
+    try:
+        # Validate filename matches expected
+        if uploaded_filename != expected_filename:
+            await update.message.reply_text(
+                f"⚠️ **Невідповідність назви файлу**\n\n"
+                f"Очікував: `{expected_filename}`\n"
+                f"Отримав: `{uploaded_filename}`\n\n"
+                f"Файл буде збережено з очікуваною назвою.",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("✅ Продовжити", callback_data="file_edit:confirm_save")],
+                    [InlineKeyboardButton("❌ Скасувати", callback_data="file_edit:cancel")]
+                ])
+            )
+
+        # Check file size (Telegram limit)
+        if document.file_size > 20 * 1024 * 1024:  # 20MB
+            await update.message.reply_text(
+                f"❌ **Файл занадто великий**\n\n"
+                f"Розмір файлу: {document.file_size:,} байт\n"
+                f"Максимальний розмір: 20MB\n\n"
+                f"Зменшіть розмір файлу та спробуйте ще раз.",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("🔙 Назад", callback_data="file_edit:select_edit")]
+                ])
+            )
+            return
+
+        # Show processing message
+        progress_msg = await update.message.reply_text(
+            f"💾 **Зберігаю відредагований файл...**\n\n"
+            f"📁 Файл: `{expected_filename}`\n"
+            f"📏 Розмір: {document.file_size:,} байт\n\n"
+            f"⏳ Зачекайте..."
+        )
+
+        # Download and save file
+        file_obj = await context.bot.get_file(document.file_id)
+
+        # Create backup of original file
+        backup_path = original_path.with_suffix(original_path.suffix + '.backup')
+        if original_path.exists():
+            shutil.copy2(original_path, backup_path)
+
+        # Save new file content
+        await file_obj.download_to_drive(original_path)
+
+        # Clear file action state
+        context.user_data.pop("file_action", None)
+
+        # Show success message
+        await progress_msg.edit_text(
+            f"✅ **Файл успішно збережено!**\n\n"
+            f"📁 Файл: `{expected_filename}`\n"
+            f"📏 Новий розмір: {document.file_size:,} байт\n"
+            f"💾 Резервна копія: `{backup_path.name}`\n\n"
+            f"🎉 Редагування завершено!",
+            reply_markup=InlineKeyboardMarkup([
+                [
+                    InlineKeyboardButton("📖 Перевірити зміни", callback_data="file_edit:select_read"),
+                    InlineKeyboardButton("📋 Меню", callback_data="action:quick_actions")
+                ]
+            ])
+        )
+
+        logger.info("File editing completed successfully", user_id=user_id, filename=expected_filename,
+                   original_size=original_path.stat().st_size if original_path.exists() else 0,
+                   new_size=document.file_size)
+
+    except Exception as e:
+        logger.error("Error saving edited file", error=str(e), user_id=user_id, filename=expected_filename)
+
+        # Clear state on error
+        context.user_data.pop("file_action", None)
+
+        await update.message.reply_text(
+            f"❌ **Помилка збереження файлу**\n\n"
+            f"Не вдалося зберегти файл `{expected_filename}`:\n"
+            f"```\n{str(e)}\n```\n\n"
+            f"Файл не змінено.",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔙 Повернутися", callback_data="action:quick_actions")]
+            ])
+        )
+
+
+async def send_unavailable_message(update: Update, status_details: dict) -> None:
+    """Надіслати повідомлення про недоступність Claude згідно з планом."""
+    try:
+        # Отримати статусне повідомлення
+        status_message = status_details.get("status_message", "🔴 Claude зараз недоступний")
+
+        # Побудувати повне повідомлення
+        message_parts = [status_message]
+
+        if "estimated_recovery" in status_details:
+            message_parts.append(f"\n⏳ {status_details['estimated_recovery']}")
+
+        message_parts.append("\n\n💡 Я повідомлю в групу, коли Claude стане доступний")
+        message_parts.append("\n📋 Використайте /claude_status для перевірки")
+
+        full_message = "".join(message_parts)
+
+        # Надіслати повідомлення
+        await update.message.reply_text(full_message, parse_mode=None)
+
+        logger.info("Claude unavailable message sent",
+                   user_id=update.effective_user.id,
+                   reason=status_details.get("reason"))
+
+    except Exception as e:
+        logger.error(f"Error sending unavailable message: {e}")
+        # Fallback повідомлення
+        await update.message.reply_text(
+            "🔴 Claude зараз недоступний\n\n"
+            "Спробуйте пізніше або використайте /claude_status для перевірки.",
+            parse_mode=None
+        )

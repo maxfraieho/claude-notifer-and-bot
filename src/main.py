@@ -19,7 +19,8 @@ from src.claude import (
     SessionManager,
     ToolMonitor,
 )
-from src.claude.sdk_integration import ClaudeSDKManager
+# Temporarily disable SDK integration
+# from src.claude.sdk_integration import ClaudeSDKManager
 from src.config.features import FeatureFlags
 from src.config.loader import load_config
 from src.config.settings import Settings
@@ -182,7 +183,9 @@ async def create_application(config: Settings) -> Dict[str, Any]:
     # Create Claude manager based on configuration
     if config.use_sdk:
         logger.info("Using Claude Python SDK integration")
-        sdk_manager = ClaudeSDKManager(config)
+        # Temporarily disable SDK integration
+        # sdk_manager = ClaudeSDKManager(config)
+        sdk_manager = None
         process_manager = None
     else:
         logger.info("Using Claude CLI subprocess integration")

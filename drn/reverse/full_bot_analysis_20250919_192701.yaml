@@ -1,0 +1,32 @@
+version: '1.0'
+name: Full Bot Analysis
+description: Reverse-engineered DRACON schema from bot code (0 handlers)
+metadata:
+  generated_from: reverse_engineering
+  complexity_metrics:
+    total_handlers: 0
+    total_flows: 0
+    average_complexity: 0
+    handler_types: {}
+    has_error_handling: 0
+    complexity_distribution:
+      simple: 0
+      medium: 0
+      complex: 0
+  analysis_timestamp: auto-generated
+nodes:
+- id: start
+  type: start
+  name: Bot Start
+  description: User interaction begins
+  position:
+  - 0
+  - 0
+- id: end
+  type: end
+  name: Interaction Complete
+  description: User interaction ends
+  position:
+  - 500
+  - 200
+edges: []

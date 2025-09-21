@@ -84,6 +84,15 @@ class ClaudeCodeBot:
         # Add middleware
         self._add_middleware()
 
+        # Add Claude availability middleware
+        from .middleware.claude_availability import claude_availability_middleware
+        self.app.add_handler(
+            MessageHandler(
+                filters.ALL, self._create_middleware_handler(claude_availability_middleware)
+            ),
+            group=-4,
+        )
+
         # Set error handler
         self.app.add_error_handler(self._error_handler)
 
@@ -118,13 +127,14 @@ class ClaudeCodeBot:
             BotCommand("cancel", "Cancel authentication process"),
             BotCommand("schedules", "Manage scheduled tasks"),
             BotCommand("add_schedule", "Add new scheduled task"),
-            BotCommand("tasks", "Manage automated task queue"),
             BotCommand("auto", "Toggle automation mode"),
-            BotCommand("schedule", "Schedule tasks for automation"),
             BotCommand("restart", "Restart the bot"),
             BotCommand("audit", "Intelligent bot code audit"),
             BotCommand("dracon", "DRACON-YAML bot logic modeling"),
             BotCommand("refactor", "Reverse engineer bot to DRACON schemas"),
+            BotCommand("claude_status", "Show Claude CLI availability status"),
+            BotCommand("claude_notifications", "Manage Claude availability notifications"),
+            BotCommand("claude_history", "Show Claude availability history"),
         ]
 
         # Add image processing command if enabled
@@ -171,6 +181,9 @@ class ClaudeCodeBot:
             ("audit", command.audit_command),
             ("dracon", command.dracon_command),
             ("refactor", command.refactor_command),
+            ("claude_status", command.claude_status_command),
+            ("claude_notifications", command.claude_notifications_command),
+            ("claude_history", command.claude_history_command),
         ]
 
         # Add image processing command if enabled
@@ -180,9 +193,7 @@ class ClaudeCodeBot:
         # Add task scheduler commands
         from .handlers import task_commands
         handlers.extend([
-            ("tasks", task_commands.task_queue_command),
             ("auto", task_commands.auto_mode_command),
-            ("schedule", task_commands.schedule_command),
         ])
 
         # Add MCP command handlers

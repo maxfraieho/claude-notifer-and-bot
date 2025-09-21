@@ -41,8 +41,11 @@ async def security_middleware(
     # Validate text content if present
     message = event.effective_message
     if message and message.text:
+        # Check if this is an image processing context (more lenient validation)
+        is_image_context = await is_image_processing_context(event, data)
+
         is_safe, violation_type = await validate_message_content(
-            message.text, security_validator, user_id, audit_logger
+            message.text, security_validator, user_id, audit_logger, is_image_context
         )
         if not is_safe:
             await message.reply_text(
@@ -79,8 +82,42 @@ async def security_middleware(
     return await handler(event, data)
 
 
+async def is_image_processing_context(event: Any, data: Dict[str, Any]) -> bool:
+    """Check if current context is image processing (allows more lenient validation)."""
+    try:
+        # Check if user has active image session
+        if hasattr(event, 'effective_user') and event.effective_user:
+            user_id = event.effective_user.id
+            # Check if bot_data contains information about image sessions
+            bot_data = data.get('bot_data', {})
+            if isinstance(bot_data, dict):
+                # Look for image command handler or active image sessions
+                image_handler = bot_data.get('image_command_handler')
+                if image_handler and hasattr(image_handler, 'active_sessions'):
+                    return user_id in image_handler.active_sessions
+
+        # Check for context clues in the update
+        message = event.effective_message if hasattr(event, 'effective_message') else None
+        if message:
+            # Check if this is during an image processing workflow
+            if hasattr(message, 'reply_to_message') and message.reply_to_message:
+                prev_text = getattr(message.reply_to_message, 'text', '')
+                if any(keyword in prev_text.lower() for keyword in ['зображення', 'image', 'готово', 'done', 'процес']):
+                    return True
+
+            # Check user data for awaiting_images flag
+            user_data = data.get('user_data', {})
+            if isinstance(user_data, dict) and user_data.get('awaiting_images'):
+                return True
+
+    except Exception as e:
+        logger.debug("Error checking image processing context", error=str(e))
+
+    return False
+
+
 async def validate_message_content(
-    text: str, security_validator: Any, user_id: int, audit_logger: Any
+    text: str, security_validator: Any, user_id: int, audit_logger: Any, is_image_context: bool = False
 ) -> tuple[bool, str]:
     """Validate message text content for security threats."""
 
@@ -177,13 +214,21 @@ async def validate_message_content(
             return False, "Suspicious URL detected"
 
     # Sanitize content using security validator
-    sanitized = security_validator.sanitize_command_input(text)
-    if len(sanitized) < len(text) * 0.5:  # More than 50% removed
+    if is_image_context:
+        # In image processing context, use more lenient sanitization
+        sanitized = security_validator.sanitize_command_input_lenient(text)
+    else:
+        sanitized = security_validator.sanitize_command_input(text)
+
+    # Adjust threshold based on context
+    threshold = 0.7 if is_image_context else 0.5  # Allow more removal in image context
+
+    if len(sanitized) < len(text) * threshold:  # More than threshold removed
         if audit_logger:
             await audit_logger.log_security_violation(
                 user_id=user_id,
                 violation_type="excessive_sanitization",
-                details="More than 50% of content was dangerous",
+                details=f"More than {int(threshold*100)}% of content was dangerous (image_context: {is_image_context})",
                 severity="medium",
                 attempted_action="message_send",
             )
@@ -193,6 +238,7 @@ async def validate_message_content(
             user_id=user_id,
             original_length=len(text),
             sanitized_length=len(sanitized),
+            is_image_context=is_image_context,
         )
         return False, "Content contains too many dangerous characters"
 

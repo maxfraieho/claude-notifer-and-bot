@@ -149,6 +149,56 @@ class ClaudeAvailabilityMonitor:
         else:
             return "request_limit"
 
+    async def check_availability_with_details(self) -> Tuple[bool, dict]:
+        """Розширена перевірка з деталями про причину недоступності згідно з планом."""
+        is_available, reason, reset_time = await self.health_check()
+
+        details = {
+            "available": is_available,
+            "reason": reason,
+            "reset_time": reset_time,
+            "last_check": datetime.now(ZoneInfo("UTC")),
+            "status_text": "available" if is_available else reason or "unknown"
+        }
+
+        # Додати українські повідомлення для різних статусів
+        if is_available:
+            details["status_message"] = "🟢 Claude доступний"
+        elif reason == "limit" or reason == "5_hour_limit" or reason == "hourly_limit":
+            details["status_message"] = "⏳ Claude тимчасово обмежений (rate limit)"
+        elif reason == "auth":
+            details["status_message"] = "🔑 Потрібна повторна авторизація Claude"
+        elif reason == "error":
+            details["status_message"] = "🌐 Проблеми з мережею"
+        else:
+            details["status_message"] = "🔴 Claude зараз недоступний"
+
+        # Додати прогноз часу відновлення
+        if reset_time and not is_available:
+            kyiv_time = reset_time.astimezone(ZoneInfo("Europe/Kyiv"))
+            details["estimated_recovery"] = f"Очікується відновлення через: {kyiv_time.strftime('%H:%M')}"
+
+        return is_available, details
+
+    async def is_claude_available_cached(self) -> Tuple[bool, dict]:
+        """Кешована перевірка доступності."""
+        now = time.time()
+
+        # Перевірити, чи є кеш і чи не застарів він (30 секунд)
+        if (hasattr(self, '_last_cache_time') and
+            hasattr(self, '_cached_result') and
+            now - self._last_cache_time < 30):
+            return self._cached_result
+
+        # Виконати нову перевірку
+        result = await self.check_availability_with_details()
+
+        # Зберегти в кеш
+        self._last_cache_time = now
+        self._cached_result = result
+
+        return result
+
     async def health_check(self) -> Tuple[bool, Optional[str], Optional[datetime]]:
         """Perform health check by running `claude auth status`.
         
@@ -375,16 +425,105 @@ class ClaudeAvailabilityMonitor:
         try:
             # Import here to avoid circular imports
             from src.bot.features.scheduled_prompts import ScheduledPromptsManager
-            
+
             # Check if we have a scheduled prompts manager
             if not hasattr(self, '_prompts_manager'):
                 self._prompts_manager = ScheduledPromptsManager(self.application, self.settings)
-            
+
             # Trigger prompt check
             await self._prompts_manager.check_and_execute_prompts(context)
-            
+
         except Exception as e:
             logger.error(f"Error checking scheduled prompts: {e}")
+
+    async def _execute_scheduled_tasks(self, context):
+        """Execute scheduled tasks when Claude becomes available."""
+        try:
+            # Get task scheduler from bot context
+            task_scheduler = self.application.bot_data.get("task_scheduler")
+            if not task_scheduler:
+                logger.debug("Task scheduler not available")
+                return
+
+            logger.info("Claude available - checking for scheduled tasks to execute")
+
+            # Execute all pending tasks
+            results = await task_scheduler.execute_task_queue()
+
+            if results["executed"] > 0 or results["failed"] > 0:
+                logger.info(
+                    "Executed scheduled tasks",
+                    executed=results["executed"],
+                    failed=results["failed"],
+                    skipped=results["skipped"]
+                )
+
+                # Send notification about task execution if configured
+                if self.settings.claude_availability.notify_chat_ids:
+                    await self._send_task_execution_notification(results)
+
+        except Exception as e:
+            logger.error(f"Error executing scheduled tasks: {e}", exc_info=True)
+
+    async def _send_task_execution_notification(self, results: dict):
+        """Send notification about automated task execution."""
+        try:
+            now = datetime.now(ZoneInfo("Europe/Kyiv"))
+
+            message = (
+                f"🤖 **Автоматичне виконання завдань**\n"
+                f"📅 `{now.strftime('%Y-%m-%d %H:%M:%S')}`\n\n"
+                f"✅ Виконано: {results['executed']}\n"
+                f"❌ Помилок: {results['failed']}\n"
+                f"⏭️ Пропущено: {results['skipped']}\n\n"
+                f"_Всі заплановані завдання оброблені автоматично_"
+            )
+
+            # Send to notification chats during DND only (don't spam during day)
+            if self._is_dnd_time():
+                await self._send_notification(message)
+            else:
+                logger.debug("Task execution notification skipped - not DND time")
+
+        except Exception as e:
+            logger.error(f"Error sending task execution notification: {e}")
+
+    async def _handle_greeting_check(self) -> bool:
+        """Send greeting to Claude to test availability and auto-respond."""
+        try:
+            # Get Claude integration
+            claude_integration = self.application.bot_data.get("claude_integration")
+            if not claude_integration:
+                logger.debug("Claude integration not available for greeting check")
+                return False
+
+            # Send simple greeting that should get auto-response
+            greeting_prompt = "Привіт! Це автоматична перевірка доступності. Будь ласка, відповідай 'так' на всі системні запити."
+
+            # Get settings for working directory
+            working_directory = self.settings.approved_directory
+
+            logger.debug("Sending greeting to Claude CLI")
+
+            # Execute greeting with auto-respond enabled
+            response = await claude_integration.run_command(
+                prompt=greeting_prompt,
+                working_directory=working_directory,
+                user_id=0,  # System user ID for automated checks
+                session_id=None,  # Use new session
+                auto_respond=True  # Enable auto-responses
+            )
+
+            if response and response.content:
+                logger.info("Claude greeting check successful", response_length=len(response.content))
+                return True
+            else:
+                logger.warning("Claude greeting check failed - no response")
+                return False
+
+        except Exception as e:
+            logger.error(f"Error in greeting check: {e}")
+            return False
 
     async def monitor_task(self, context):
         """Main monitoring task that runs periodically."""
@@ -395,9 +534,10 @@ class ClaudeAvailabilityMonitor:
         current_available, current_reason, current_reset_time = await self.health_check()
         current_time = time.time()
         
-        # Check for scheduled prompts during DND when Claude is available
+        # Check for scheduled prompts and tasks during DND when Claude is available
         if current_available and self._is_dnd_time():
             await self._check_scheduled_prompts(context)
+            await self._execute_scheduled_tasks(context)
 
         # Load previous state
         try:
@@ -474,7 +614,7 @@ class ClaudeAvailabilityMonitor:
             # Save new state
             await self._save_state(confirmed_available, current_reason, current_reset_time)
 
-            # Handle notifications
+            # Handle notifications and task execution
             if confirmed_available and not last_available:
                 # Became available from limited/unavailable
                 message = await self._build_availability_message(
@@ -482,7 +622,16 @@ class ClaudeAvailabilityMonitor:
                     reset_expected=last_reset_expected,
                     reset_actual=reset_actual
                 )
-                
+
+                # Execute scheduled tasks immediately when Claude becomes available
+                logger.info("Claude became available - executing scheduled tasks")
+                await self._execute_scheduled_tasks(context)
+
+                # Send greeting to test and warm up Claude
+                greeting_success = await self._handle_greeting_check()
+                if greeting_success:
+                    logger.info("Claude greeting check successful - system ready for automation")
+
                 if self._is_dnd_time():
                     # Save for sending in the morning
                     self.pending_notification = {

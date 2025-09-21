@@ -1,0 +1,388 @@
+{
+  "task": "DRACON Telegram Bot Subsystem Development",
+  "mode": "laboratory",
+  "complexity": "enterprise-grade",
+  "output_format": "complete_project_with_examples",
+
+  "project_specification": {
+    "title": "DRACON-YAML Visual Algorithm Language Integration for Telegram Bot",
+    "description": "Create a comprehensive subsystem that implements the DRACON visual algorithmic language (Дружелю́бный ру́сский алгоритми́ческий язы́к, кото́рый обеспе́чивает нагля́дность) for Telegram bot logic modeling, with full compatibility with DRAKON Hub editor format",
+
+    "requirements": {
+      "core_functionality": [
+        "Complete DRACON language parser and validator",
+        "Visual schema renderer (SVG/PNG generation)",
+        "Bidirectional conversion: code ↔ DRACON ↔ YAML",
+        "Real-time schema validation with DRACON rules",
+        "Automatic code generation from DRACON schemas",
+        "Reverse engineering: existing code → DRACON schemas",
+        "Schema evolution and versioning system",
+        "Visual diff and merge capabilities"
+      ],
+
+      "dracon_language_features": [
+        "Silhouette schemas (замкнутые графы) with no line intersections",
+        "DRACON primitive blocks: Title, Action, Question, Case, Loop, Address",
+        "Macro definitions and hierarchical decomposition",
+        "Data flow analysis and variable tracking",
+        "Control flow validation and deadlock detection",
+        "DRACON syntax compliance checking",
+        "Icon-based visual representation",
+        "Russian/Ukrainian/English localization"
+      ],
+
+      "integration_features": [
+        "Telegram bot command integration (/dracon, /schema, /generate)",
+        "File management system with categories (reverse/, build/, audit/, library/)",
+        "Claude AI integration for intelligent analysis",
+        "Real-time collaboration and schema sharing",
+        "Export formats: YAML, JSON, SVG, PNG, PDF, Python code",
+        "Import from existing bot frameworks",
+        "Template library and pattern recognition",
+        "Performance optimization and caching"
+      ],
+
+      "advanced_capabilities": [
+        "Interactive schema editor with drag-and-drop",
+        "Automatic layout optimization algorithms",
+        "Schema complexity metrics and analysis",
+        "Code quality assessment based on DRACON principles",
+        "Refactoring suggestions and modernization",
+        "Multi-user concurrent editing",
+        "Version control integration (Git-like for schemas)",
+        "Schema testing and simulation framework"
+      ]
+    },
+
+    "technical_specifications": {
+      "dracon_format_compatibility": {
+        "drakon_hub_format": "Full compatibility with DRAKON Hub JSON schema format",
+        "node_types": [
+          "title", "action", "question", "case", "select", "loop_start", "loop_end",
+          "address", "end", "shelf", "timer", "parallel_start", "parallel_end"
+        ],
+        "connection_types": ["sequence", "true", "false", "case_branch", "loop_back"],
+        "visual_properties": ["position", "size", "color", "font", "icons"],
+        "metadata_support": ["version", "author", "description", "tags", "changelog"]
+      },
+
+      "file_structure": {
+        "schema_format": "YAML with DRACON-specific extensions",
+        "directory_layout": {
+          "drn/reverse/": "Reverse-engineered schemas from existing code",
+          "drn/build/": "Base framework schemas and templates",
+          "drn/audit/": "Testing, validation, and quality assurance schemas",
+          "drn/library/": "Reusable components and patterns",
+          "drn/active/": "Currently deployed and active schemas",
+          "drn/archive/": "Historical versions and backups",
+          "drn/temp/": "Working directory for temporary operations",
+          "drn/export/": "Generated outputs (SVG, PNG, code, docs)"
+        },
+        "naming_conventions": "category_name_timestamp.extension",
+        "metadata_tracking": "JSON sidecar files with full provenance"
+      },
+
+      "programming_architecture": {
+        "languages": ["Python 3.12+", "JavaScript/TypeScript for web components"],
+        "frameworks": ["python-telegram-bot", "FastAPI", "React/Vue for web UI"],
+        "dependencies": ["PyYAML", "Pillow", "svglib", "networkx", "ast", "structlog"],
+        "design_patterns": ["MVC", "Observer", "Command", "Factory", "Strategy"],
+        "testing": ["pytest", "unittest", "integration tests", "visual regression tests"]
+      }
+    },
+
+    "implementation_details": {
+      "dracon_parser": {
+        "description": "Complete DRACON language parser with AST generation",
+        "features": [
+          "Lexical analysis of DRACON constructs",
+          "Syntax validation according to DRACON rules",
+          "Semantic analysis for logical consistency",
+          "Error reporting with precise location and suggestions",
+          "Support for macro expansion and hierarchical schemas",
+          "Variable scope analysis and data flow tracking"
+        ],
+        "output_format": "Abstract Syntax Tree with DRACON-specific nodes"
+      },
+
+      "visual_renderer": {
+        "description": "SVG/PNG generation engine for DRACON schemas",
+        "features": [
+          "Professional-quality diagram rendering",
+          "Configurable themes and styling",
+          "Automatic layout algorithms (hierarchical, force-directed)",
+          "Icon library for DRACON primitives",
+          "Text rendering with proper fonts and sizing",
+          "Export to multiple formats (SVG, PNG, PDF)",
+          "Responsive design for different screen sizes",
+          "Accessibility features (alt text, high contrast)"
+        ],
+        "algorithms": "Sugiyama algorithm for hierarchical layout, stress minimization"
+      },
+
+      "code_generator": {
+        "description": "Automatic Python code generation from DRACON schemas",
+        "features": [
+          "Telegram bot handler generation",
+          "State machine implementation",
+          "Error handling and logging integration",
+          "Type hints and documentation generation",
+          "Configuration management",
+          "Testing framework integration",
+          "Performance optimization",
+          "Code style compliance (PEP 8, Black formatting)"
+        ],
+        "templates": "Jinja2-based code templates with customization"
+      },
+
+      "reverse_engineer": {
+        "description": "AST analysis and DRACON schema generation from existing code",
+        "features": [
+          "Python AST parsing and analysis",
+          "Control flow graph construction",
+          "Data dependency analysis",
+          "Pattern recognition for common bot structures",
+          "Complexity metrics calculation",
+          "Refactoring opportunity detection",
+          "Legacy code modernization suggestions",
+          "Documentation generation from code"
+        ],
+        "algorithms": "Control flow analysis, reaching definitions, live variable analysis"
+      }
+    },
+
+    "example_schemas": {
+      "simple_bot_menu": {
+        "description": "Basic bot menu with help and settings",
+        "dracon_elements": ["title", "action", "question", "case", "end"],
+        "complexity": "beginner",
+        "features": ["command handling", "inline keyboards", "state management"]
+      },
+
+      "complex_workflow": {
+        "description": "Multi-step user registration with validation",
+        "dracon_elements": ["loop", "parallel", "timer", "shelf", "address"],
+        "complexity": "advanced",
+        "features": ["form handling", "async operations", "error recovery", "timeout handling"]
+      },
+
+      "microservice_integration": {
+        "description": "Bot with external API integration and caching",
+        "dracon_elements": ["all DRACON primitives"],
+        "complexity": "expert",
+        "features": ["API calls", "caching", "rate limiting", "circuit breaker", "monitoring"]
+      }
+    },
+
+    "file_format_specifications": {
+      "dracon_yaml_schema": {
+        "version": "1.0",
+        "structure": {
+          "metadata": {
+            "name": "string",
+            "version": "semver",
+            "description": "string",
+            "author": "string",
+            "created": "ISO8601",
+            "modified": "ISO8601",
+            "tags": ["array of strings"],
+            "dracon_version": "string"
+          },
+          "canvas": {
+            "width": "number",
+            "height": "number",
+            "grid_size": "number",
+            "theme": "string",
+            "zoom": "number"
+          },
+          "nodes": [{
+            "id": "unique_string",
+            "type": "dracon_node_type",
+            "position": {"x": "number", "y": "number"},
+            "size": {"width": "number", "height": "number"},
+            "properties": {
+              "text": "string",
+              "icon": "string",
+              "color": "hex_color",
+              "font_size": "number",
+              "variable": "string",
+              "condition": "string"
+            },
+            "dracon_metadata": {
+              "is_macro": "boolean",
+              "macro_definition": "object",
+              "data_flow": ["array of variables"],
+              "complexity_score": "number"
+            }
+          }],
+          "edges": [{
+            "id": "unique_string",
+            "from_node": "node_id",
+            "to_node": "node_id",
+            "type": "dracon_connection_type",
+            "condition": "string",
+            "label": "string",
+            "control_points": [{"x": "number", "y": "number"}],
+            "dracon_metadata": {
+              "data_transfer": ["array of variables"],
+              "execution_weight": "number"
+            }
+          }],
+          "macros": [{
+            "name": "string",
+            "parameters": ["array of strings"],
+            "definition": "nested_dracon_schema"
+          }],
+          "validation_rules": {
+            "no_intersections": "boolean",
+            "single_entry_exit": "boolean",
+            "all_paths_covered": "boolean",
+            "variable_scope_check": "boolean"
+          }
+        }
+      },
+
+      "drakon_hub_compatibility": {
+        "import_export": "Full bidirectional conversion",
+        "node_mapping": "Direct mapping between DRAKON Hub and internal format",
+        "visual_preservation": "Maintain exact visual appearance",
+        "metadata_migration": "Preserve all DRAKON Hub metadata and custom properties"
+      }
+    }
+  },
+
+  "deliverables": {
+    "core_modules": [
+      "dracon_parser.py - Complete DRACON language parser",
+      "dracon_renderer.py - Visual diagram generation engine",
+      "dracon_generator.py - Code generation from schemas",
+      "dracon_reverse.py - Reverse engineering engine",
+      "dracon_storage.py - File management and versioning",
+      "dracon_validator.py - Schema validation and rule checking",
+      "dracon_optimizer.py - Layout and performance optimization",
+      "dracon_integration.py - Telegram bot command integration"
+    ],
+
+    "utility_modules": [
+      "dracon_types.py - Type definitions and data structures",
+      "dracon_themes.py - Visual themes and styling",
+      "dracon_templates.py - Code generation templates",
+      "dracon_metrics.py - Complexity analysis and metrics",
+      "dracon_export.py - Multi-format export capabilities",
+      "dracon_import.py - Import from various sources",
+      "dracon_diff.py - Schema comparison and merging",
+      "dracon_test.py - Testing and simulation framework"
+    ],
+
+    "example_implementations": [
+      "telegram_bot_example.py - Complete bot using DRACON schemas",
+      "web_editor_example.html - Browser-based schema editor",
+      "cli_tools.py - Command-line utilities for DRACON operations",
+      "api_server.py - REST API for DRACON operations",
+      "migration_tools.py - Legacy bot migration utilities"
+    ],
+
+    "documentation": [
+      "DRACON_LANGUAGE_REFERENCE.md - Complete language specification",
+      "API_DOCUMENTATION.md - Full API reference with examples",
+      "TUTORIAL.md - Step-by-step implementation guide",
+      "EXAMPLES.md - Comprehensive example gallery",
+      "PERFORMANCE_GUIDE.md - Optimization recommendations",
+      "MIGRATION_GUIDE.md - Legacy system migration",
+      "TROUBLESHOOTING.md - Common issues and solutions"
+    ],
+
+    "test_suite": [
+      "Unit tests for all modules (90%+ coverage)",
+      "Integration tests for end-to-end workflows",
+      "Performance benchmarks and stress tests",
+      "Visual regression tests for diagram rendering",
+      "Compatibility tests with DRAKON Hub format",
+      "Security tests for input validation",
+      "Load tests for concurrent operations"
+    ]
+  },
+
+  "quality_requirements": {
+    "code_quality": [
+      "Type hints throughout (mypy compliance)",
+      "Comprehensive docstrings (Google style)",
+      "Error handling with custom exceptions",
+      "Logging integration with structured logs",
+      "Configuration management with environment variables",
+      "Async/await support for performance",
+      "Memory optimization for large schemas",
+      "Security best practices implementation"
+    ],
+
+    "performance_targets": [
+      "Schema parsing: < 100ms for 1000 nodes",
+      "Visual rendering: < 500ms for complex diagrams",
+      "Code generation: < 200ms for typical bot",
+      "File operations: < 50ms for save/load",
+      "Memory usage: < 100MB for large schemas",
+      "Concurrent users: Support 100+ simultaneous operations"
+    ],
+
+    "compatibility": [
+      "Python 3.12+ support",
+      "Cross-platform compatibility (Linux, Windows, macOS)",
+      "DRAKON Hub format 100% compatibility",
+      "Telegram Bot API latest version support",
+      "Modern browser support for web components",
+      "Mobile-responsive design for touch interfaces"
+    ]
+  },
+
+  "research_areas": {
+    "dracon_language_study": [
+      "Official DRACON specification analysis",
+      "DRAKON Hub editor format reverse engineering",
+      "Academic papers on visual programming languages",
+      "Graph layout algorithms for optimal visualization",
+      "Control flow analysis techniques",
+      "Code generation best practices"
+    ],
+
+    "implementation_techniques": [
+      "AST manipulation libraries and techniques",
+      "SVG generation and optimization",
+      "Graph algorithms for schema analysis",
+      "Template engines for code generation",
+      "File format design patterns",
+      "Real-time collaboration algorithms",
+      "Version control for visual artifacts"
+    ],
+
+    "telegram_bot_integration": [
+      "python-telegram-bot library advanced features",
+      "Async programming patterns for bots",
+      "State management in conversation flows",
+      "Error handling and recovery strategies",
+      "Performance optimization for high-load bots",
+      "Security considerations for bot development"
+    ]
+  },
+
+  "success_criteria": [
+    "Complete DRACON language implementation with full compatibility",
+    "Seamless integration with existing Telegram bot framework",
+    "Professional-quality visual diagram generation",
+    "Reliable bidirectional conversion between formats",
+    "Comprehensive test suite with high coverage",
+    "Clear documentation and examples for all features",
+    "Performance meeting or exceeding specified targets",
+    "Production-ready code with proper error handling"
+  ],
+
+  "constraints_and_considerations": [
+    "Must maintain backward compatibility with existing bot code",
+    "Should follow DRACON language principles and best practices",
+    "Must handle large schemas efficiently (1000+ nodes)",
+    "Should provide clear error messages and debugging support",
+    "Must be extensible for future DRACON language features",
+    "Should integrate smoothly with existing development workflows",
+    "Must handle concurrent access and operations safely",
+    "Should provide migration path from other visual languages"
+  ]
+}

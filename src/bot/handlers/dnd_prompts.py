@@ -43,12 +43,12 @@ async def dnd_prompts_command(update: Update, context: ContextTypes.DEFAULT_TYPE
         # Створити меню управління
         keyboard = [
             [
-                InlineKeyboardButton("📝 Створити промпт", callback_data="dnd:create"),
-                InlineKeyboardButton("📋 Список промптів", callback_data="dnd:list")
+                InlineKeyboardButton(await t(context, user_id, "buttons.create_prompt"), callback_data="dnd:create"),
+                InlineKeyboardButton(await t(context, user_id, "buttons.prompts_list"), callback_data="dnd:list")
             ],
             [
-                InlineKeyboardButton("⚙️ Налаштування", callback_data="dnd:settings"),
-                InlineKeyboardButton("📊 Статистика", callback_data="dnd:stats")
+                InlineKeyboardButton(await t(context, user_id, "buttons.settings"), callback_data="dnd:settings"),
+                InlineKeyboardButton(await t(context, user_id, "buttons.statistics"), callback_data="dnd:stats")
             ],
             [
                 InlineKeyboardButton("📤 Експорт", callback_data="dnd:export"),
@@ -135,8 +135,8 @@ TAGS: git,code-review,analysis
 ```"""
 
         keyboard = [
-            [InlineKeyboardButton("📋 Шаблони промптів", callback_data="dnd:templates")],
-            [InlineKeyboardButton("⬅️ Назад до меню", callback_data="dnd:menu")]
+            [InlineKeyboardButton(await t(context, user_id, "buttons.prompt_templates"), callback_data="dnd:templates")],
+            [InlineKeyboardButton(await t(context, user_id, "buttons.back_to_menu"), callback_data="dnd:menu")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -297,8 +297,8 @@ async def list_dnd_prompts(update: Update, context: ContextTypes.DEFAULT_TYPE, c
             message_text += "\n"
         
         keyboard = [
-            [InlineKeyboardButton("📝 Створити новий", callback_data="dnd:create")],
-            [InlineKeyboardButton("⬅️ Назад", callback_data="dnd:menu")]
+            [InlineKeyboardButton(await t(context, user_id, "buttons.create_new"), callback_data="dnd:create")],
+            [InlineKeyboardButton(await t(context, user_id, "buttons.back_simple"), callback_data="dnd:menu")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         

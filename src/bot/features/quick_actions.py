@@ -119,6 +119,57 @@ class QuickActionManager:
                 context_required=["has_code"],
                 priority=3,
             ),
+            # NEW FUNCTIONAL ACTIONS
+            "ls": QuickAction(
+                id="ls",
+                name="Show Files",
+                description="List files in current directory",
+                command="ls -la",
+                icon="📋",
+                category="navigation",
+                context_required=[],  # Always available
+                priority=15,
+            ),
+            "pwd": QuickAction(
+                id="pwd",
+                name="Current Location",
+                description="Show current directory path",
+                command="pwd",
+                icon="🏠",
+                category="navigation",
+                context_required=[],
+                priority=14,
+            ),
+            "git_status": QuickAction(
+                id="git_status",
+                name="Git Status",
+                description="Show git repository status",
+                command="git status",
+                icon="💾",
+                category="git",
+                context_required=[],
+                priority=13,
+            ),
+            "grep": QuickAction(
+                id="grep",
+                name="Search TODOs",
+                description="Find TODO, FIXME, BUG comments",
+                command="grep -r \"TODO\\|FIXME\\|BUG\" . --include=\"*.py\" --include=\"*.js\" --include=\"*.ts\" || echo 'No TODO/FIXME/BUG found'",
+                icon="🔍",
+                category="search",
+                context_required=[],
+                priority=12,
+            ),
+            "find_files": QuickAction(
+                id="find_files",
+                name="Find Code Files",
+                description="Find Python, JS, TS files",
+                command="find . -type f -name \"*.py\" -o -name \"*.js\" -o -name \"*.ts\" | head -20",
+                icon="🔍",
+                category="search",
+                context_required=[],
+                priority=11,
+            ),
         }
 
     async def get_suggestions(
@@ -169,30 +220,15 @@ class QuickActionManager:
             "has_dependencies": False,
         }
 
-        # Analyze recent messages for context clues
-        if session.context:
-            recent_messages = session.context.get("recent_messages", [])
-            for msg in recent_messages:
-                content = msg.get("content", "").lower()
-
-                # Check for test indicators
-                if any(word in content for word in ["test", "pytest", "unittest"]):
-                    context["has_tests"] = True
-
-                # Check for package manager indicators
-                if any(word in content for word in ["pip", "poetry", "npm", "yarn"]):
-                    context["has_package_manager"] = True
-                    context["has_dependencies"] = True
-
-                # Check for formatter indicators
-                if any(word in content for word in ["black", "prettier", "format"]):
-                    context["has_formatter"] = True
-
-                # Check for linter indicators
-                if any(
-                    word in content for word in ["flake8", "pylint", "eslint", "mypy"]
-                ):
-                    context["has_linter"] = True
+        # Simplified context analysis without session.context dependency
+        # Just return functional actions that are always available
+        context.update({
+            "has_tests": True,  # Always suggest test actions
+            "has_package_manager": True,  # Always suggest install actions
+            "has_formatter": True,  # Always suggest format actions
+            "has_linter": True,  # Always suggest lint actions
+            "has_dependencies": True,  # Always suggest security actions
+        })
 
         # File-based context analysis could be added here
         # For now, we'll use heuristics based on session history
@@ -237,8 +273,10 @@ class QuickActionManager:
         for i, action in enumerate(actions):
             # Try to get localized action name, fallback to default
             if localization and user_lang:
-                action_text = localization.get(f"quick_actions.{action.id}.name", language=user_lang)
-                if not action_text:
+                translation_key = f"quick_actions.{action.id}.name"
+                action_text = localization.get(translation_key, language=user_lang)
+                # If translation not found, localization.get() returns the key itself
+                if not action_text or action_text == translation_key:
                     action_text = f"{action.icon} {action.name}"
             else:
                 action_text = f"{action.icon} {action.name}"

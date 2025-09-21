@@ -1,0 +1,10 @@
+{
+  "name": "full_bot_analysis",
+  "description": "Full reverse engineering with 0 handlers and 0 flows",
+  "handlers_count": 0,
+  "flows_count": 0,
+  "analysis_type": "complete_architecture",
+  "saved_at": "2025-09-19T19:27:01.177670",
+  "category": "reverse",
+  "file_path": "/home/vokov/claude-notifer-and-bot/drn/reverse/full_bot_analysis_20250919_192701.yaml"
+}

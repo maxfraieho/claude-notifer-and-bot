@@ -267,3 +267,97 @@ class UserTokenModel:
         if not self.expires_at:
             return False
         return datetime.utcnow() > self.expires_at
+
+
+@dataclass
+class ScheduledTaskModel:
+    """Scheduled task data model for automated execution."""
+
+    user_id: int
+    task_type: str
+    prompt: str
+    created_at: datetime
+    task_id: Optional[int] = None
+    scheduled_for: Optional[datetime] = None
+    auto_execute: bool = True
+    auto_respond: bool = True
+    status: str = "pending"  # pending, running, completed, failed, cancelled
+    result: Optional[str] = None
+    error_message: Optional[str] = None
+    executed_at: Optional[datetime] = None
+    execution_duration_ms: Optional[int] = None
+    retry_count: int = 0
+    max_retries: int = 3
+    priority: int = 1  # 1=high, 2=medium, 3=low
+    metadata: Optional[Dict[str, Any]] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        data = asdict(self)
+        # Convert datetime to ISO format
+        for key in ["created_at", "scheduled_for", "executed_at"]:
+            if data[key]:
+                data[key] = data[key].isoformat()
+        # Convert metadata to JSON string if present
+        if data["metadata"]:
+            data["metadata"] = json.dumps(data["metadata"])
+        return data
+
+    @classmethod
+    def from_row(cls, row: aiosqlite.Row) -> "ScheduledTaskModel":
+        """Create from database row."""
+        data = dict(row)
+
+        # Parse datetime fields
+        for field in ["created_at", "scheduled_for", "executed_at"]:
+            if data.get(field):
+                data[field] = datetime.fromisoformat(data[field])
+
+        # Parse JSON fields
+        if data.get("metadata"):
+            try:
+                data["metadata"] = json.loads(data["metadata"])
+            except (json.JSONDecodeError, TypeError):
+                data["metadata"] = {}
+
+        return cls(**data)
+
+    def is_ready_for_execution(self) -> bool:
+        """Check if task is ready for execution."""
+        if self.status != "pending":
+            return False
+
+        if self.scheduled_for:
+            return datetime.utcnow() >= self.scheduled_for
+
+        return True
+
+    def is_failed_with_retries(self) -> bool:
+        """Check if task has failed and exhausted retries."""
+        return self.status == "failed" and self.retry_count >= self.max_retries
+
+    def can_retry(self) -> bool:
+        """Check if task can be retried."""
+        return self.status == "failed" and self.retry_count < self.max_retries
+
+    def mark_running(self) -> None:
+        """Mark task as running."""
+        self.status = "running"
+
+    def mark_completed(self, result: str, duration_ms: Optional[int] = None) -> None:
+        """Mark task as completed."""
+        self.status = "completed"
+        self.result = result
+        self.executed_at = datetime.utcnow()
+        if duration_ms:
+            self.execution_duration_ms = duration_ms
+
+    def mark_failed(self, error: str) -> None:
+        """Mark task as failed and increment retry count."""
+        self.status = "failed"
+        self.error_message = error
+        self.retry_count += 1
+        self.executed_at = datetime.utcnow()
+
+
+__all__ = ["UserModel", "SessionModel", "ScheduledTaskModel"]

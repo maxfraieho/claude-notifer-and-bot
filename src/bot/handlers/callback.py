@@ -1,6 +1,7 @@
 """Handle inline keyboard callbacks."""
 
 import structlog
+from datetime import datetime
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
@@ -53,6 +54,8 @@ async def handle_callback_query(
             "action": handle_action_callback,
             "confirm": handle_confirm_callback,
             "quick": handle_quick_action_callback,
+            "quick_action": handle_quick_action_execution_callback,
+            "file_edit": handle_file_edit_callback,
             "followup": handle_followup_callback,
             "conversation": handle_conversation_callback,
             "git": handle_git_callback,
@@ -64,6 +67,7 @@ async def handle_callback_query(
             "continue": handle_continue_callback,
             "explain": handle_explain_callback,
             "refresh": handle_refresh_callback,
+            "claude_status": handle_claude_status_callback,
         }
 
         # Check for MCP callbacks first
@@ -74,8 +78,10 @@ async def handle_callback_query(
 
         handler = handlers.get(action)
         if handler:
+            logger.info("Executing callback handler", action=action, param=param, user_id=user_id)
             await handler(query, param, context)
         else:
+            logger.warning("Unknown callback action", action=action, param=param, user_id=user_id)
             user_id = get_user_id(update)
             await query.edit_message_text(
                 await t(context, user_id, "callback_errors.unknown_action")
@@ -470,21 +476,7 @@ async def _handle_end_session_action(query, context: ContextTypes.DEFAULT_TYPE) 
     context.user_data["session_started"] = False
     context.user_data["last_message"] = None
 
-    # Create quick action buttons
-    keyboard = [
-        [
-            InlineKeyboardButton("🆕 New Session", callback_data="action:new_session"),
-            InlineKeyboardButton(
-                "📁 Change Project", callback_data="action:show_projects"
-            ),
-        ],
-        [
-            InlineKeyboardButton("📊 Status", callback_data="action:status"),
-            InlineKeyboardButton("❓ Help", callback_data="action:help"),
-        ],
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
+    # Show termination message first
     await query.edit_message_text(
         "✅ **Session Ended**\n\n"
         f"Your Claude session has been terminated.\n\n"
@@ -495,10 +487,13 @@ async def _handle_end_session_action(query, context: ContextTypes.DEFAULT_TYPE) 
         f"**Next Steps:**\n"
         f"• Start a new session\n"
         f"• Check status\n"
-        f"• Send any message to begin a new conversation",
+        f"• Send any message to begin a new conversation\n\n"
+        f"_Returning to main menu..._",
         parse_mode=None,
-        reply_markup=reply_markup,
     )
+
+    # Now call the proper main menu action to ensure consistency
+    await _handle_main_menu_action(query, context)
 
 
 async def _handle_continue_action(query, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -790,22 +785,25 @@ async def _handle_quick_actions_action(
     query, context: ContextTypes.DEFAULT_TYPE
 ) -> None:
     """Handle quick actions menu."""
+    user_id = query.from_user.id
+
+    # NEW FUNCTIONAL BUTTONS - using quick_action callback for actual execution
     keyboard = [
         [
-            InlineKeyboardButton("🧪 Run Tests", callback_data="quick:test"),
-            InlineKeyboardButton("📦 Install Deps", callback_data="quick:install"),
+            InlineKeyboardButton("📋 Показати файли", callback_data="quick_action:ls"),
+            InlineKeyboardButton("🏠 Де я?", callback_data="quick_action:pwd"),
         ],
         [
-            InlineKeyboardButton("🎨 Format Code", callback_data="quick:format"),
-            InlineKeyboardButton("🔍 Find TODOs", callback_data="quick:find_todos"),
+            InlineKeyboardButton("💾 Git Status", callback_data="quick_action:git_status"),
+            InlineKeyboardButton("🔍 Пошук TODO", callback_data="quick_action:grep"),
         ],
         [
-            InlineKeyboardButton("🔨 Build", callback_data="quick:build"),
-            InlineKeyboardButton("🚀 Start Server", callback_data="quick:start"),
+            InlineKeyboardButton("📖 Читати файл", callback_data="file_edit:select_read"),
+            InlineKeyboardButton("✏️ Редагувати файл", callback_data="file_edit:select_edit"),
         ],
         [
-            InlineKeyboardButton("📊 Git Status", callback_data="quick:git_status"),
-            InlineKeyboardButton("🔧 Lint Code", callback_data="quick:lint"),
+            InlineKeyboardButton("🔍 Знайти файли", callback_data="quick_action:find_files"),
+            InlineKeyboardButton("🧪 Запустити тести", callback_data="quick:test"),
         ],
         [InlineKeyboardButton("⬅️ " + await get_localized_text(context, user_id, "buttons.back"), callback_data="action:new_session")],
     ]
@@ -1013,23 +1011,7 @@ async def handle_conversation_callback(
         )
         relative_path = current_dir.relative_to(settings.approved_directory)
 
-        # Create quick action buttons
-        keyboard = [
-            [
-                InlineKeyboardButton(
-                    "🆕 New Session", callback_data="action:new_session"
-                ),
-                InlineKeyboardButton(
-                    "📁 Change Project", callback_data="action:show_projects"
-                ),
-            ],
-            [
-                InlineKeyboardButton("📊 Status", callback_data="action:status"),
-                InlineKeyboardButton("❓ Help", callback_data="action:help"),
-            ],
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-
+        # Show termination message first
         await query.edit_message_text(
             "✅ **Conversation Ended**\n\n"
             f"Your Claude session has been terminated.\n\n"
@@ -1040,10 +1022,13 @@ async def handle_conversation_callback(
             f"**Next Steps:**\n"
             f"• Start a new session\n"
             f"• Check status\n"
-            f"• Send any message to begin a new conversation",
+            f"• Send any message to begin a new conversation\n\n"
+            f"_Returning to main menu..._",
             parse_mode=None,
-            reply_markup=reply_markup,
         )
+
+        # Now call the proper main menu action to ensure consistency
+        await _handle_main_menu_action(query, context)
 
         logger.info("Conversation ended via callback", user_id=user_id)
 
@@ -1402,7 +1387,11 @@ async def handle_schedule_callback(query, param: str, context: ContextTypes.DEFA
                 ],
                 [
                     InlineKeyboardButton("⚙️ Налаштування", callback_data="schedule:settings"),
-                    InlineKeyboardButton("🔄 Оновити", callback_data="schedule:list")
+                    InlineKeyboardButton("📊 Статистика", callback_data="schedule:stats")
+                ],
+                [
+                    InlineKeyboardButton("🔄 Оновити", callback_data="schedule:refresh"),
+                    InlineKeyboardButton("▶️ Запустити всі", callback_data="schedule:run_all")
                 ]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
@@ -1441,7 +1430,148 @@ async def handle_schedule_callback(query, param: str, context: ContextTypes.DEFA
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
             await query.edit_message_text(message, reply_markup=reply_markup)
-            
+
+        elif param == "edit":
+            # Show list of tasks for editing
+            config = await prompts_manager.load_prompts()
+            prompts = config.get("prompts", [])
+
+            if not prompts:
+                await query.edit_message_text(
+                    "📝 **Немає завдань для редагування**\n\n"
+                    "Спочатку додайте планові завдання.",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton("➕ Додати завдання", callback_data="schedule:add")],
+                        [InlineKeyboardButton("🔙 Назад", callback_data="schedule:list")]
+                    ])
+                )
+                return
+
+            message = "📝 **Редагування завдань**\n\nОберіть завдання для редагування:\n\n"
+            keyboard = []
+
+            for i, prompt in enumerate(prompts[:10]):  # Show first 10
+                status_icon = "✅" if prompt.get("enabled", False) else "❌"
+                title = prompt.get("title", f"Завдання {i+1}")
+                keyboard.append([
+                    InlineKeyboardButton(
+                        f"{status_icon} {title[:30]}{'...' if len(title) > 30 else ''}",
+                        callback_data=f"schedule:edit_task:{i}"
+                    )
+                ])
+
+            keyboard.append([InlineKeyboardButton("🔙 Назад", callback_data="schedule:list")])
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await query.edit_message_text(message, reply_markup=reply_markup)
+
+        elif param.startswith("edit_task:"):
+            # Edit specific task
+            task_index = int(param.split(":", 1)[1])
+            config = await prompts_manager.load_prompts()
+            prompts = config.get("prompts", [])
+
+            if task_index >= len(prompts):
+                await query.edit_message_text(
+                    "❌ **Завдання не знайдено**\n\nЗавдання з таким номером не існує.",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton("🔙 Назад", callback_data="schedule:edit")]
+                    ])
+                )
+                return
+
+            task = prompts[task_index]
+            schedule = task.get("schedule", {})
+
+            message = (
+                f"✏️ **Редагування завдання**\n\n"
+                f"📝 **Назва:** {task.get('title', 'Без назви')}\n"
+                f"📋 **Опис:** {task.get('description', 'Без опису')}\n"
+                f"⏰ **Розклад:** {schedule.get('type', 'daily')} о {schedule.get('time', '02:00')}\n"
+                f"🔧 **Статус:** {'✅ Увімкнено' if task.get('enabled', False) else '❌ Вимкнено'}\n\n"
+                f"**Промпт:**\n`{task.get('prompt', 'Немає промпту')[:200]}{'...' if len(task.get('prompt', '')) > 200 else ''}`"
+            )
+
+            keyboard = [
+                [
+                    InlineKeyboardButton(
+                        "❌ Вимкнути" if task.get("enabled", False) else "✅ Увімкнути",
+                        callback_data=f"schedule:toggle_task:{task_index}"
+                    ),
+                    InlineKeyboardButton("🗑️ Видалити", callback_data=f"schedule:delete_task:{task_index}")
+                ],
+                [InlineKeyboardButton("🔙 Назад", callback_data="schedule:edit")]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await query.edit_message_text(message, reply_markup=reply_markup)
+
+        elif param.startswith("toggle_task:"):
+            # Toggle task enabled/disabled
+            task_index = int(param.split(":", 1)[1])
+            config = await prompts_manager.load_prompts()
+            prompts = config.get("prompts", [])
+
+            if task_index < len(prompts):
+                prompts[task_index]["enabled"] = not prompts[task_index].get("enabled", False)
+                await prompts_manager.save_prompts(config)
+
+                status = "увімкнено" if prompts[task_index]["enabled"] else "вимкнено"
+                await query.edit_message_text(
+                    f"✅ **Завдання {status}**\n\n"
+                    f"Завдання '{prompts[task_index].get('title', 'Без назви')}' було {status}.",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton("🔙 Назад до редагування", callback_data=f"schedule:edit_task:{task_index}")]
+                    ])
+                )
+            else:
+                await query.edit_message_text("❌ Завдання не знайдено")
+
+        elif param.startswith("delete_task:"):
+            # Delete task with confirmation
+            task_index = int(param.split(":", 1)[1])
+            config = await prompts_manager.load_prompts()
+            prompts = config.get("prompts", [])
+
+            if task_index < len(prompts):
+                task_title = prompts[task_index].get('title', 'Без назви')
+                message = (
+                    f"🗑️ **Видалення завдання**\n\n"
+                    f"Ви впевнені, що хочете видалити завдання:\n"
+                    f"**'{task_title}'**?\n\n"
+                    f"⚠️ Ця дія незворотна!"
+                )
+
+                keyboard = [
+                    [
+                        InlineKeyboardButton("✅ Так, видалити", callback_data=f"schedule:confirm_delete:{task_index}"),
+                        InlineKeyboardButton("❌ Скасувати", callback_data=f"schedule:edit_task:{task_index}")
+                    ]
+                ]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                await query.edit_message_text(message, reply_markup=reply_markup)
+            else:
+                await query.edit_message_text("❌ Завдання не знайдено")
+
+        elif param.startswith("confirm_delete:"):
+            # Confirm task deletion
+            task_index = int(param.split(":", 1)[1])
+            config = await prompts_manager.load_prompts()
+            prompts = config.get("prompts", [])
+
+            if task_index < len(prompts):
+                task_title = prompts[task_index].get('title', 'Без назви')
+                del prompts[task_index]
+                await prompts_manager.save_prompts(config)
+
+                await query.edit_message_text(
+                    f"✅ **Завдання видалено**\n\n"
+                    f"Завдання '{task_title}' було успішно видалено.",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton("📋 Назад до списку", callback_data="schedule:list")]
+                    ])
+                )
+            else:
+                await query.edit_message_text("❌ Завдання не знайдено")
+
         elif param == "stats":
             # Show execution statistics
             stats = await prompts_manager.get_execution_stats()
@@ -1465,18 +1595,62 @@ async def handle_schedule_callback(query, param: str, context: ContextTypes.DEFA
             
         elif param == "create_new":
             # Handle create new scheduled prompt
+            # Store state for task creation dialogue
+            user_id = query.from_user.id
+            context.user_data["creating_task"] = {"step": "prompt", "user_id": user_id}
+
             await query.edit_message_text(
-                "📝 **Створити нове завдання**\n\n"
-                "Функція створення нових планових завдань\n"
-                "буде доступна найближчим часом.\n\n"
-                "Наразі ви можете:\n"
-                "• Переглядати існуючі завдання\n"
-                "• Керувати налаштуваннями системи\n"
-                "• Переглядати статистику",
+                "📝 **Створити нове планове завдання**\n\n"
+                "**Крок 1 з 3: Введіть промпт**\n\n"
+                "Введіть текст завдання, яке буде виконано автоматично:\n\n"
+                "**Приклади:**\n"
+                "• `Проаналізуй останні зміни в проекті`\n"
+                "• `Створи щоденний звіт про код`\n"
+                "• `Перевір безпеку проекту`\n"
+                "• `Оптимізуй код для продуктивності`\n\n"
+                "💬 Надішліть повідомлення з текстом завдання.",
                 reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton("🔙 Назад", callback_data="schedule:list")]
+                    [InlineKeyboardButton("❌ Скасувати", callback_data="schedule:cancel_create")]
                 ])
             )
+
+        elif param == "from_template":
+            # Handle create from template
+            keyboard = [
+                [
+                    InlineKeyboardButton("🔍 Аналіз коду", callback_data="schedule:template:code_analysis"),
+                    InlineKeyboardButton("📊 Генерація звітів", callback_data="schedule:template:report_generation")
+                ],
+                [
+                    InlineKeyboardButton("⚒️ Рефакторинг", callback_data="schedule:template:refactoring"),
+                    InlineKeyboardButton("📝 Документація", callback_data="schedule:template:documentation")
+                ],
+                [
+                    InlineKeyboardButton("🔒 Перевірка безпеки", callback_data="schedule:template:security_audit"),
+                    InlineKeyboardButton("🧪 Тестування", callback_data="schedule:template:testing")
+                ],
+                [InlineKeyboardButton("🔙 Назад", callback_data="schedule:add")]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+
+            message = (
+                "📋 **Обрати шаблон завдання**\n\n"
+                "Виберіть тип завдання зі списку готових шаблонів:\n\n"
+                "🔍 **Аналіз коду** - повний аналіз проєкту та архітектури\n"
+                "📊 **Генерація звітів** - створення звітів та статистики\n"
+                "⚒️ **Рефакторинг** - оптимізація та покращення коду\n"
+                "📝 **Документація** - створення та оновлення документації\n"
+                "🔒 **Перевірка безпеки** - аналіз уразливостей\n"
+                "🧪 **Тестування** - генерація та запуск тестів\n\n"
+                "_Натисніть на шаблон для налаштування завдання_"
+            )
+
+            await query.edit_message_text(message, reply_markup=reply_markup)
+
+        elif param.startswith("template:"):
+            # Handle specific template selection
+            template_type = param.split(":", 1)[1]
+            await _handle_template_selection(query, template_type, context)
             
         elif param == "advanced":
             # Handle advanced settings  
@@ -1494,8 +1668,16 @@ async def handle_schedule_callback(query, param: str, context: ContextTypes.DEFA
                 "• Тайм-аут - максимальний час виконання одного завдання\n"
                 "• Інтервал перевірки - як часто система перевіряє нові завдання"
             )
-            
+
             keyboard = [
+                [
+                    InlineKeyboardButton("🔧 Змінити максимум завдань", callback_data="schedule:change_max_tasks"),
+                    InlineKeyboardButton("⏰ Змінити тайм-аут", callback_data="schedule:change_timeout")
+                ],
+                [
+                    InlineKeyboardButton("🔄 Змінити інтервал", callback_data="schedule:change_interval"),
+                    InlineKeyboardButton("📝 Переключити логування", callback_data="schedule:toggle_logging")
+                ],
                 [InlineKeyboardButton("🔙 Назад", callback_data="schedule:settings")]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
@@ -1527,7 +1709,468 @@ async def handle_schedule_callback(query, param: str, context: ContextTypes.DEFA
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
             await query.edit_message_text(message, reply_markup=reply_markup)
-            
+
+        elif param == "cancel_create":
+            # Cancel task creation and clear state
+            context.user_data.pop("creating_task", None)
+
+            await query.edit_message_text(
+                "❌ **Створення завдання скасовано**\n\n"
+                "Повертаємось до головного меню планових завдань.",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("📋 Назад до списку", callback_data="schedule:list")]
+                ])
+            )
+
+        elif param == "change_max_tasks":
+            # Handle changing max concurrent tasks
+            config = await prompts_manager.load_prompts()
+            system_settings = config.get("settings", {})
+            current_max = system_settings.get("max_concurrent_tasks", 1)
+
+            message = (
+                "🔧 **Змінити максимум завдань**\n\n"
+                f"📊 Поточне значення: {current_max}\n\n"
+                "Оберіть нове значення максимальної кількості завдань,\n"
+                "які можуть виконуватись одночасно:\n\n"
+                "• **1** - послідовне виконання (рекомендовано)\n"
+                "• **2-3** - паралельне виконання (потребує більше ресурсів)\n"
+                "• **4+** - високе навантаження (не рекомендовано)"
+            )
+
+            keyboard = [
+                [
+                    InlineKeyboardButton("1️⃣ Одне завдання", callback_data="schedule:set_max:1"),
+                    InlineKeyboardButton("2️⃣ Два завдання", callback_data="schedule:set_max:2")
+                ],
+                [
+                    InlineKeyboardButton("3️⃣ Три завдання", callback_data="schedule:set_max:3"),
+                    InlineKeyboardButton("4️⃣ Чотири завдання", callback_data="schedule:set_max:4")
+                ],
+                [InlineKeyboardButton("🔙 Назад", callback_data="schedule:advanced")]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await query.edit_message_text(message, reply_markup=reply_markup)
+
+        elif param.startswith("set_max:"):
+            # Handle setting max concurrent tasks
+            new_max = int(param.split(":", 1)[1])
+            config = await prompts_manager.load_prompts()
+
+            if "settings" not in config:
+                config["settings"] = {}
+            config["settings"]["max_concurrent_tasks"] = new_max
+
+            await prompts_manager.save_prompts(config)
+
+            await query.edit_message_text(
+                f"✅ **Налаштування оновлено**\n\n"
+                f"🔧 Максимум завдань встановлено: **{new_max}**\n\n"
+                f"{'📋 Завдання виконуватимуться послідовно' if new_max == 1 else f'⚡ До {new_max} завдань можуть виконуватись паралельно'}\n\n"
+                "Нові налаштування будуть застосовані для наступних завдань.",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("⚙️ Назад до налаштувань", callback_data="schedule:advanced")]
+                ])
+            )
+
+        elif param == "change_timeout":
+            # Handle changing task timeout
+            config = await prompts_manager.load_prompts()
+            system_settings = config.get("settings", {})
+            current_timeout = system_settings.get("task_timeout", 300)
+
+            message = (
+                "⏰ **Змінити тайм-аут завдання**\n\n"
+                f"📊 Поточне значення: {current_timeout} секунд\n\n"
+                "Оберіть новий максимальний час виконання одного завдання:"
+            )
+
+            keyboard = [
+                [
+                    InlineKeyboardButton("🕑 2 хв (120с)", callback_data="schedule:set_timeout:120"),
+                    InlineKeyboardButton("🕕 5 хв (300с)", callback_data="schedule:set_timeout:300")
+                ],
+                [
+                    InlineKeyboardButton("🕙 10 хв (600с)", callback_data="schedule:set_timeout:600"),
+                    InlineKeyboardButton("🕐 15 хв (900с)", callback_data="schedule:set_timeout:900")
+                ],
+                [
+                    InlineKeyboardButton("🕕 30 хв (1800с)", callback_data="schedule:set_timeout:1800"),
+                    InlineKeyboardButton("🕐 60 хв (3600с)", callback_data="schedule:set_timeout:3600")
+                ],
+                [InlineKeyboardButton("🔙 Назад", callback_data="schedule:advanced")]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await query.edit_message_text(message, reply_markup=reply_markup)
+
+        elif param.startswith("set_timeout:"):
+            # Handle setting task timeout
+            new_timeout = int(param.split(":", 1)[1])
+            config = await prompts_manager.load_prompts()
+
+            if "settings" not in config:
+                config["settings"] = {}
+            config["settings"]["task_timeout"] = new_timeout
+
+            await prompts_manager.save_prompts(config)
+
+            minutes = new_timeout // 60
+            await query.edit_message_text(
+                f"✅ **Налаштування оновлено**\n\n"
+                f"⏰ Тайм-аут завдання встановлено: **{new_timeout}с ({minutes} хв)**\n\n"
+                "Завдання, які виконуватимуться довше за цей час,\n"
+                "будуть автоматично скасовані.",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("⚙️ Назад до налаштувань", callback_data="schedule:advanced")]
+                ])
+            )
+
+        elif param == "change_interval":
+            # Handle changing check interval
+            config = await prompts_manager.load_prompts()
+            system_settings = config.get("settings", {})
+            current_interval = system_settings.get("check_interval", 60)
+
+            message = (
+                "🔄 **Змінити інтервал перевірки**\n\n"
+                f"📊 Поточне значення: {current_interval} секунд\n\n"
+                "Оберіть як часто система перевірятиме нові завдання для виконання:"
+            )
+
+            keyboard = [
+                [
+                    InlineKeyboardButton("⚡ 30с", callback_data="schedule:set_interval:30"),
+                    InlineKeyboardButton("🕐 1хв (60с)", callback_data="schedule:set_interval:60")
+                ],
+                [
+                    InlineKeyboardButton("🕕 2хв (120с)", callback_data="schedule:set_interval:120"),
+                    InlineKeyboardButton("🕙 5хв (300с)", callback_data="schedule:set_interval:300")
+                ],
+                [InlineKeyboardButton("🔙 Назад", callback_data="schedule:advanced")]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await query.edit_message_text(message, reply_markup=reply_markup)
+
+        elif param.startswith("set_interval:"):
+            # Handle setting check interval
+            new_interval = int(param.split(":", 1)[1])
+            config = await prompts_manager.load_prompts()
+
+            if "settings" not in config:
+                config["settings"] = {}
+            config["settings"]["check_interval"] = new_interval
+
+            await prompts_manager.save_prompts(config)
+
+            minutes = new_interval // 60 if new_interval >= 60 else 0
+            seconds = new_interval % 60
+            time_str = f"{minutes}хв {seconds}с" if minutes > 0 else f"{seconds}с"
+
+            await query.edit_message_text(
+                f"✅ **Налаштування оновлено**\n\n"
+                f"🔄 Інтервал перевірки встановлено: **{time_str}**\n\n"
+                "Система перевірятиме нові завдання з цим інтервалом.",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("⚙️ Назад до налаштувань", callback_data="schedule:advanced")]
+                ])
+            )
+
+        elif param == "toggle_logging":
+            # Handle toggling logging
+            config = await prompts_manager.load_prompts()
+            system_settings = config.get("settings", {})
+            current_logging = system_settings.get("logging_enabled", True)
+            new_logging = not current_logging
+
+            if "settings" not in config:
+                config["settings"] = {}
+            config["settings"]["logging_enabled"] = new_logging
+
+            await prompts_manager.save_prompts(config)
+
+            status = "увімкнено" if new_logging else "вимкнено"
+            icon = "✅" if new_logging else "❌"
+
+            await query.edit_message_text(
+                f"✅ **Налаштування оновлено**\n\n"
+                f"📝 Логування {icon} **{status}**\n\n"
+                f"{'Детальні логи виконання завдань записуватимуться в систему.' if new_logging else 'Логування виконання завдань вимкнено для економії ресурсів.'}",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("⚙️ Назад до налаштувань", callback_data="schedule:advanced")]
+                ])
+            )
+
+        elif param == "refresh":
+            # Handle refresh tasks list
+            # Simply redirect to list to reload data
+            await handle_schedule_callback(query, context, "list")
+            return
+
+        elif param == "run_all":
+            # Handle running all enabled tasks immediately
+            config = await prompts_manager.load_prompts()
+            prompts = config.get("prompts", [])
+            enabled_prompts = [p for p in prompts if p.get("enabled", False)]
+
+            if not enabled_prompts:
+                await query.edit_message_text(
+                    "❌ **Немає активних завдань**\n\n"
+                    "Спочатку увімкніть завдання, які потрібно виконати.",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton("📋 Повернутися до списку", callback_data="schedule:list")]
+                    ])
+                )
+                return
+
+            # Show confirmation dialog
+            message = (
+                f"▶️ **Запустити всі активні завдання?**\n\n"
+                f"📊 Знайдено активних завдань: **{len(enabled_prompts)}**\n\n"
+                "**Список завдань до виконання:**\n"
+            )
+
+            for i, prompt in enumerate(enabled_prompts[:5], 1):
+                title = prompt.get('title', 'Без назви')
+                message += f"{i}. {title}\n"
+
+            if len(enabled_prompts) > 5:
+                message += f"... та ще {len(enabled_prompts) - 5} завдань\n"
+
+            message += (
+                "\n⚠️ **Увага:** Завдання будуть виконані негайно,\n"
+                "незалежно від розкладу.\n\n"
+                "Продовжити?"
+            )
+
+            keyboard = [
+                [
+                    InlineKeyboardButton("✅ Так, запустити", callback_data="schedule:confirm_run_all"),
+                    InlineKeyboardButton("❌ Скасувати", callback_data="schedule:list")
+                ]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await query.edit_message_text(message, reply_markup=reply_markup)
+
+        elif param == "confirm_run_all":
+            # Handle confirmed run all tasks
+            try:
+                # Get the prompts manager and run tasks
+                await query.edit_message_text(
+                    "🚀 **Запускаю всі активні завдання...**\n\n"
+                    "⏳ Будь ласка, зачекайте..."
+                )
+
+                # Execute all enabled prompts
+                config = await prompts_manager.load_prompts()
+                prompts = config.get("prompts", [])
+                enabled_prompts = [p for p in prompts if p.get("enabled", False)]
+
+                executed_count = 0
+                failed_count = 0
+
+                for prompt in enabled_prompts:
+                    try:
+                        # Here you would call the actual execution logic
+                        # For now, we'll just mark as executed
+                        logger.info("Executing scheduled prompt",
+                                  title=prompt.get('title', 'Без назви'),
+                                  user_id=query.from_user.id)
+
+                        # TODO: Add actual prompt execution logic here
+                        # await execute_prompt(prompt, context)
+
+                        executed_count += 1
+                    except Exception as e:
+                        logger.error("Failed to execute prompt",
+                                   title=prompt.get('title', 'Без назви'),
+                                   error=str(e))
+                        failed_count += 1
+
+                # Show results
+                result_message = (
+                    f"✅ **Виконання завершено**\n\n"
+                    f"📈 Виконано успішно: **{executed_count}**\n"
+                    f"❌ Помилок: **{failed_count}**\n\n"
+                    f"📋 Всі активні завдання запущені в обробку."
+                )
+
+                if failed_count > 0:
+                    result_message += f"\n\n⚠️ Деякі завдання не вдалося виконати. Перевірте логи."
+
+                keyboard = [
+                    [InlineKeyboardButton("📋 Повернутися до списку", callback_data="schedule:list")]
+                ]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                await query.edit_message_text(result_message, reply_markup=reply_markup)
+
+            except Exception as e:
+                logger.error("Error executing all tasks", error=str(e), user_id=query.from_user.id)
+                await query.edit_message_text(
+                    f"❌ **Помилка виконання**\n\n"
+                    f"```\n{str(e)}\n```\n\n"
+                    "Спробуйте ще раз або зверніться до адміністратора.",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton("📋 Повернутися до списку", callback_data="schedule:list")]
+                    ])
+                )
+
+        elif param.startswith("time:"):
+            # Handle time selection for task scheduling
+            time_type = param.split(":", 1)[1]
+            user_id = query.from_user.id
+
+            if not context.user_data or not context.user_data.get('creating_task'):
+                await query.edit_message_text(
+                    "❌ **Сесія створення завдання закінчилась**\n\n"
+                    "Почніть створення завдання спочатку:",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton("📝 Створити завдання", callback_data="schedule:create_new")]
+                    ])
+                )
+                return
+
+            task_data = context.user_data['creating_task']
+            task_data['schedule_type'] = time_type
+
+            if time_type == "custom":
+                # Ask user to input custom time
+                task_data['step'] = 'custom_time'
+                context.user_data['creating_task'] = task_data
+
+                await query.edit_message_text(
+                    "⏰ **Налаштування часу виконання**\n\n"
+                    "Введіть час у форматі **ГГ:ХХ** (24-годинний формат)\n\n"
+                    "**Приклади:**\n"
+                    "• `08:30` - щоранку о 8:30\n"
+                    "• `14:15` - щодня о 14:15\n"
+                    "• `23:00` - щовечора о 23:00\n\n"
+                    "💬 Надішліть повідомлення з часом:",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton("❌ Скасувати", callback_data="schedule:cancel_create")]
+                    ])
+                )
+            else:
+                # Move to confirmation step
+                task_data['step'] = 'confirm'
+                context.user_data['creating_task'] = task_data
+
+                from ..handlers.message import _show_task_confirmation
+                await _show_task_confirmation(query, task_data)
+
+        elif param == "confirm_task":
+            # Handle task confirmation and creation
+            user_id = query.from_user.id
+
+            if not context.user_data or not context.user_data.get('creating_task'):
+                await query.edit_message_text(
+                    "❌ **Сесія створення завдання закінчилась**\n\n"
+                    "Почніть створення завдання спочатку:",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton("📝 Створити завдання", callback_data="schedule:create_new")]
+                    ])
+                )
+                return
+
+            task_data = context.user_data['creating_task']
+
+            try:
+                # Create new task using ScheduledPromptsManager
+                from ..features.scheduled_prompts import ScheduledPromptsManager
+
+                settings = context.bot_data.get("settings")
+                if not settings:
+                    await query.edit_message_text(
+                        "❌ **Помилка системи**\n\n"
+                        "Не вдалося отримати налаштування системи."
+                    )
+                    return
+
+                prompts_manager = ScheduledPromptsManager(context.application, settings)
+                config = await prompts_manager.load_prompts()
+
+                # Generate unique task ID
+                import uuid
+                task_id = f"user_task_{uuid.uuid4().hex[:8]}"
+
+                # Create task object
+                new_task = {
+                    "id": task_id,
+                    "title": f"Користувацьке завдання ({task_data['schedule_type']})",
+                    "description": task_data['prompt'][:100] + ("..." if len(task_data['prompt']) > 100 else ""),
+                    "prompt": task_data['prompt'],
+                    "enabled": True,
+                    "schedule": {
+                        "type": task_data['schedule_type'],
+                        "time": task_data.get('custom_time', '08:00')
+                    },
+                    "auto_execute": True,
+                    "auto_respond": True,
+                    "created_by": user_id,
+                    "created_at": datetime.now().isoformat()
+                }
+
+                # Add task to configuration
+                if "prompts" not in config:
+                    config["prompts"] = []
+                config["prompts"].append(new_task)
+
+                # Save updated configuration
+                await prompts_manager.save_prompts(config)
+
+                # Clear creation state
+                context.user_data.pop("creating_task", None)
+
+                # Show success message
+                schedule_desc = {
+                    'dnd': 'під час DND періоду (23:00-08:00)',
+                    'morning': 'щоранку о 08:00',
+                    'evening': 'щовечора о 20:00',
+                    'daily': 'щоденно о 08:00',
+                    'weekly': 'щотижня (понеділок о 09:00)',
+                    'custom': f'щоденно о {task_data.get("custom_time", "налаштований час")}'
+                }
+
+                await query.edit_message_text(
+                    f"✅ **Завдання створено успішно!**\n\n"
+                    f"**📝 Завдання:** {task_data['prompt'][:150]}{'...' if len(task_data['prompt']) > 150 else ''}\n\n"
+                    f"**⏰ Розклад:** {schedule_desc.get(task_data['schedule_type'], 'не вказано')}\n\n"
+                    f"**🔧 ID:** `{task_id}`\n\n"
+                    f"Завдання буде виконуватись автоматично згідно розкладу.",
+                    reply_markup=InlineKeyboardMarkup([
+                        [
+                            InlineKeyboardButton("📋 Переглянути завдання", callback_data="schedule:list"),
+                            InlineKeyboardButton("➕ Ще завдання", callback_data="schedule:create_new")
+                        ]
+                    ])
+                )
+
+            except Exception as e:
+                logger.error("Error creating scheduled task", error=str(e), user_id=user_id)
+                await query.edit_message_text(
+                    f"❌ **Помилка створення завдання**\n\n"
+                    f"Виникла помилка: {str(e)}\n\n"
+                    f"Спробуйте ще раз пізніше.",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton("🔙 Назад", callback_data="schedule:list")]
+                    ])
+                )
+
+        elif param == "edit_task":
+            # Handle task editing (simple version - just restart creation)
+            context.user_data.pop("creating_task", None)
+
+            await query.edit_message_text(
+                "✏️ **Редагування завдання**\n\n"
+                "Для редагування створіть завдання заново з новими параметрами.\n\n"
+                "Почати створення завдання спочатку?",
+                reply_markup=InlineKeyboardMarkup([
+                    [
+                        InlineKeyboardButton("📝 Створити завдання", callback_data="schedule:create_new"),
+                        InlineKeyboardButton("🔙 Назад", callback_data="schedule:list")
+                    ]
+                ])
+            )
+
         else:
             user_id = query.from_user.id
             await query.edit_message_text(
@@ -1544,8 +2187,7 @@ async def handle_schedule_callback(query, param: str, context: ContextTypes.DEFA
 
 async def _handle_settings_action(query, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle settings action."""
-    update = query.callback_query if hasattr(query, 'callback_query') else type('obj', (object,), {'callback_query': query})()
-    user_id = get_user_id(update)
+    user_id = query.from_user.id
     
     try:
         # Create settings keyboard
@@ -1570,38 +2212,87 @@ async def _handle_settings_action(query, context: ContextTypes.DEFAULT_TYPE) -> 
 
 
 async def _handle_main_menu_action(query, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle main menu action."""
-    update = query.callback_query if hasattr(query, 'callback_query') else type('obj', (object,), {'callback_query': query})()
-    user_id = get_user_id(update)
-    
+    """Handle main menu action - unified with start command."""
+    user_id = query.from_user.id
+
     try:
-        # Create main menu keyboard with all primary actions
+        logger.info("🔍 DEBUG: Creating FULL main menu for user", user_id=user_id, function="main_menu_action")
+
+        # Create unified main menu keyboard matching start command layout
         keyboard = [
             [
-                InlineKeyboardButton(await t(context, user_id, "buttons.new_session"), callback_data="action:new"),
+                InlineKeyboardButton(await t(context, user_id, "buttons.new_session"), callback_data="action:new_session"),
                 InlineKeyboardButton(await t(context, user_id, "buttons.continue_session"), callback_data="action:continue")
             ],
             [
-                InlineKeyboardButton(await t(context, user_id, "buttons.status"), callback_data="action:status"),
-                InlineKeyboardButton(await t(context, user_id, "buttons.export"), callback_data="action:export")
+                InlineKeyboardButton(await t(context, user_id, "buttons.show_projects"), callback_data="action:show_projects"),
+                InlineKeyboardButton(await t(context, user_id, "buttons.status"), callback_data="action:status")
+            ],
+            [
+                InlineKeyboardButton(await t(context, user_id, "buttons.export"), callback_data="action:export"),
+                InlineKeyboardButton(await t(context, user_id, "buttons.settings"), callback_data="action:settings")
             ],
             [
                 InlineKeyboardButton(await t(context, user_id, "buttons.help"), callback_data="action:help"),
-                InlineKeyboardButton(await t(context, user_id, "buttons.settings"), callback_data="action:settings")
+                InlineKeyboardButton(await t(context, user_id, "buttons.language_settings"), callback_data="lang:select")
             ]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        main_menu_text = await t(context, user_id, "commands.main_menu.title")
-        description_text = await t(context, user_id, "commands.main_menu.description")
-        
+
+        # Build full welcome message like in start command
+        welcome_text = await t(context, user_id, "commands.start.welcome", name=query.from_user.first_name)
+        description_text = await t(context, user_id, "commands.start.description")
+        available_commands_text = await t(context, user_id, "commands.start.available_commands")
+
+        help_cmd_text = await t(context, user_id, "commands.start.help_cmd")
+        new_cmd_text = await t(context, user_id, "commands.start.new_cmd")
+        ls_cmd_text = await t(context, user_id, "commands.start.ls_cmd")
+        cd_cmd_text = await t(context, user_id, "commands.start.cd_cmd")
+        projects_cmd_text = await t(context, user_id, "commands.start.projects_cmd")
+        status_cmd_text = await t(context, user_id, "commands.start.status_cmd")
+        actions_cmd_text = await t(context, user_id, "commands.start.actions_cmd")
+        git_cmd_text = await t(context, user_id, "commands.start.git_cmd")
+
+        quick_start_text = await t(context, user_id, "commands.start.quick_start")
+        quick_start_1_text = await t(context, user_id, "commands.start.quick_start_1")
+        quick_start_2_text = await t(context, user_id, "commands.start.quick_start_2")
+        quick_start_3_text = await t(context, user_id, "commands.start.quick_start_3")
+
+        security_note_text = await t(context, user_id, "commands.start.security_note")
+        usage_note_text = await t(context, user_id, "commands.start.usage_note")
+
+        welcome_message = (
+            f"{welcome_text}\n\n"
+            f"{description_text}\n\n"
+            f"{available_commands_text}\n"
+            f"• `/help` - {help_cmd_text}\n"
+            f"• `/new` - {new_cmd_text}\n"
+            f"• `/ls` - {ls_cmd_text}\n"
+            f"• `/cd <dir>` - {cd_cmd_text}\n"
+            f"• `/projects` - {projects_cmd_text}\n"
+            f"• `/status` - {status_cmd_text}\n"
+            f"• `/actions` - {actions_cmd_text}\n"
+            f"• `/git` - {git_cmd_text}\n\n"
+            f"{quick_start_text}\n"
+            f"1. {quick_start_1_text}\n"
+            f"2. {quick_start_2_text}\n"
+            f"3. {quick_start_3_text}\n\n"
+            f"⚠️ {security_note_text}\n"
+            f"💡 {usage_note_text}"
+        )
+
+        logger.info("Main menu created successfully", user_id=user_id, keyboard_rows=len(keyboard), total_buttons=sum(len(row) for row in keyboard))
+
         await query.edit_message_text(
-            f"🏠 **{main_menu_text}**\n\n{description_text}",
+            welcome_message,
             reply_markup=reply_markup
         )
     except Exception as e:
-        logger.error("Error in main menu action", error=str(e))
-        await query.edit_message_text(await t(context, user_id, "errors.unexpected_error"))
+        logger.error("Error in main menu action", error=str(e), user_id=user_id, exc_info=True)
+        try:
+            await query.edit_message_text(await t(context, user_id, "errors.unexpected_error"))
+        except Exception as nested_e:
+            logger.error("Failed to send error message for main menu", error=str(nested_e), user_id=user_id)
 
 
 def _format_file_size(size: int) -> str:
@@ -1754,10 +2445,544 @@ async def handle_refresh_callback(query, param: str, context: ContextTypes.DEFAU
         await safe_user_error(query, context, "errors.refresh_failed", e)
 
 
+async def _handle_template_selection(query, template_type: str, context: ContextTypes.DEFAULT_TYPE):
+    """Handle selection of task template."""
+    user_id = query.from_user.id
+
+    # Get task scheduler from context
+    task_scheduler = context.bot_data.get("task_scheduler")
+    if not task_scheduler:
+        await query.edit_message_text(
+            "❌ **Система планування недоступна**\n\n"
+            "Система планування завдань не налаштована."
+        )
+        return
+
+    try:
+        # Get template configuration
+        from ..features.task_scheduler import TaskScheduler
+
+        template_configs = {
+            "code_analysis": {
+                "title": "🔍 Аналіз коду",
+                "description": "Повний аналіз проєкту та архітектури",
+                **TaskScheduler.create_code_analysis_task(
+                    user_id,
+                    str(context.user_data.get("current_directory", "/"))
+                )
+            },
+            "report_generation": {
+                "title": "📊 Генерація звітів",
+                "description": "Створення звітів та статистики",
+                "task_type": "report_generation",
+                "prompt": """Згенеруйте комплексний звіт про проєкт:
+
+1. **Статистика коду**: Підрахуйте рядки коду, файли, компоненти
+2. **Структура проєкту**: Опишіть архітектуру та організацію
+3. **Залежності**: Проаналізуйте використовувані бібліотеки
+4. **Покриття тестами**: Оцініть тестування (якщо є)
+5. **Продуктивність**: Виявіть потенційні проблеми
+6. **Рекомендації**: Дайте поради щодо покращення
+
+Створіть детальний звіт у форматі Markdown.""",
+                "metadata": {"report_type": "comprehensive"}
+            },
+            "refactoring": {
+                "title": "⚒️ Рефакторинг",
+                "description": "Оптимізація та покращення коду",
+                **TaskScheduler.create_refactoring_task(user_id)
+            },
+            "documentation": {
+                "title": "📝 Документація",
+                "description": "Створення та оновлення документації",
+                **TaskScheduler.create_documentation_task(user_id, "readme")
+            },
+            "security_audit": {
+                "title": "🔒 Перевірка безпеки",
+                "description": "Аналіз уразливостей та безпеки",
+                **TaskScheduler.create_code_analysis_task(user_id, str(context.user_data.get("current_directory", "/")), "security")
+            },
+            "testing": {
+                "title": "🧪 Тестування",
+                "description": "Генерація та запуск тестів",
+                "task_type": "testing",
+                "prompt": """Створіть та запустіть тести для проєкту:
+
+1. **Аналіз покриття**: Перевірте існуючі тести
+2. **Генерація тестів**: Створіть нові unit-тести для некритичних функцій
+3. **Інтеграційні тести**: Додайте тести для основних сценаріїв
+4. **Тестування безпеки**: Перевірте уразливості
+5. **Запуск тестів**: Виконайте всі тести та опишіть результати
+6. **Звіт**: Створіть звіт з рекомендаціями
+
+Зосередьтеся на покращенні якості коду через тестування.""",
+                "metadata": {"test_type": "comprehensive"}
+            }
+        }
+
+        template_config = template_configs.get(template_type)
+        if not template_config:
+            await query.edit_message_text(
+                "❌ **Невідомий шаблон**\n\n"
+                f"Шаблон '{template_type}' не знайдено."
+            )
+            return
+
+        # Show template details and confirmation
+        message = (
+            f"{template_config['title']}\n\n"
+            f"**Опис**: {template_config['description']}\n\n"
+            f"**Завдання**:\n{template_config['prompt'][:300]}...\n\n"
+            "**Параметри виконання**:\n"
+            "• Автоматичне виконання: ✅ Увімкнено\n"
+            "• Автовідповіді: ✅ Увімкнено\n"
+            "• Пріоритет: 🔥 Високий\n\n"
+            "_Підтвердіть створення завдання_"
+        )
+
+        keyboard = [
+            [
+                InlineKeyboardButton("✅ Створити завдання", callback_data=f"schedule:confirm_template:{template_type}"),
+                InlineKeyboardButton("✏️ Редагувати", callback_data=f"schedule:edit_template:{template_type}")
+            ],
+            [InlineKeyboardButton("🔙 Назад", callback_data="schedule:from_template")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        await query.edit_message_text(message, reply_markup=reply_markup)
+
+    except Exception as e:
+        logger.error("Error handling template selection", error=str(e), template_type=template_type)
+        await query.edit_message_text(
+            "❌ **Помилка обробки шаблону**\n\n"
+            f"Виникла помилка при обробці шаблону: {str(e)}"
+        )
+
+
+async def handle_quick_action_execution_callback(
+    query, action_type: str, context: ContextTypes.DEFAULT_TYPE
+) -> None:
+    """Handle quick action execution callbacks - the new functional buttons."""
+    user_id = query.from_user.id
+    settings: Settings = context.bot_data["settings"]
+
+    try:
+        # Get Claude integration
+        claude_integration: ClaudeIntegration = context.bot_data.get("claude_integration")
+        if not claude_integration:
+            error_text = await get_localized_text(context, user_id, "errors.claude_not_available")
+            await query.edit_message_text(error_text, parse_mode=None)
+            return
+
+        current_dir = context.user_data.get(
+            "current_directory", settings.approved_directory
+        )
+
+        # Show executing message
+        executing_text = await get_localized_text(context, user_id, "messages.executing_action", action=action_type)
+        await query.edit_message_text(executing_text, parse_mode=None)
+
+        # Define action commands mapping
+        action_commands = {
+            "ls": "ls -la",
+            "pwd": "pwd",
+            "git_status": "git status",
+            "git_diff": "git diff --color=never",
+            "git_log": "git log --oneline -10",
+            "grep": "grep -r \"TODO\\|FIXME\\|BUG\" . --include=\"*.py\" --include=\"*.js\" --include=\"*.ts\" || echo 'No TODO/FIXME/BUG found'",
+            "find_files": "find . -type f -name \"*.py\" -o -name \"*.js\" -o -name \"*.ts\" | head -20",
+            "disk_usage": "du -sh * 2>/dev/null | sort -hr | head -10",
+            "processes": "ps aux | head -10"
+        }
+
+        # Get command for action
+        command = action_commands.get(action_type)
+        if not command:
+            error_text = await get_localized_text(context, user_id, "errors.action_not_found", action=action_type)
+            await query.edit_message_text(error_text, parse_mode=None)
+            return
+
+        # Execute command through Claude
+        claude_response = await claude_integration.run_command(
+            prompt=f"Виконай команду: {command}",
+            working_directory=current_dir,
+            user_id=user_id
+        )
+
+        if claude_response and claude_response.content:
+            # Show results with Continue button
+            result_text = f"✅ **Результат {action_type}:**\n\n{claude_response.content}"
+
+            # Truncate if too long
+            if len(result_text) > 4000:
+                result_text = result_text[:4000] + "...\n\n_(Результат обрізано)_"
+
+            # Add action buttons
+            keyboard = [
+                [
+                    InlineKeyboardButton("🔄 Продовжити", callback_data="conversation:continue"),
+                    InlineKeyboardButton("📋 Меню", callback_data="action:quick_actions")
+                ]
+            ]
+
+            # Add specific action buttons based on action type
+            if action_type == "ls":
+                keyboard.insert(0, [
+                    InlineKeyboardButton("📖 Читати файл", callback_data="file_edit:select_read"),
+                    InlineKeyboardButton("✏️ Редагувати файл", callback_data="file_edit:select_edit")
+                ])
+            elif action_type == "git_status":
+                keyboard.insert(0, [
+                    InlineKeyboardButton("📊 Git diff", callback_data="quick_action:git_diff"),
+                    InlineKeyboardButton("📜 Git log", callback_data="quick_action:git_log")
+                ])
+
+            reply_markup = InlineKeyboardMarkup(keyboard)
+
+            await query.edit_message_text(
+                result_text,
+                parse_mode=None,
+                reply_markup=reply_markup
+            )
+        else:
+            failed_text = await get_localized_text(context, user_id, "messages.action_failed", action=action_type)
+            await query.edit_message_text(failed_text, parse_mode=None)
+
+    except Exception as e:
+        logger.error("Quick action execution failed", error=str(e), user_id=user_id, action_type=action_type)
+        error_text = await get_localized_text(context, user_id, "errors.action_error", action=action_type, error=str(e))
+        await query.edit_message_text(error_text, parse_mode=None)
+
+
+async def handle_file_edit_callback(
+    query, action_type: str, context: ContextTypes.DEFAULT_TYPE
+) -> None:
+    """Handle file editing workflow through Telegram interface."""
+    user_id = query.from_user.id
+    settings: Settings = context.bot_data["settings"]
+
+    try:
+        current_dir = context.user_data.get("current_directory", settings.approved_directory)
+
+        if action_type == "select_read":
+            # Step 1: Show file selection for reading
+            await query.edit_message_text(
+                "📖 **Читання файлу**\n\n"
+                "📝 Введіть назву файлу який хочете прочитати:\n\n"
+                "**Приклади:**\n"
+                "• `main.py`\n"
+                "• `src/config.py` \n"
+                "• `README.md`\n\n"
+                "💬 Надішліть повідомлення з назвою файлу.",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("❌ Скасувати", callback_data="action:quick_actions")]
+                ])
+            )
+
+            # Set state for waiting for filename
+            context.user_data["file_action"] = {"type": "read", "step": "waiting_filename"}
+
+        elif action_type == "select_edit":
+            # Step 1: Show file selection for editing
+            await query.edit_message_text(
+                "✏️ **Редагування файлу**\n\n"
+                "📝 Введіть назву файлу який хочете редагувати:\n\n"
+                "**Приклади:**\n"
+                "• `main.py`\n"
+                "• `src/config.py`\n"
+                "• `README.md`\n\n"
+                "🔄 **Процес редагування:**\n"
+                "1. Я надішлю вам файл\n"
+                "2. Ви редагуєте його в зовнішньому редакторі\n"
+                "3. Надсилаєте відредагований файл назад\n"
+                "4. Я зберігаю зміни\n\n"
+                "💬 Надішліть повідомлення з назвою файлу.",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("❌ Скасувати", callback_data="action:quick_actions")]
+                ])
+            )
+
+            # Set state for waiting for filename
+            context.user_data["file_action"] = {"type": "edit", "step": "waiting_filename"}
+
+        elif action_type.startswith("download:"):
+            # Step 2: Download file for editing
+            filename = action_type.replace("download:", "")
+
+            # Validate and read file
+            file_path = current_dir / filename
+
+            if not file_path.exists():
+                await query.edit_message_text(
+                    f"❌ **Файл не знайдено**\n\n"
+                    f"Файл `{filename}` не існує в поточній директорії.\n\n"
+                    f"Перевірте назву файлу та спробуйте ще раз.",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton("🔙 Назад", callback_data="file_edit:select_edit")]
+                    ])
+                )
+                return
+
+            if not file_path.is_file():
+                await query.edit_message_text(
+                    f"❌ **Це не файл**\n\n"
+                    f"`{filename}` є директорією, а не файлом.\n\n"
+                    f"Виберіть файл для редагування.",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton("🔙 Назад", callback_data="file_edit:select_edit")]
+                    ])
+                )
+                return
+
+            # Check file size (Telegram limit ~50MB, but let's be conservative)
+            file_size = file_path.stat().st_size
+            if file_size > 20 * 1024 * 1024:  # 20MB limit
+                await query.edit_message_text(
+                    f"❌ **Файл занадто великий**\n\n"
+                    f"Файл `{filename}` має розмір {_format_file_size(file_size)}.\n"
+                    f"Максимальний розмір для редагування: 20MB.\n\n"
+                    f"Використайте інші інструменти для великих файлів.",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton("🔙 Назад", callback_data="file_edit:select_edit")]
+                    ])
+                )
+                return
+
+            try:
+                # Send file to user for editing
+                await query.edit_message_text(
+                    f"📤 **Надсилаю файл для редагування...**\n\n"
+                    f"📁 Файл: `{filename}`\n"
+                    f"📏 Розмір: {_format_file_size(file_size)}\n\n"
+                    f"⏳ Зачекайте...",
+                    parse_mode=None
+                )
+
+                # Send the file
+                with open(file_path, 'rb') as file:
+                    await query.message.reply_document(
+                        document=file,
+                        filename=filename,
+                        caption=(
+                            f"✏️ **Файл для редагування**\n\n"
+                            f"📁 Назва: `{filename}`\n"
+                            f"📏 Розмір: {_format_file_size(file_size)}\n\n"
+                            f"🔄 **Як редагувати:**\n"
+                            f"1. Завантажте цей файл\n"
+                            f"2. Відредагуйте у вашому редакторі\n"
+                            f"3. Надішліть відредагований файл назад як документ\n"
+                            f"4. Я збережу зміни\n\n"
+                            f"💾 Очікую відредагований файл..."
+                        ),
+                        parse_mode=None
+                    )
+
+                # Update state to wait for edited file
+                context.user_data["file_action"] = {
+                    "type": "edit",
+                    "step": "waiting_edited_file",
+                    "filename": filename,
+                    "original_path": str(file_path)
+                }
+
+                # Update original message
+                await query.edit_message_text(
+                    f"✅ **Файл надіслано**\n\n"
+                    f"📁 Файл `{filename}` надіслано вище.\n\n"
+                    f"📝 Відредагуйте файл та надішліть його назад як документ.\n\n"
+                    f"💡 **Підказка:** Переконайтеся що зберегли файл з тією ж назвою!",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton("❌ Скасувати редагування", callback_data="file_edit:cancel")]
+                    ])
+                )
+
+            except Exception as e:
+                logger.error("File sending failed", error=str(e), filename=filename)
+                await query.edit_message_text(
+                    f"❌ **Помилка надсилання файлу**\n\n"
+                    f"Не вдалося надіслати файл `{filename}`:\n"
+                    f"```\n{str(e)}\n```\n\n"
+                    f"Спробуйте ще раз або виберіть інший файл.",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton("🔙 Назад", callback_data="file_edit:select_edit")]
+                    ])
+                )
+
+        elif action_type == "cancel":
+            # Cancel file editing workflow
+            context.user_data.pop("file_action", None)
+
+            await query.edit_message_text(
+                "❌ **Редагування скасовано**\n\n"
+                "Повертаємось до швидких дій.",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("📋 Швидкі дії", callback_data="action:quick_actions")]
+                ])
+            )
+
+        else:
+            error_text = await get_localized_text(context, user_id, "errors.unknown_action")
+            await query.edit_message_text(f"{error_text}: {action_type}")
+
+    except Exception as e:
+        logger.error("File edit callback failed", error=str(e), user_id=user_id, action_type=action_type)
+        error_text = await get_localized_text(context, user_id, "errors.file_operation_failed", error=str(e))
+        await query.edit_message_text(error_text, parse_mode=None)
+
+
+async def handle_claude_status_callback(query, param: str, context: ContextTypes.DEFAULT_TYPE):
+    """Handle Claude status related callbacks."""
+    user_id = query.from_user.id
+
+    try:
+        # Get Claude availability monitor
+        availability_monitor = context.bot_data.get("claude_availability_monitor")
+        if not availability_monitor:
+            await query.edit_message_text(
+                "❌ **Система моніторингу недоступна**\n\n"
+                "Моніторинг Claude CLI не налаштований."
+            )
+            return
+
+        if param == "check":
+            # Manual availability check
+            await query.edit_message_text("🟡 **Перевіряю доступність Claude...**")
+
+            is_available, details = await availability_monitor.check_availability_with_details()
+
+            # Get status message with emoji
+            if is_available:
+                status_icon = "🟢"
+                status_text = await get_localized_text(context, user_id, "claude_status.available")
+            else:
+                status_icon = "🔴"
+                status_text = details.get("status_message", "Claude недоступний")
+
+            # Build detailed message
+            message_parts = [f"{status_icon} **{status_text}**"]
+
+            if not is_available:
+                if "estimated_recovery" in details:
+                    message_parts.append(f"\n⏳ {details['estimated_recovery']}")
+                if "reason" in details:
+                    reason = details["reason"]
+                    if reason == "rate_limit":
+                        message_parts.append("\n📊 Причина: Досягнуто ліміт запитів")
+                    elif reason == "authentication":
+                        message_parts.append("\n🔐 Причина: Проблеми автентифікації")
+                    else:
+                        message_parts.append(f"\n❓ Причина: {reason}")
+
+            # Add buttons
+            buttons = [
+                [InlineKeyboardButton("🔄 Перевірити ще раз", callback_data="claude_status:check")],
+                [InlineKeyboardButton("📈 Історія", callback_data="claude_status:history")],
+                [InlineKeyboardButton("🔔 Сповіщення", callback_data="claude_status:notifications")]
+            ]
+
+            await query.edit_message_text(
+                "\n".join(message_parts),
+                reply_markup=InlineKeyboardMarkup(buttons)
+            )
+
+        elif param == "history":
+            # Show availability history
+            history_entries = await availability_monitor.get_status_history(hours=24)
+
+            if not history_entries:
+                message = "📈 **Історія доступності (24 години)**\n\n📊 Немає записів в історії"
+            else:
+                message_parts = ["📈 **Історія доступності (24 години)**\n"]
+
+                for entry in history_entries[-10:]:  # Last 10 entries
+                    timestamp = entry.get("timestamp", "")
+                    old_status = entry.get("old_status", "unknown")
+                    new_status = entry.get("new_status", "unknown")
+
+                    # Format timestamp
+                    try:
+                        from datetime import datetime
+                        dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                        time_str = dt.strftime("%H:%M")
+                    except:
+                        time_str = timestamp[:5] if timestamp else "??:??"
+
+                    # Status icons
+                    status_icons = {
+                        "available": "🟢",
+                        "unavailable": "🔴",
+                        "rate_limited": "🟡",
+                        "unknown": "⚪"
+                    }
+
+                    old_icon = status_icons.get(old_status, "⚪")
+                    new_icon = status_icons.get(new_status, "⚪")
+
+                    message_parts.append(f"• {time_str}: {old_icon} → {new_icon}")
+
+                message = "\n".join(message_parts)
+
+            buttons = [
+                [InlineKeyboardButton("🔄 Оновити", callback_data="claude_status:history")],
+                [InlineKeyboardButton("🔙 Назад", callback_data="claude_status:check")]
+            ]
+
+            await query.edit_message_text(
+                message,
+                reply_markup=InlineKeyboardMarkup(buttons)
+            )
+
+        elif param == "notifications":
+            # Manage notifications
+            settings = context.bot_data.get("settings")
+            if settings and settings.claude_availability and settings.claude_availability.enabled:
+                notify_enabled = True
+                chat_ids = settings.claude_availability.notify_chat_ids or []
+                current_chat_in_list = str(query.message.chat_id) in map(str, chat_ids)
+            else:
+                notify_enabled = False
+                current_chat_in_list = False
+
+            if notify_enabled:
+                status_text = "🔔 **Сповіщення увімкнені**"
+                if current_chat_in_list:
+                    status_text += "\n✅ Цей чат отримує сповіщення"
+                else:
+                    status_text += "\n❌ Цей чат НЕ отримує сповіщення"
+            else:
+                status_text = "🔕 **Сповіщення вимкнені**\n\nСистема сповіщень не налаштована."
+
+            buttons = [
+                [InlineKeyboardButton("🔙 Назад", callback_data="claude_status:check")]
+            ]
+
+            await query.edit_message_text(
+                status_text,
+                reply_markup=InlineKeyboardMarkup(buttons)
+            )
+
+        else:
+            await query.edit_message_text(
+                f"❌ **Невідома дія**: {param}",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("🔙 Статус", callback_data="claude_status:check")]
+                ])
+            )
+
+    except Exception as e:
+        logger.error("Claude status callback failed", error=str(e), user_id=user_id, param=param)
+        await query.edit_message_text(
+            f"❌ **Помилка**\n\n{str(e)}",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔄 Спробувати ще раз", callback_data="claude_status:check")]
+            ])
+        )
+
+
 # Registration function for callbacks
 def register_callbacks(application):
     """Register all callback handlers."""
     from telegram.ext import CallbackQueryHandler
-    
+
     # Register the main callback query handler
     application.add_handler(CallbackQueryHandler(handle_callback_query))

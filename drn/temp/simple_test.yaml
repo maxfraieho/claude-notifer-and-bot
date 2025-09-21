@@ -1,0 +1,80 @@
+canvas:
+  grid_size: 20
+  height: 800
+  theme: default
+  width: 1200
+  zoom: 1.0
+edges:
+- condition: null
+  control_points: []
+  edge_metadata:
+    data_transfer: []
+    execution_weight: 1
+  edge_type: !!python/object/apply:dracon_types.EdgeType
+  - sequence
+  from_node: start
+  id: start_to_end
+  label: ''
+  to_node: end
+macros: []
+metadata:
+  author: Test System
+  created: 2025-09-19 23:59:09.683787
+  description: Simple test
+  dracon_version: '1.0'
+  modified: 2025-09-19 23:59:09.683805
+  name: Simple Test Schema
+  tags: []
+  version: 1.0.0
+nodes:
+- dracon_metadata:
+    complexity_score: 0
+    data_flow: []
+    is_macro: false
+    macro_definition: null
+  id: start
+  node_type: !!python/object/apply:dracon_types.NodeType
+  - title
+  position:
+    x: 100
+    y: 100
+  properties:
+    text: Start
+  size:
+    height: 60
+    width: 120
+  visual_properties:
+    background_color: '#f0f0f0'
+    border_color: '#000000'
+    border_width: 1
+    color: '#ffffff'
+    font_family: Arial
+    font_size: 12
+- dracon_metadata:
+    complexity_score: 0
+    data_flow: []
+    is_macro: false
+    macro_definition: null
+  id: end
+  node_type: !!python/object/apply:dracon_types.NodeType
+  - end
+  position:
+    x: 300
+    y: 100
+  properties:
+    text: End
+  size:
+    height: 50
+    width: 100
+  visual_properties:
+    background_color: '#f0f0f0'
+    border_color: '#000000'
+    border_width: 1
+    color: '#ffffff'
+    font_family: Arial
+    font_size: 12
+validation_rules:
+  all_paths_covered: true
+  no_intersections: true
+  single_entry_exit: true
+  variable_scope_check: true

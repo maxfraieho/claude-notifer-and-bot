@@ -1,0 +1,467 @@
+version: "1.0"
+name: "Claude Code Bot System Analysis"
+description: "DRACON схема архітектури та логіки Claude Code Telegram Bot"
+
+metadata:
+  author: "Enhanced DRACON System"
+  created: "2024-12-19"
+  version: "1.0.0"
+  category: "system_analysis"
+  complexity: "enterprise"
+
+  analysis_data:
+    total_files_analyzed: 4303
+    critical_issues: 21
+    high_priority_issues: 1870
+    medium_priority_issues: 2410
+    low_priority_issues: 2
+
+canvas:
+  width: 1600
+  height: 1200
+  grid_size: 50
+  theme: "enterprise"
+  zoom: 0.8
+
+nodes:
+  # === ENTRY POINTS ===
+  - id: "telegram_webhook"
+    type: "title"
+    name: "Telegram Webhook"
+    description: "Отримання повідомлень від Telegram API"
+    position: [100, 100]
+    size: [160, 80]
+    properties:
+      text: "📡 Telegram Update"
+      color: "#4a90e2"
+      icon: "webhook"
+
+  - id: "user_authentication"
+    type: "question"
+    name: "Аутентифікація користувача"
+    description: "Перевірка прав доступу користувача"
+    position: [350, 100]
+    size: [180, 100]
+    properties:
+      text: "🔐 Перевірка доступу"
+      condition: "user_id in whitelist OR valid_token"
+      color: "#f5a623"
+
+  - id: "reject_access"
+    type: "end"
+    name: "Відхилення доступу"
+    description: "Блокування неавторизованого користувача"
+    position: [200, 250]
+    size: [140, 60]
+    properties:
+      text: "❌ Доступ заборонено"
+      color: "#d0021b"
+
+  # === COMMAND ROUTING ===
+  - id: "command_router"
+    type: "case"
+    name: "Маршрутизація команд"
+    description: "Розподіл команд по обробникам"
+    position: [600, 100]
+    size: [200, 120]
+    properties:
+      text: "🎯 Розподіл команд"
+      cases: ["navigation", "session", "dracon", "mcp", "system"]
+      color: "#9013fe"
+
+  # === NAVIGATION COMMANDS ===
+  - id: "navigation_handler"
+    type: "action"
+    name: "Навігаційні команди"
+    description: "Обробка команд файлової навігації"
+    position: [100, 350]
+    size: [180, 100]
+    properties:
+      text: "📁 Навігація"
+      commands: ["/ls", "/cd", "/pwd", "/projects"]
+      template: "Операції з файловою системою"
+      color: "#7ed321"
+
+  - id: "security_validation"
+    type: "question"
+    name: "Валідація безпеки"
+    description: "Перевірка шляхів файлів на безпеку"
+    position: [100, 500]
+    size: [180, 80]
+    properties:
+      text: "🛡️ Валідація шляхів"
+      condition: "path_is_safe AND within_approved_dir"
+      color: "#f5a623"
+
+  # === SESSION MANAGEMENT ===
+  - id: "session_handler"
+    type: "action"
+    name: "Управління сесіями"
+    description: "Обробка Claude сесій"
+    position: [350, 350]
+    size: [180, 100]
+    properties:
+      text: "🔄 Claude Sessions"
+      commands: ["/new", "/continue", "/status", "/export"]
+      template: "Операції з Claude CLI/SDK"
+      color: "#7ed321"
+
+  - id: "claude_integration"
+    type: "case"
+    name: "Claude інтеграція"
+    description: "Вибір між CLI та SDK"
+    position: [350, 500]
+    size: [180, 100]
+    properties:
+      text: "⚙️ CLI vs SDK"
+      cases: ["cli_mode", "sdk_mode", "fallback"]
+      color: "#9013fe"
+
+  # === DRACON SYSTEM ===
+  - id: "dracon_handler"
+    type: "action"
+    name: "DRACON система"
+    description: "Обробка DRACON команд"
+    position: [600, 350]
+    size: [200, 120]
+    properties:
+      text: "🎨 DRACON System"
+      commands: ["/dracon", "/refactor"]
+      features: ["visual_diagrams", "code_generation", "reverse_engineering"]
+      template: "Візуальне моделювання логіки бота"
+      color: "#50e3c2"
+
+  - id: "dracon_parser"
+    type: "action"
+    name: "DRACON Parser"
+    description: "Парсинг YAML схем"
+    position: [450, 500]
+    size: [160, 80]
+    properties:
+      text: "📝 YAML Parser"
+      features: ["syntax_validation", "semantic_analysis"]
+      color: "#7ed321"
+
+  - id: "dracon_renderer"
+    type: "action"
+    name: "Візуальний рендерер"
+    description: "Генерація SVG/PNG діаграм"
+    position: [650, 500]
+    size: [160, 80]
+    properties:
+      text: "🎨 Visual Renderer"
+      output_formats: ["svg", "png"]
+      color: "#7ed321"
+
+  - id: "dracon_generator"
+    type: "action"
+    name: "Генератор коду"
+    description: "Створення Python коду з схем"
+    position: [850, 500]
+    size: [160, 80]
+    properties:
+      text: "⚙️ Code Generator"
+      templates: ["jinja2", "telegram_bot"]
+      color: "#7ed321"
+
+  # === MCP SYSTEM ===
+  - id: "mcp_handler"
+    type: "action"
+    name: "MCP система"
+    description: "Model Context Protocol обробка"
+    position: [900, 350]
+    size: [180, 100]
+    properties:
+      text: "🔗 MCP Protocol"
+      commands: ["/mcpadd", "/mcplist", "/mcpselect"]
+      features: ["external_tools", "context_management"]
+      color: "#50e3c2"
+
+  # === SYSTEM COMMANDS ===
+  - id: "system_handler"
+    type: "action"
+    name: "Системні команди"
+    description: "Системне управління ботом"
+    position: [1150, 350]
+    size: [180, 100]
+    properties:
+      text: "⚙️ System Control"
+      commands: ["/restart", "/help", "/actions"]
+      color: "#7ed321"
+
+  # === AUDIT AND MONITORING ===
+  - id: "audit_logger"
+    type: "action"
+    name: "Аудит та логування"
+    description: "Запис операцій для безпеки"
+    position: [100, 700]
+    size: [200, 80]
+    properties:
+      text: "📊 Audit Logging"
+      features: ["command_tracking", "security_events"]
+      color: "#b8e986"
+
+  - id: "rate_limiter"
+    type: "question"
+    name: "Обмеження швидкості"
+    description: "Контроль частоти запитів"
+    position: [350, 700]
+    size: [180, 80]
+    properties:
+      text: "⏱️ Rate Limiting"
+      condition: "requests_per_minute < limit"
+      color: "#f5a623"
+
+  # === ERROR HANDLING ===
+  - id: "error_handler"
+    type: "action"
+    name: "Обробка помилок"
+    description: "Централізована обробка помилок"
+    position: [600, 700]
+    size: [200, 100]
+    properties:
+      text: "🚨 Error Handler"
+      issues_found:
+        critical: 21
+        high: 1870
+        medium: 2410
+      features: ["safe_user_error", "structured_logging"]
+      color: "#d0021b"
+
+  # === LOCALIZATION ===
+  - id: "localization"
+    type: "action"
+    name: "Локалізація"
+    description: "Підтримка багатьох мов"
+    position: [850, 700]
+    size: [180, 80]
+    properties:
+      text: "🌐 Localization"
+      languages: ["uk", "en"]
+      issues: "hardcoded_buttons_detected"
+      color: "#f5a623"
+
+  # === STORAGE ===
+  - id: "storage_system"
+    type: "action"
+    name: "Система зберігання"
+    description: "База даних та файли"
+    position: [1100, 700]
+    size: [180, 100]
+    properties:
+      text: "💾 Storage"
+      components: ["sqlite_db", "file_system", "dracon_categories"]
+      color: "#7ed321"
+
+  # === RESPONSE GENERATION ===
+  - id: "response_formatter"
+    type: "action"
+    name: "Форматування відповідей"
+    description: "Підготовка відповідей користувачу"
+    position: [600, 900]
+    size: [200, 80]
+    properties:
+      text: "📤 Response Format"
+      formats: ["text", "markdown", "images", "files"]
+      color: "#7ed321"
+
+  - id: "telegram_send"
+    type: "end"
+    name: "Відправка в Telegram"
+    description: "Відправлення відповіді користувачу"
+    position: [900, 900]
+    size: [160, 60]
+    properties:
+      text: "📨 Send Response"
+      color: "#4a90e2"
+
+edges:
+  # Main flow
+  - id: "webhook_to_auth"
+    from_node: "telegram_webhook"
+    to_node: "user_authentication"
+    type: "sequence"
+    label: "Incoming message"
+
+  - id: "auth_reject"
+    from_node: "user_authentication"
+    to_node: "reject_access"
+    type: "false"
+    label: "Unauthorized"
+
+  - id: "auth_success"
+    from_node: "user_authentication"
+    to_node: "command_router"
+    type: "true"
+    label: "Authorized"
+
+  # Command routing
+  - id: "route_navigation"
+    from_node: "command_router"
+    to_node: "navigation_handler"
+    type: "case_branch"
+    label: "Navigation commands"
+
+  - id: "route_session"
+    from_node: "command_router"
+    to_node: "session_handler"
+    type: "case_branch"
+    label: "Session commands"
+
+  - id: "route_dracon"
+    from_node: "command_router"
+    to_node: "dracon_handler"
+    type: "case_branch"
+    label: "DRACON commands"
+
+  - id: "route_mcp"
+    from_node: "command_router"
+    to_node: "mcp_handler"
+    type: "case_branch"
+    label: "MCP commands"
+
+  - id: "route_system"
+    from_node: "command_router"
+    to_node: "system_handler"
+    type: "case_branch"
+    label: "System commands"
+
+  # Navigation flow
+  - id: "nav_to_security"
+    from_node: "navigation_handler"
+    to_node: "security_validation"
+    type: "sequence"
+    label: "Path validation"
+
+  # Session flow
+  - id: "session_to_claude"
+    from_node: "session_handler"
+    to_node: "claude_integration"
+    type: "sequence"
+    label: "Claude processing"
+
+  # DRACON flow
+  - id: "dracon_to_parser"
+    from_node: "dracon_handler"
+    to_node: "dracon_parser"
+    type: "sequence"
+    label: "Parse YAML"
+
+  - id: "dracon_to_renderer"
+    from_node: "dracon_handler"
+    to_node: "dracon_renderer"
+    type: "sequence"
+    label: "Generate diagram"
+
+  - id: "dracon_to_generator"
+    from_node: "dracon_handler"
+    to_node: "dracon_generator"
+    type: "sequence"
+    label: "Generate code"
+
+  # Cross-cutting concerns
+  - id: "all_to_audit"
+    from_node: "command_router"
+    to_node: "audit_logger"
+    type: "sequence"
+    label: "Log all operations"
+
+  - id: "all_to_rate_limit"
+    from_node: "command_router"
+    to_node: "rate_limiter"
+    type: "sequence"
+    label: "Check rate limits"
+
+  - id: "rate_limit_fail"
+    from_node: "rate_limiter"
+    to_node: "error_handler"
+    type: "false"
+    label: "Rate exceeded"
+
+  # Response flow
+  - id: "nav_to_response"
+    from_node: "security_validation"
+    to_node: "response_formatter"
+    type: "true"
+    label: "Safe operation"
+
+  - id: "session_to_response"
+    from_node: "claude_integration"
+    to_node: "response_formatter"
+    type: "sequence"
+    label: "Claude response"
+
+  - id: "dracon_to_response"
+    from_node: "dracon_parser"
+    to_node: "response_formatter"
+    type: "sequence"
+    label: "DRACON result"
+
+  - id: "mcp_to_response"
+    from_node: "mcp_handler"
+    to_node: "response_formatter"
+    type: "sequence"
+    label: "MCP result"
+
+  - id: "system_to_response"
+    from_node: "system_handler"
+    to_node: "response_formatter"
+    type: "sequence"
+    label: "System response"
+
+  - id: "response_to_send"
+    from_node: "response_formatter"
+    to_node: "telegram_send"
+    type: "sequence"
+    label: "Send to user"
+
+  # Error flows
+  - id: "security_fail"
+    from_node: "security_validation"
+    to_node: "error_handler"
+    type: "false"
+    label: "Security violation"
+
+  - id: "error_to_response"
+    from_node: "error_handler"
+    to_node: "response_formatter"
+    type: "sequence"
+    label: "Error message"
+
+validation_rules:
+  no_intersections: true
+  single_entry_exit: true
+  all_paths_covered: true
+  variable_scope_check: true
+
+macros:
+  - name: "command_processing"
+    parameters: ["command_type", "handler"]
+    definition:
+      description: "Стандартний макрос обробки команд"
+      steps: ["validation", "processing", "response", "audit"]
+
+dracon_metadata:
+  complexity_metrics:
+    total_nodes: 19
+    total_edges: 22
+    max_depth: 4
+    cyclomatic_complexity: 12
+
+  system_analysis:
+    architecture_style: "layered_with_middleware"
+    security_level: "enterprise"
+    scalability: "high"
+    maintainability: "good_with_issues"
+
+  audit_findings:
+    critical_issues: 21
+    main_problems:
+      - "Silent exception handling (except: pass)"
+      - "Hardcoded button texts"
+      - "Missing localization"
+    recommendations:
+      - "Implement proper error handling"
+      - "Move hardcoded texts to localization files"
+      - "Add comprehensive testing"
+      - "Improve documentation"

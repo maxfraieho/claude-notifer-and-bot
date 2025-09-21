@@ -346,6 +346,41 @@ class SecurityValidator:
 
         return sanitized
 
+    def sanitize_command_input_lenient(self, text: str) -> str:
+        """Sanitize text input for commands with lenient rules for image processing context.
+
+        This allows Markdown characters like # while still blocking dangerous patterns.
+        """
+        if not text:
+            return ""
+
+        # Remove dangerous characters but allow Markdown formatting
+        # Allow # for headers, * for emphasis, etc.
+        sanitized = re.sub(r"[`$;|&<>\x00-\x1f\x7f]", "", text)
+
+        # Limit length to prevent buffer overflow attacks
+        max_length = 5000  # Higher limit for image context with detailed prompts
+        if len(sanitized) > max_length:
+            sanitized = sanitized[:max_length]
+            logger.warning(
+                "Command input truncated (lenient)",
+                original_length=len(text),
+                truncated_length=len(sanitized),
+            )
+
+        # Keep original whitespace structure for formatted text
+        # Only collapse excessive runs of whitespace
+        sanitized = re.sub(r'\s{3,}', '  ', sanitized)
+
+        if sanitized != text:
+            logger.debug(
+                "Command input sanitized (lenient)",
+                original=text[:100],  # Log first 100 chars
+                sanitized=sanitized[:100],
+            )
+
+        return sanitized
+
     def validate_command_args(
         self, args: List[str]
     ) -> Tuple[bool, List[str], Optional[str]]:

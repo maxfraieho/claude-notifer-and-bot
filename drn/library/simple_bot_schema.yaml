@@ -1,0 +1,155 @@
+metadata:
+  name: "Simple Telegram Bot"
+  version: "1.0.0"
+  description: "A simple bot demonstrating DRACON workflow"
+  author: "DRACON System"
+  created: "2025-09-19T19:16:00Z"
+  modified: "2025-09-19T19:16:00Z"
+  tags: ["telegram", "bot", "simple"]
+  dracon_version: "1.0"
+
+canvas:
+  width: 1200
+  height: 800
+  grid_size: 20
+  theme: "default"
+  zoom: 1.0
+
+nodes:
+  - id: "start"
+    type: "title"
+    position:
+      x: 100
+      y: 100
+    size:
+      width: 120
+      height: 60
+    properties:
+      text: "Welcome to Simple Bot!"
+      icon: "start_icon.svg"
+    dracon_metadata:
+      is_macro: false
+      data_flow: []
+      complexity_score: 1
+    visual_properties:
+      color: "#4a90e2"
+      font_size: 14
+      font_family: "Arial"
+
+  - id: "main_menu"
+    type: "question"  
+    position:
+      x: 100
+      y: 250
+    size:
+      width: 150
+      height: 80
+    properties:
+      text: "What would you like to do?"
+      icon: "question_icon.svg"
+    dracon_metadata:
+      is_macro: false
+      data_flow: ["user_choice"]
+      complexity_score: 2
+
+  - id: "show_help"
+    type: "action"
+    position:
+      x: 50
+      y: 400
+    size:
+      width: 100
+      height: 50
+    properties:
+      text: "Show help information"
+      icon: "action_icon.svg"
+    dracon_metadata:
+      is_macro: false
+      data_flow: []
+      complexity_score: 1
+
+  - id: "show_status"
+    type: "action"
+    position:
+      x: 200
+      y: 400
+    size:
+      width: 100
+      height: 50
+    properties:
+      text: "Show bot status"
+      icon: "action_icon.svg"
+    dracon_metadata:
+      is_macro: false
+      data_flow: []
+      complexity_score: 1
+
+  - id: "end_session"
+    type: "end"
+    position:
+      x: 100
+      y: 550
+    size:
+      width: 80
+      height: 40
+    properties:
+      text: "Thank you for using our bot!"
+      icon: "end_icon.svg"
+    dracon_metadata:
+      is_macro: false
+      data_flow: []
+      complexity_score: 1
+
+edges:
+  - id: "start_to_menu"
+    from_node: "start"
+    to_node: "main_menu"
+    type: "sequence"
+    label: ""
+    dracon_metadata:
+      data_transfer: []
+      execution_weight: 1
+
+  - id: "menu_to_help"
+    from_node: "main_menu" 
+    to_node: "show_help"
+    type: "true"
+    condition: "user_choice == 'help'"
+    label: "Help"
+    dracon_metadata:
+      data_transfer: ["user_choice"]
+      execution_weight: 1
+
+  - id: "menu_to_status"
+    from_node: "main_menu"
+    to_node: "show_status" 
+    type: "true"
+    condition: "user_choice == 'status'"
+    label: "Status"
+    dracon_metadata:
+      data_transfer: ["user_choice"]
+      execution_weight: 1
+
+  - id: "help_to_end"
+    from_node: "show_help"
+    to_node: "end_session"
+    type: "sequence"
+    dracon_metadata:
+      data_transfer: []
+      execution_weight: 1
+
+  - id: "status_to_end"
+    from_node: "show_status"
+    to_node: "end_session"
+    type: "sequence"
+    dracon_metadata:
+      data_transfer: []
+      execution_weight: 1
+
+macros: []
+
+validation_rules:
+  no_intersections: true
+  single_entry_exit: true
+  all_paths_covered: true
+  variable_scope_check: true

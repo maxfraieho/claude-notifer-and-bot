@@ -1,0 +1,9 @@
+{
+  "name": "test_reverse_engineering",
+  "description": "Test reverse engineering with 0 handlers",
+  "handlers_count": 0,
+  "flows_count": 0,
+  "saved_at": "2025-09-19T19:25:43.568260",
+  "category": "reverse",
+  "file_path": "/home/vokov/claude-notifer-and-bot/drn/reverse/test_bot_20250919_192543.yaml"
+}

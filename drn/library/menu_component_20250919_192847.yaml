@@ -1,0 +1,78 @@
+version: "1.0"
+name: "Simple Menu Example"
+description: "Example DRACON schema for testing file operations"
+metadata:
+  author: "Test"
+  created: "2024-12-19"
+
+nodes:
+  - id: "start"
+    type: "start"
+    name: "Bot Start"
+    description: "User starts bot"
+    position: [0, 0]
+
+  - id: "main_menu"
+    type: "message"
+    name: "Main Menu"
+    description: "Show main menu"
+    position: [100, 0]
+    properties:
+      template: "🏠 **Main Menu**\n\nChoose an option:"
+
+  - id: "help_button"
+    type: "button"
+    name: "Help Button"
+    description: "Get help"
+    position: [200, -50]
+    properties:
+      text: "❓ Help"
+      callback_data: "help"
+
+  - id: "help_handler"
+    type: "callback"
+    name: "Help Handler"
+    description: "Process help request"
+    position: [300, -50]
+    properties:
+      callback_data: "help"
+
+  - id: "help_message"
+    type: "message"
+    name: "Help Message"
+    description: "Display help"
+    position: [400, -50]
+    properties:
+      template: "❓ **Help**\n\nThis is help information"
+
+  - id: "end"
+    type: "end"
+    name: "End"
+    description: "Interaction complete"
+    position: [500, 0]
+
+edges:
+  - id: "start_to_menu"
+    from_node: "start"
+    to_node: "main_menu"
+    type: "sequence"
+
+  - id: "menu_to_help_btn"
+    from_node: "main_menu"
+    to_node: "help_button"
+    type: "sequence"
+
+  - id: "help_btn_to_handler"
+    from_node: "help_button"
+    to_node: "help_handler"
+    type: "callback"
+
+  - id: "help_handler_to_message"
+    from_node: "help_handler"
+    to_node: "help_message"
+    type: "sequence"
+
+  - id: "help_to_end"
+    from_node: "help_message"
+    to_node: "end"
+    type: "sequence"

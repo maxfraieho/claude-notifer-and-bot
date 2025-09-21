@@ -25,7 +25,16 @@
     },
     "help": {
       "title": "🤖 **Claude Code Telegram Bot Help**",
-      "commands": "Available commands:\n/status - Status\n/new - New session\n/actions - Actions"
+      "commands": "Available commands:\n/status - Status\n/new - New session\n/actions - Actions\n/restart - Restart bot"
+    },
+    "restart": {
+      "title": "🔄 **Bot Restart**",
+      "description": "Restart the bot with memory cleanup and code updates",
+      "restarting": "🔄 **Restarting bot...**\n\nStopping all processes and starting fresh...",
+      "initiated": "✅ **Restart initiated**\n\nRestarting now...",
+      "access_denied": "🚫 You don't have permission to restart the bot.",
+      "script_not_found": "❌ **Restart script not found**\n\nPlease restart manually.",
+      "failed": "❌ **Restart failed**"
     },
     "status": {
       "title": "📊 Bot Status",
@@ -54,6 +63,39 @@
     "export": {
       "title": "💾 Export Session",
       "processing": "Processing session data..."
+    },
+    "main_menu": {
+      "title": "Main Menu",
+      "description": "Main bot functions for working with Claude Code."
+    },
+    "audit": {
+      "title": "🔍 Intelligent Audit",
+      "description": "Bot code analysis with Claude",
+      "starting": "Starting intelligent audit...",
+      "analyzing": "Analyzing code and architecture...",
+      "completed": "Audit completed",
+      "no_issues": "🎉 No issues found!",
+      "critical_warning": "🚨 WARNING! Critical issues found"
+    },
+    "dracon": {
+      "title": "🔧 DRACON-YAML Bot Logic Modeling",
+      "description": "Model bot logic using YAML schemas with graph analysis",
+      "help": "DRACON (Дружелюбные Русские Алгоритмы, Которые Обеспечивают Надежность) system for bot logic modeling",
+      "analyzing": "Analyzing DRACON schema...",
+      "generating": "Generating components...",
+      "validating": "Validating schema...",
+      "completed": "Analysis completed",
+      "invalid_schema": "❌ Invalid DRACON schema",
+      "no_components": "❌ No components could be generated"
+    },
+    "refactor": {
+      "title": "🔄 DRACON Refactoring System",
+      "description": "Reverse engineer existing bot code into DRACON schemas",
+      "analyzing": "Analyzing bot architecture...",
+      "generating": "Generating DRACON schema from code...",
+      "suggesting": "Generating refactoring suggestions...",
+      "completed": "Refactoring analysis completed",
+      "access_denied": "❌ Access denied. Refactoring available only to administrators"
     },
     "img": {
       "title": "📸 Image Processing",
@@ -86,9 +128,37 @@
     "projects": "📁 Projects",
     "continue_session": "🔄 Continue Session",
     "export_session": "💾 Export Session",
+    "export": "💾 Export",
+    "settings": "⚙️ Settings",
+    "status": "📊 Status",
     "git_info": "📊 Git Info",
     "save_code": "💾 Save Code",
-    "explain": "❓ Explain"
+    "explain": "❓ Explain",
+    "debug": "🔧 Debug",
+    "go_up": "⬆️ Go Up",
+    "git_status": "📊 Git Status",
+    "lint_code": "🔧 Lint Code",
+    "show_diff": "📊 Show Diff",
+    "create_task": "📝 Create Task",
+    "from_template": "📋 From Template",
+    "add": "➕ Add",
+    "edit": "📝 Edit",
+    "update": "🔄 Update",
+    "add_task": "➕ Add Task",
+    "change_dnd": "🌙 Change DND",
+    "advanced_settings": "⚡ Settings",
+    "detailed_logs": "📋 Detailed Logs",
+    "statistics": "📊 Statistics",
+    "create_prompt": "📝 Create Prompt",
+    "prompts_list": "📋 Prompts List",
+    "prompt_templates": "📋 Prompt Templates",
+    "back_to_menu": "⬅️ Back to Menu",
+    "create_new": "📝 Create New",
+    "back_simple": "⬅️ Back",
+    "prompts_settings": "🔧 Settings",
+    "prompts_history": "📊 History",
+    "json_export": "📋 JSON",
+    "markdown_export": "📝 Markdown"
   },
   "status": {
     "title": "📊 Bot Status",
@@ -103,7 +173,7 @@
   },
   "help": {
     "title": "❓ Help",
-    "commands": "Available commands:\n/status - Status\n/new - New session\n/actions - Actions"
+    "commands": "**Navigation Commands:**\n• `/ls` - List files and directories\n• `/cd <directory>` - Change to directory\n• `/pwd` - Show current directory\n• `/projects` - Show available projects\n\n**Session Commands:**\n• `/new` - Start new Claude session\n• `/continue` - Continue last session\n• `/status` - Show session status\n• `/export` - Export session history\n\n**DRACON System (Visual Modeling):**\n• `/dracon help` - DRACON help\n• `/dracon diagram <category> <file>` - 🎨 Visual diagram\n• `/dracon list [category]` - List schemas\n• `/dracon analyze <yaml>` - Analyze schema\n• `/refactor` - Reverse engineer code to DRACON\n\n**Special Commands:**\n• `/actions` - Show quick actions\n• `/git` - Git repository commands\n• `/claude` - Authorize Claude CLI\n• `/img` - Image processing with Claude\n\n**MCP Commands:**\n• `/mcpadd` - Add MCP server\n• `/mcplist` - List MCP servers\n• `/mcpselect` - Select active context\n• `/mcpask` - Query with MCP context\n• `/mcpremove` - Remove MCP server\n• `/mcpstatus` - MCP system status\n\n**Scheduler:**\n• `/schedules` - Task management\n• `/add_schedule` - Add new task\n\n**System Commands:**\n• `/restart` - Restart bot\n\n**Tips:**\n• Send text files for viewing\n• Use specific queries\n• Check status with `/status`"
   },
   "session": {
     "new_started": "🆕 New session started",
@@ -159,5 +229,70 @@
     "service_unavailable": "❌ Service unavailable",
     "command_failed": "❌ Command failed",
     "image_processing_disabled": "❌ Image processing is disabled. Contact administrator to enable."
+  },
+  "schedule": {
+    "create_new": "Create New Task",
+    "advanced": "Advanced Settings",
+    "change_dnd": "Change DND Period",
+    "add_task": "Add Task",
+    "edit_task": "Edit Task",
+    "update_list": "Update List",
+    "back_to_list": "Back to List",
+    "back_to_settings": "Back to Settings"
+  },
+  "quick_actions": {
+    "title": "🚀 **Quick Actions**\n\nChoose a development task:",
+    "ls": {
+      "name": "📋 Show Files"
+    },
+    "pwd": {
+      "name": "🏠 Where Am I?"
+    },
+    "git_status": {
+      "name": "💾 Git Status"
+    },
+    "grep": {
+      "name": "🔍 Search TODO"
+    },
+    "find_files": {
+      "name": "🔍 Find Files"
+    },
+    "test": {
+      "name": "🧪 Run Tests"
+    },
+    "install": {
+      "name": "📦 Install Dependencies"
+    },
+    "format": {
+      "name": "🎨 Format Code"
+    },
+    "lint": {
+      "name": "🔍 Lint Code"
+    },
+    "security": {
+      "name": "🔒 Security Scan"
+    },
+    "optimize": {
+      "name": "⚡ Optimize"
+    },
+    "document": {
+      "name": "📝 Generate Docs"
+    },
+    "refactor": {
+      "name": "🔧 Refactor"
+    }
+  },
+  "help": {
+    "quick_help_title": "🚀 **Quick Help**",
+    "navigation_section": "**📁 Navigation:**",
+    "sessions_section": "**💬 Sessions:**",
+    "tips_section": "**💡 Tips:**",
+    "send_text_tip": "• Send text messages to work with Claude",
+    "upload_files_tip": "• Upload files for code analysis",
+    "use_buttons_tip": "• Use buttons for quick actions",
+    "detailed_help_note": "\n📚 For detailed help press **📚 Full Help**"
+  },
+  "messages": {
+    "language_changed": "✅ Language changed to {language_name}"
   }
 }

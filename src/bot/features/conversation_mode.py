@@ -366,6 +366,10 @@ class ConversationEnhancer:
             del self.conversation_contexts[user_id]
             logger.debug("Cleared conversation context", user_id=user_id)
 
+    def get_context(self, user_id: int) -> Optional[ConversationContext]:
+        """Get conversation context for user."""
+        return self.conversation_contexts.get(user_id)
+
     def get_context_summary(self, user_id: int) -> Optional[Dict]:
         """Get summary of conversation context."""
         context = self.conversation_contexts.get(user_id)

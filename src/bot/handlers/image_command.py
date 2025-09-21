@@ -109,7 +109,7 @@ class ImageCommandHandler:
 
         if not session.is_active():
             logger.warning("Session expired for user", user_id=user_id)
-            await self._cleanup_session(user_id)
+            await self._cleanup_session(user_id, context)
             error_text = await t(context, user_id, "commands.img.session_expired")
             await message.reply_text(error_text)
             return
@@ -178,7 +178,7 @@ class ImageCommandHandler:
                 no_images_text = await t(context, user_id, "commands.img.no_images")
                 await message.reply_text(no_images_text)
         elif message_text in ['cancel', 'скасувати', 'відміна']:
-            await self._cleanup_session(user_id)
+            await self._cleanup_session(user_id, context)
             cancelled_text = await t(context, user_id, "commands.img.cancelled")
             await message.reply_text(cancelled_text)
         elif message_text in ['запит', 'query', 'fix', 'фікс']:
@@ -316,7 +316,7 @@ class ImageCommandHandler:
 
         finally:
             # Clean up session
-            await self._cleanup_session(session.user_id)
+            await self._cleanup_session(session.user_id, context)
 
     def _build_claude_prompt(self, session: 'ImageSession') -> str:
         """Build Claude prompt with image context."""
@@ -330,93 +330,99 @@ class ImageCommandHandler:
             image_info.append(info)
 
         if session.ui_fix_mode:
-            prompt = f"""{base_instruction}
+            # Load detailed prompt from bot-cli-prompts directory
+            try:
+                prompt_path = Path(__file__).parent.parent.parent.parent / "bot-cli-prompts" / "prompt-clean.md"
+                with open(prompt_path, 'r', encoding='utf-8') as f:
+                    detailed_prompt = f.read().strip()
 
-I'm providing you with {len(session.images)} screenshot(s) showing interface/code issues:
+                logger.debug("Loaded clean prompt successfully", prompt_length=len(detailed_prompt))
+
+            except Exception as e:
+                logger.warning("Could not load detailed prompt, using fallback", error=str(e))
+                detailed_prompt = self._get_fallback_fix_mode_prompt()
+
+            prompt = f"""{detailed_prompt}
+
+**КОНТЕКСТ КОРИСТУВАЧА:**
+{base_instruction}
+
+**ЗОБРАЖЕННЯ ДЛЯ АНАЛІЗУ:**
 {chr(10).join(image_info)}
 
-**ВАЖЛИВИЙ КОНТЕКСТ:**
+**ІНСТРУКЦІЯ:** Проаналізуйте зображення згідно з наведеною структурою, враховуючи контекст користувача."""
+
+        else:
+            # For non-fix mode, use simplified fallback prompt
+            detailed_prompt = self._get_fallback_general_prompt()
+
+            prompt = f"""{detailed_prompt}
+
+**КОНТЕКСТ КОРИСТУВАЧА:**
+{base_instruction}
+
+**ЗОБРАЖЕННЯ ДЛЯ АНАЛІЗУ:**
+{chr(10).join(image_info)}
+
+**ІНСТРУКЦІЯ:** Проаналізуйте зображення згідно з наведеною структурою та надайте детальний опис."""
+
+        return prompt
+
+    def _get_fallback_fix_mode_prompt(self) -> str:
+        """Fallback prompt for fix mode if file loading fails."""
+        return """**ВАЖЛИВИЙ КОНТЕКСТ:**
 Ви Claude Code з повними можливостями розробки. Ви можете аналізувати скріншоти та модифікувати вихідний код для виправлення проблем.
 
-**Ваші можливості:**
-- Повний доступ до інструментів Read, Write, Edit, MultiEdit, Bash, Grep, Glob
-- Ви можете працювати з БУДЬ-ЯКОЮ кодовою базою в дозволеній директорії
-- Ви можете модифікувати файли, запускати тести, комітити зміни
-- Ви можете аналізувати проблеми UI та впроваджувати виправлення
+**ЗАВДАННЯ - ДЕТАЛЬНИЙ АНАЛІЗ ЗОБРАЖЕНЬ:**
+Проаналізуйте надане(і) зображення та надайте максимально детальний опис усіх проблем, помилок, недоліків та спостережень.
 
-**ДЕТАЛЬНИЙ АНАЛІЗ - ОБОВ'ЯЗКОВО:**
-1. **Проаналізуйте скріншот(и) і детально опишіть ВСІ помічені проблеми:**
-   - Які конкретно елементи інтерфейсу мають проблеми?
-   - Що саме неправильно відображається?
-   - Які тексти, кнопки, елементи відсутні або некоректні?
-   - Чи є проблеми з локалізацією (мова інтерфейсу)?
+**СТРУКТУРА ВІДПОВІДІ:**
 
-2. **Визначте технічні причини проблем:**
-   - Які файли вірогідно містять проблемний код?
-   - Які компоненти/модулі потребують змін?
-   - Чи це проблема коду, конфігурації, чи даних?
+## 🔍 ДЕТАЛЬНИЙ АНАЛІЗ ЗОБРАЖЕНЬ
 
-3. **Запропонуйте КОНКРЕТНИЙ план виправлення:**
-   - Перелічіть ВСІ файли які потрібно змінити
-   - Опишіть ЩО саме потрібно змінити в кожному файлі
-   - Вкажіть порядок дій для впровадження змін
+### ⚠️ ВИЯВЛЕНІ ПРОБЛЕМИ
 
-4. **ОБОВ'ЯЗКОВО запитайте дозвіл перед впровадженням:**
-   - "Чи можу я почати впровадження цих змін?"
-   - "Чи потрібні додаткові уточнення перед початком роботи?"
+#### Критичні проблеми:
+- [Перелічіть всі критичні помилки, баги, збої]
 
-**ФОРМАТ ВІДПОВІДІ:**
-```
-## 🔍 АНАЛІЗ ПРОБЛЕМИ
+#### Проблеми UI/UX:
+- [Опишіть проблеми з інтерфейсом користувача]
 
-[детальний опис всіх помічених проблем]
+#### Технічні недоліки:
+- [Виявлені помилки в коді, якщо код видно]
 
-## ⚙️ ТЕХНІЧНІ ПРИЧИНИ
+### 💡 РЕКОМЕНДАЦІЇ ДЛЯ ВИПРАВЛЕННЯ
 
-[пояснення причин проблем]
+#### Пріоритетні виправлення:
+1. [Найважливіші проблеми що потребують негайного вирішення]
 
-## 📋 ПЛАН ВИПРАВЛЕННЯ
-
-### Файли для зміни:
-1. `файл1.py` - [опис змін]
-2. `файл2.js` - [опис змін]
-
-### Порядок дій:
-1. [крок 1]
-2. [крок 2]
+### 🔧 ПОДАЛЬШІ КРОКИ
 
 ## ❓ ЗАПИТ НА ДОЗВІЛ
 
-Чи можу я почати впровадження цих змін? Чи потрібні додаткові уточнення?
-```
+Чи можу я почати впровадження цих змін? Чи потрібні додаткові уточнення?"""
 
-**Що ви можете виправити:**
-- Проблеми UI/інтерфейсу в веб-, мобільних, десктопних додатках
-- Помилки коду показані на скріншотах
-- Проблеми локалізації та перекладів
-- Неконсистентність дизайну
-- Повідомлення про помилки та UX
-- Проблеми продуктивності
-- Проблеми конфігурації
-- Будь-які проблеми коду видимі на скріншотах
+    def _get_fallback_general_prompt(self) -> str:
+        """Fallback prompt for general analysis if file loading fails."""
+        return """**ВАЖЛИВИЙ КОНТЕКСТ:**
+Ви Claude Code з можливостями аналізу, що працює через Telegram бот. Користувач надіслав зображення(я) для детального аналізу та отримання інсайтів.
 
-ВАЖЛИВО: Спочатку дайте ДЕТАЛЬНИЙ аналіз та план, потім запитайте дозвіл на впровадження!
-"""
-        else:
-            prompt = f"""{base_instruction}
+**ЗАВДАННЯ - ДЕТАЛЬНИЙ АНАЛІЗ ЗОБРАЖЕНЬ:**
+Проаналізуйте надане(і) зображення та надайте максимально детальний опис усіх спостережень та інсайтів.
 
-I'm providing you with {len(session.images)} image(s):
-{chr(10).join(image_info)}
+**СТРУКТУРА ВІДПОВІДІ:**
 
-Please analyze these images and help me with the request above. Consider:
-1. The content and context of each image
-2. Any text or UI elements visible
-3. Technical aspects if relevant (code, diagrams, etc.)
-4. Relationships between images if multiple
-5. Specific actionable recommendations
-"""
+## 🔍 ДЕТАЛЬНИЙ АНАЛІЗ ЗОБРАЖЕНЬ
 
-        return prompt
+### 📋 Загальний огляд
+- Тип контенту та основні компоненти
+
+### 🎯 КОНКРЕТНІ СПОСТЕРЕЖЕННЯ
+- Детальний опис елементів
+- Текстовий контент та особливості
+
+### 💡 ВИСНОВКИ ТА РЕКОМЕНДАЦІЇ
+- Основні інсайти та пропозиції"""
 
     async def _get_instruction_message(self, context: ContextTypes.DEFAULT_TYPE, user_id: int) -> str:
         """Get localized instruction message."""
@@ -437,13 +443,19 @@ Please analyze these images and help me with the request above. Consider:
                 "Type 'cancel' to stop."
             )
 
-    async def _cleanup_session(self, user_id: int) -> None:
+    async def _cleanup_session(self, user_id: int, context: Optional[ContextTypes.DEFAULT_TYPE] = None) -> None:
         """Clean up user's image session."""
         if user_id in self.active_sessions:
             session = self.active_sessions[user_id]
             await session.cleanup()
             del self.active_sessions[user_id]
             logger.info("Cleaned up image session", user_id=user_id)
+
+        # Clear user_data flags that control message routing
+        if context and context.user_data:
+            context.user_data.pop('awaiting_images', None)
+            context.user_data.pop('image_session_id', None)
+            logger.info("Cleared user_data image session flags", user_id=user_id)
 
     async def _cleanup_session_after_timeout(self, user_id: int, session_id: str) -> None:
         """Clean up session after timeout."""
@@ -452,6 +464,7 @@ Please analyze these images and help me with the request above. Consider:
         if (user_id in self.active_sessions and
             self.active_sessions[user_id].session_id == session_id):
             await self._cleanup_session(user_id)
+            logger.info("Session cleaned up after timeout", user_id=user_id, session_id=session_id)
 
     async def _safe_edit_or_send_error(self, progress_msg, message, error_text: str) -> None:
         """Safely edit progress message or send new error message."""
