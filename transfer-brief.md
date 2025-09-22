@@ -2,9 +2,9 @@
 
 ## Project Status: ✅ WORKING & OPTIMIZED
 
-**Date:** 2025-09-21
+**Date:** 2025-09-22
 **System:** AMD C-60, 1.5GB RAM, Alpine Linux
-**Status:** Claude CLI integration fully functional with memory optimizations
+**Status:** Claude CLI integration fully functional with memory optimizations + comprehensive bot restart completed
 
 ---
 
@@ -280,4 +280,32 @@ free -h && cat /proc/sys/vm/swappiness
 
 **🎉 STATUS: PRODUCTION READY - Claude Telegram Bot working optimally on low-memory system**
 
-*Last updated: 2025-09-21 by Claude Code Assistant*
+---
+
+## 🔧 Recent Updates (2025-09-22)
+
+### Comprehensive Bot Restart & Fixes Applied
+
+**Issues Resolved:**
+- ✅ **Git operations errors:** Fixed "Can't parse entities" markdown parsing errors
+- ✅ **Quick actions:** Fixed "Show files" button display formatting
+- ✅ **Security validation:** Replaced problematic grep commands with TODO List integration
+- ✅ **Code stability:** All Git callbacks, localization, and handlers working properly
+
+**Technical Fixes:**
+- Removed `parse_mode="Markdown"` from all Git operations
+- Replaced non-existent `ClaudeIntegration.create_session()` with `run_command()`
+- Fixed async localization by properly awaiting `t()` functions before `.format()`
+- Added `_handle_ls_action_for_quick()` for proper file listing in quick actions
+- Replaced "🔍 Пошук TODO" with "📝 TODO List" button linking to `/schedules`
+- All syntax validation passed (main.py, callback.py, command.py)
+
+**System State:**
+- Bot processes: Clean restart completed successfully
+- Configuration: All essential files validated ✅
+- Memory usage: Stable operation maintained
+- Functionality: All critical functions tested and working
+
+**Git Commit:** `f9fe6e7` - Comprehensive fixes for Git operations and quick actions
+
+*Last updated: 2025-09-22 by Claude Code Assistant*
