@@ -163,7 +163,6 @@ async def handle_cd_callback(
         # Add navigation buttons with localization
         list_files_text = await get_localized_text(context, user_id, "buttons.list_files")
         new_session_text = await get_localized_text(context, user_id, "buttons.new_session")
-        projects_text = await get_localized_text(context, user_id, "buttons.projects")
         status_text = await get_localized_text(context, user_id, "buttons.status")
         
         keyboard = [
@@ -172,7 +171,6 @@ async def handle_cd_callback(
                 InlineKeyboardButton(new_session_text, callback_data="action:new_session"),
             ],
             [
-                InlineKeyboardButton(projects_text, callback_data="action:show_projects"),
                 InlineKeyboardButton(status_text, callback_data="action:status"),
             ],
         ]
@@ -208,7 +206,6 @@ async def handle_action_callback(
     actions = {
         "help": _handle_help_action,
         "full_help": _handle_full_help_action,
-        "show_projects": _handle_show_projects_action,
         "new_session": _handle_new_session_action,
         "new": _handle_new_session_action,  # alias for new_session
         "continue": _handle_continue_action,
@@ -278,7 +275,6 @@ async def _handle_help_action(query, context: ContextTypes.DEFAULT_TYPE) -> None
         f"{navigation_text}\n"
         f"• `/ls` - {await get_localized_text(context, user_id, 'commands.ls.title')}\n"
         f"• `/cd <dir>` - {await get_localized_text(context, user_id, 'commands.cd.usage')}\n"
-        f"• `/projects` - {await get_localized_text(context, user_id, 'commands.projects.title')}\n\n"
         f"{sessions_text}\n"
         f"• `/new` - {await get_localized_text(context, user_id, 'buttons.new_session')}\n"
         f"• `/status` - {await get_localized_text(context, user_id, 'commands.status.title')}\n\n"
@@ -327,67 +323,6 @@ async def _handle_full_help_action(query, context: ContextTypes.DEFAULT_TYPE) ->
     )
 
 
-async def _handle_show_projects_action(
-    query, context: ContextTypes.DEFAULT_TYPE
-) -> None:
-    """Handle show projects action."""
-    settings: Settings = context.bot_data["settings"]
-
-    try:
-        # Get directories in approved directory
-        projects = []
-        for item in sorted(settings.approved_directory.iterdir()):
-            if item.is_dir() and not item.name.startswith("."):
-                projects.append(item.name)
-
-        if not projects:
-            await query.edit_message_text(
-                await t(context, user_id, "errors_command.no_projects_found")
-            )
-            return
-
-        # Create project buttons
-        keyboard = []
-        for i in range(0, len(projects), 2):
-            row = []
-            for j in range(2):
-                if i + j < len(projects):
-                    project = projects[i + j]
-                    row.append(
-                        InlineKeyboardButton(
-                            f"📁 {project}", callback_data=f"cd:{project}"
-                        )
-                    )
-            keyboard.append(row)
-
-        # Add navigation buttons with localization
-        user_id = query.from_user.id
-        root_text = await get_localized_text(context, user_id, "buttons.root")
-        refresh_text = await get_localized_text(context, user_id, "buttons.refresh")
-        
-        keyboard.append(
-            [
-                InlineKeyboardButton(root_text, callback_data="cd:/"),
-                InlineKeyboardButton(refresh_text, callback_data="action:show_projects"),
-            ]
-        )
-
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        project_list = "\n".join([f"• `{project}/`" for project in projects])
-
-        available_projects_text = await t(context, user_id, "commands_extended.projects.available_projects_title")
-        click_navigate_text = await t(context, user_id, "commands_extended.projects.click_to_navigate")
-
-        await query.edit_message_text(
-            f"{available_projects_text}\n\n{project_list}\n\n{click_navigate_text}",
-            parse_mode=None,
-            reply_markup=reply_markup,
-        )
-
-    except Exception as e:
-        await query.edit_message_text(
-            await t(context, user_id, "errors_command.error_loading_projects", error=str(e))
-        )
 
 
 async def _handle_new_session_action(query, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -406,14 +341,12 @@ async def _handle_new_session_action(query, context: ContextTypes.DEFAULT_TYPE) 
     # Get localized button text
     user_id = query.from_user.id
     start_coding_text = await get_localized_text(context, user_id, "buttons.start_coding")
-    change_project_text = await get_localized_text(context, user_id, "buttons.change_project")
     quick_actions_text = await get_localized_text(context, user_id, "buttons.quick_actions")
     help_text = await get_localized_text(context, user_id, "buttons.help")
     
     keyboard = [
         [
             InlineKeyboardButton(start_coding_text, callback_data="action:start_coding"),
-            InlineKeyboardButton(change_project_text, callback_data="action:show_projects"),
         ],
         [
             InlineKeyboardButton(quick_actions_text, callback_data="action:quick_actions"),
@@ -669,7 +602,6 @@ async def _handle_status_action(query, context: ContextTypes.DEFAULT_TYPE) -> No
     keyboard.append(
         [
             InlineKeyboardButton("🔄 Refresh", callback_data="action:refresh_status"),
-            InlineKeyboardButton("📁 Projects", callback_data="action:show_projects"),
         ]
     )
 
@@ -736,7 +668,7 @@ async def _handle_ls_action(query, context: ContextTypes.DEFAULT_TYPE) -> None:
             [
                 InlineKeyboardButton("🔄 Refresh", callback_data="action:refresh_ls"),
                 InlineKeyboardButton(
-                    "📋 Projects", callback_data="action:show_projects"
+                    "🔄 Refresh", callback_data="action:refresh_ls"
                 ),
             ]
         )
@@ -1042,116 +974,197 @@ async def handle_conversation_callback(
 async def handle_git_callback(
     query, git_action: str, context: ContextTypes.DEFAULT_TYPE
 ) -> None:
-    """Handle git-related callbacks."""
+    """Handle git-related callbacks with Claude CLI delegation."""
     user_id = query.from_user.id
     settings: Settings = context.bot_data["settings"]
-    features = context.bot_data.get("features")
-
-    if not features or not features.is_enabled("git"):
-        await query.edit_message_text(
-            "❌ **Git Integration Disabled**\n\n"
-            "Git integration feature is not enabled."
-        )
-        return
 
     current_dir = context.user_data.get(
         "current_directory", settings.approved_directory
     )
 
     try:
-        git_integration = features.get_git_integration()
-        if not git_integration:
+        # Handle help action
+        if git_action == "help":
+            title = await t(context, user_id, "git.help.title")
+            description = await t(context, user_id, "git.help.description")
+            operations = []
+            for op in ["status", "add", "commit", "push", "pull", "log", "diff", "branch"]:
+                op_text = await t(context, user_id, f"git.help.operations.{op}")
+                operations.append(op_text)
+
+            note = await t(context, user_id, "git.help.note")
+
+            help_message = f"{title}\n\n{description}\n\n" + "\n".join(operations) + f"\n\n{note}"
+
+            # Create back button
+            keyboard = [[
+                InlineKeyboardButton(
+                    await t(context, user_id, "git.buttons.back"),
+                    callback_data="git:back"
+                )
+            ]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+
             await query.edit_message_text(
-                "❌ **Git Integration Unavailable**\n\n"
-                "Git integration service is not available."
+                help_message, reply_markup=reply_markup
             )
             return
 
+        # Handle back action
+        if git_action == "back":
+            # Show main git menu
+            title = await t(context, user_id, "git.title")
+            description = await t(context, user_id, "git.description")
+
+            # Create button grid
+            keyboard = [
+                [
+                    InlineKeyboardButton(
+                        await t(context, user_id, "git.buttons.status"),
+                        callback_data="git:status"
+                    ),
+                    InlineKeyboardButton(
+                        await t(context, user_id, "git.buttons.add"),
+                        callback_data="git:add"
+                    ),
+                    InlineKeyboardButton(
+                        await t(context, user_id, "git.buttons.commit"),
+                        callback_data="git:commit"
+                    ),
+                ],
+                [
+                    InlineKeyboardButton(
+                        await t(context, user_id, "git.buttons.push"),
+                        callback_data="git:push"
+                    ),
+                    InlineKeyboardButton(
+                        await t(context, user_id, "git.buttons.pull"),
+                        callback_data="git:pull"
+                    ),
+                    InlineKeyboardButton(
+                        await t(context, user_id, "git.buttons.log"),
+                        callback_data="git:log"
+                    ),
+                ],
+                [
+                    InlineKeyboardButton(
+                        await t(context, user_id, "git.buttons.diff"),
+                        callback_data="git:diff"
+                    ),
+                    InlineKeyboardButton(
+                        await t(context, user_id, "git.buttons.branch"),
+                        callback_data="git:branch"
+                    ),
+                    InlineKeyboardButton(
+                        await t(context, user_id, "git.buttons.help"),
+                        callback_data="git:help"
+                    ),
+                ],
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+
+            await query.edit_message_text(
+                f"{title}\n\n{description}",
+                reply_markup=reply_markup
+            )
+            return
+
+        # Show processing message
+        processing_msg = await t(context, user_id, "git.processing")
+        await query.edit_message_text(
+            processing_msg.format(operation=git_action)
+        )
+
+        # Get Claude integration
+        claude_integration: ClaudeIntegration = context.bot_data["claude_integration"]
+
+        # Prepare git command based on action
+        git_commands = {
+            "status": "git status --porcelain",
+            "add": "git add .",
+            "commit": "git commit -m 'Update via Telegram bot'",
+            "push": "git push",
+            "pull": "git pull",
+            "log": "git log --oneline -10",
+            "diff": "git diff",
+            "branch": "git branch -a"
+        }
+
+        if git_action not in git_commands:
+            unknown_action_msg = await t(context, user_id, "git.unknown_git_action")
+            await query.edit_message_text(
+                unknown_action_msg.format(
+                    action=git_action,
+                    message="Unknown action"
+                )
+            )
+            return
+
+        # Execute git command via Claude CLI
+        command = git_commands[git_action]
+        message = f"Execute this git command in directory {current_dir}: {command}"
+
+        claude_response = await claude_integration.run_command(
+            prompt=message,
+            working_directory=current_dir,
+            user_id=user_id
+        )
+
+        response = claude_response.content
+
+        # Helper function to escape markdown
+        def escape_markdown(text):
+            return text.replace('_', '\\_').replace('*', '\\*').replace('[', '\\[').replace(']', '\\]').replace('`', '\\`')
+
+        # Format response based on action
         if git_action == "status":
-            # Refresh git status
-            git_status = await git_integration.get_status(current_dir)
-            status_message = git_integration.format_status(git_status)
-
-            keyboard = [
-                [
-                    InlineKeyboardButton("📊 Show Diff", callback_data="git:diff"),
-                    InlineKeyboardButton("📜 Show Log", callback_data="git:log"),
-                ],
-                [
-                    InlineKeyboardButton("🔄 Refresh", callback_data="git:status"),
-                    InlineKeyboardButton("📁 Files", callback_data="action:ls"),
-                ],
-            ]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-
-            await query.edit_message_text(
-                status_message, parse_mode=None, reply_markup=reply_markup
-            )
-
+            if "nothing to commit" in response.lower() or not response.strip():
+                diff_title_msg = await t(context, user_id, "git.diff_title")
+                formatted_message = diff_title_msg.format(
+                    diff="No changes to commit"
+                )
+            else:
+                clean_response = escape_markdown(response[:2000] + ("..." if len(response) > 2000 else ""))
+                diff_title_msg = await t(context, user_id, "git.diff_title")
+                formatted_message = diff_title_msg.format(
+                    diff=clean_response
+                )
         elif git_action == "diff":
-            # Show git diff
-            diff_output = await git_integration.get_diff(current_dir)
-
-            if not diff_output.strip():
-                diff_message = "📊 **Git Diff**\n\n_No changes to show._"
+            if not response.strip():
+                diff_title_msg = await t(context, user_id, "git.diff_title")
+                formatted_message = diff_title_msg.format(
+                    diff="No changes to show"
+                )
             else:
-                # Clean up diff output for Telegram
-                # Remove emoji symbols that interfere with markdown parsing
-                clean_diff = diff_output.replace("➕", "+").replace("➖", "-").replace("📍", "@")
-                
-                # Limit diff output
-                max_length = 2000
-                if len(clean_diff) > max_length:
-                    clean_diff = (
-                        clean_diff[:max_length] + "\n\n_... output truncated ..._"
-                    )
-
-                diff_message = f"📊 **Git Diff**\n\n```\n{clean_diff}\n```"
-
-            keyboard = [
-                [
-                    InlineKeyboardButton("📜 Show Log", callback_data="git:log"),
-                    InlineKeyboardButton("📊 Status", callback_data="git:status"),
-                ]
-            ]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-
-            await query.edit_message_text(
-                diff_message, parse_mode=None, reply_markup=reply_markup
-            )
-
-        elif git_action == "log":
-            # Show git log
-            commits = await git_integration.get_file_history(current_dir, ".")
-
-            if not commits:
-                log_message = "📜 **Git Log**\n\n_No commits found._"
-            else:
-                log_message = "📜 **Git Log**\n\n"
-                for commit in commits[:10]:  # Show last 10 commits
-                    short_hash = commit.hash[:7]
-                    short_message = commit.message[:60]
-                    if len(commit.message) > 60:
-                        short_message += "..."
-                    log_message += f"• `{short_hash}` {short_message}\n"
-
-            keyboard = [
-                [
-                    InlineKeyboardButton("📊 Show Diff", callback_data="git:diff"),
-                    InlineKeyboardButton("📊 Status", callback_data="git:status"),
-                ]
-            ]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-
-            await query.edit_message_text(
-                log_message, parse_mode=None, reply_markup=reply_markup
-            )
-
+                # Clean response for display
+                clean_response = escape_markdown(response[:2000] + ("..." if len(response) > 2000 else ""))
+                diff_title_msg = await t(context, user_id, "git.diff_title")
+                formatted_message = diff_title_msg.format(
+                    diff=clean_response
+                )
         else:
-            user_id = query.from_user.id
-            await query.edit_message_text(
-                await t(context, user_id, "callback_errors.unknown_action") + f": {git_action}"
+            # For other actions, show success message with truncated output
+            success_msg = await t(context, user_id, "git.success")
+            output = response[:1500] + ("..." if len(response) > 1500 else "")
+            formatted_message = f"{success_msg.format(operation=git_action)}\n\n```\n{output}\n```"
+
+        # Create navigation buttons
+        keyboard = [[
+            InlineKeyboardButton(
+                await t(context, user_id, "git.buttons.back"),
+                callback_data="git:back"
+            ),
+            InlineKeyboardButton(
+                await t(context, user_id, "git.buttons.help"),
+                callback_data="git:help"
             )
+        ]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        await query.edit_message_text(
+            formatted_message,
+            reply_markup=reply_markup
+        )
 
     except Exception as e:
         logger.error(
@@ -1160,7 +1173,12 @@ async def handle_git_callback(
             git_action=git_action,
             user_id=user_id,
         )
-        await query.edit_message_text(f"❌ **Git Error**\n\n{str(e)}")
+        error_msg = await t(context, user_id, "git.error")
+        # Escape markdown characters in error message
+        escaped_error = str(e).replace('_', '\\_').replace('*', '\\*').replace('[', '\\[').replace(']', '\\]').replace('`', '\\`')
+        await query.edit_message_text(
+            error_msg.format(error=escaped_error)
+        )
 
 
 async def handle_export_callback(
@@ -2225,7 +2243,6 @@ async def _handle_main_menu_action(query, context: ContextTypes.DEFAULT_TYPE) ->
                 InlineKeyboardButton(await t(context, user_id, "buttons.continue_session"), callback_data="action:continue")
             ],
             [
-                InlineKeyboardButton(await t(context, user_id, "buttons.show_projects"), callback_data="action:show_projects"),
                 InlineKeyboardButton(await t(context, user_id, "buttons.status"), callback_data="action:status")
             ],
             [
@@ -2248,7 +2265,6 @@ async def _handle_main_menu_action(query, context: ContextTypes.DEFAULT_TYPE) ->
         new_cmd_text = await t(context, user_id, "commands.start.new_cmd")
         ls_cmd_text = await t(context, user_id, "commands.start.ls_cmd")
         cd_cmd_text = await t(context, user_id, "commands.start.cd_cmd")
-        projects_cmd_text = await t(context, user_id, "commands.start.projects_cmd")
         status_cmd_text = await t(context, user_id, "commands.start.status_cmd")
         actions_cmd_text = await t(context, user_id, "commands.start.actions_cmd")
         git_cmd_text = await t(context, user_id, "commands.start.git_cmd")
@@ -2269,7 +2285,6 @@ async def _handle_main_menu_action(query, context: ContextTypes.DEFAULT_TYPE) ->
             f"• `/new` - {new_cmd_text}\n"
             f"• `/ls` - {ls_cmd_text}\n"
             f"• `/cd <dir>` - {cd_cmd_text}\n"
-            f"• `/projects` - {projects_cmd_text}\n"
             f"• `/status` - {status_cmd_text}\n"
             f"• `/actions` - {actions_cmd_text}\n"
             f"• `/git` - {git_cmd_text}\n\n"

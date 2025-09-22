@@ -292,6 +292,42 @@
     "use_buttons_tip": "• Use buttons for quick actions",
     "detailed_help_note": "\n📚 For detailed help press **📚 Full Help**"
   },
+  "git": {
+    "title": "🔧 **Git Management**",
+    "description": "Essential Git operations for your project:",
+    "buttons": {
+      "status": "📊 Status",
+      "add": "➕ Add",
+      "commit": "💾 Commit",
+      "push": "⬆️ Push",
+      "pull": "⬇️ Pull",
+      "log": "📜 Log",
+      "diff": "🔍 Diff",
+      "branch": "🌿 Branch",
+      "help": "❓ Help",
+      "back": "⬅️ Back"
+    },
+    "help": {
+      "title": "📖 **Git Commands - Help**",
+      "description": "Description of main Git operations:",
+      "operations": {
+        "status": "**📊 Status** - shows file and repository state",
+        "add": "**➕ Add** - stages changes for commit",
+        "commit": "**💾 Commit** - creates a saved point of changes",
+        "push": "**⬆️ Push** - sends changes to server",
+        "pull": "**⬇️ Pull** - downloads changes from server",
+        "log": "**📜 Log** - shows history of saved changes",
+        "diff": "**🔍 Diff** - compares files and shows differences",
+        "branch": "**🌿 Branch** - manages development branches"
+      },
+      "note": "All operations are executed through Claude CLI for maximum flexibility."
+    },
+    "diff_title": "📊 **Git Diff**\n\n```\n{diff}\n```",
+    "unknown_git_action": "❌ **Unknown Git action: {action}**\n\n{message}",
+    "processing": "🔄 Executing Git operation: **{operation}**...",
+    "success": "✅ Git operation **{operation}** completed successfully",
+    "error": "❌ Git operation error: {error}"
+  },
   "messages": {
     "language_changed": "✅ Language changed to {language_name}"
   }

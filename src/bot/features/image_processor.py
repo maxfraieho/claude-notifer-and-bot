@@ -18,7 +18,13 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Any
 import structlog
 from telegram import PhotoSize
-from PIL import Image, ExifTags
+try:
+    from PIL import Image, ExifTags
+    PIL_AVAILABLE = True
+except ImportError:
+    PIL_AVAILABLE = False
+    Image = None
+    ExifTags = None
 import aiofiles
 
 from ...config.settings import Settings
@@ -95,6 +101,13 @@ class ImageProcessor:
         self.security_validator = security_validator
         self.temp_dir = Path(settings.image_temp_directory)
         self.temp_dir.mkdir(parents=True, exist_ok=True)
+
+        # Check if PIL is available
+        if not PIL_AVAILABLE:
+            logger.warning("PIL/Pillow not available. Image processing features disabled.")
+            self.enabled = False
+        else:
+            self.enabled = True
 
         # Supported image formats
         self.supported_formats = {

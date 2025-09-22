@@ -847,7 +847,6 @@ async def _generate_placeholder_response(
             f"**Available commands:**\n"
             f"• `/ls` - List files\n"
             f"• `/cd <dir>` - Change directory\n"
-            f"• `/projects` - Show projects\n\n"
             f"_Note: Full Claude Code integration will be available in the next phase._"
         )
 
@@ -857,7 +856,7 @@ async def _generate_placeholder_response(
             f"I understand you want to create something! Once the Claude Code integration "
             f"is complete, I'll be able to:\n\n"
             f"• Generate code files\n"
-            f"• Create project structures\n"
+            f"• Create directory structures\n"
             f"• Write documentation\n"
             f"• Build complete applications\n\n"
             f"**Current directory:** `{relative_path}/`\n\n"
@@ -870,7 +869,6 @@ async def _generate_placeholder_response(
             f"I'm here to help! Try using `/help` for available commands.\n\n"
             f"**What I can do now:**\n"
             f"• Navigate directories (`/cd`, `/ls`, `/pwd`)\n"
-            f"• Show projects (`/projects`)\n"
             f"• Manage sessions (`/new`, `/status`)\n\n"
             f"**Coming soon:**\n"
             f"• Full Claude Code integration\n"

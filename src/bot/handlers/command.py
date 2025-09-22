@@ -245,7 +245,6 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         new_cmd_text = await t(context, user_id, "commands.start.new_cmd")
         ls_cmd_text = await t(context, user_id, "commands.start.ls_cmd")
         cd_cmd_text = await t(context, user_id, "commands.start.cd_cmd")
-        projects_cmd_text = await t(context, user_id, "commands.start.projects_cmd")
         status_cmd_text = await t(context, user_id, "commands.start.status_cmd")
         actions_cmd_text = await t(context, user_id, "commands.start.actions_cmd")
         git_cmd_text = await t(context, user_id, "commands.start.git_cmd")
@@ -266,7 +265,6 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             f"• `/new` - {new_cmd_text}\n"
             f"• `/ls` - {ls_cmd_text}\n"
             f"• `/cd <dir>` - {cd_cmd_text}\n"
-            f"• `/projects` - {projects_cmd_text}\n"
             f"• `/status` - {status_cmd_text}\n"
             f"• `/actions` - {actions_cmd_text}\n"
             f"• `/git` - {git_cmd_text}\n\n"
@@ -279,7 +277,6 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         )
         
         # Localized button texts
-        show_projects_text = await t(context, user_id, "buttons.show_projects")
         get_help_text = await t(context, user_id, "buttons.get_help")
         new_session_text = await t(context, user_id, "buttons.new_session")
         check_status_text = await t(context, user_id, "buttons.check_status")
@@ -296,7 +293,6 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
                 InlineKeyboardButton(continue_session_text, callback_data="action:continue"),
             ],
             [
-                InlineKeyboardButton(show_projects_text, callback_data="action:show_projects"),
                 InlineKeyboardButton(check_status_text, callback_data="action:status"),
             ],
             [
@@ -318,13 +314,12 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             f"• `/new` - Start a new Claude session\n"
             f"• `/ls` - List files in current directory\n"
             f"• `/cd <dir>` - Change directory\n"
-            f"• `/projects` - Show available projects\n"
             f"• `/status` - Show session status\n"
             f"• `/actions` - Show quick actions\n"
             f"• `/git` - Git repository commands\n\n"
             f"**Quick Start:**\n"
-            f"1. Use `/projects` to see available projects\n"
-            f"2. Use `/cd <project>` to navigate to a project\n"
+            f"1. Use `/ls` to see available directories\n"
+            f"2. Use `/cd <dir>` to navigate to a directory\n"
             f"3. Send any message to start coding with Claude!\n\n"
             f"🔒 Your access is secured and all actions are logged.\n"
             f"📊 Use `/status` to check your usage limits."
@@ -336,7 +331,6 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
                 InlineKeyboardButton(await t(context, user_id, "buttons.continue"), callback_data="action:continue"),
             ],
             [
-                InlineKeyboardButton(await t(context, user_id, "buttons.show_projects"), callback_data="action:show_projects"),
                 InlineKeyboardButton(await t(context, user_id, "buttons.check_status"), callback_data="action:status"),
             ],
             [
@@ -395,7 +389,6 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                     f"• `/ls` - {help_data.get('ls_desc', 'List files and directories')}",
                     f"• `/cd <directory>` - {help_data.get('cd_desc', 'Change to directory')}",
                     f"• `/pwd` - {help_data.get('pwd_desc', 'Show current directory')}",
-                    f"• `/projects` - {help_data.get('projects_desc', 'Show available projects')}",
                     ""
                 ])
             
@@ -415,7 +408,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             if "usage_title" in help_data:
                 parts.append(help_data["usage_title"])
                 parts.extend([
-                    f"• {help_data.get('usage_cd', 'cd myproject - Enter project directory')}",
+                    f"• {help_data.get('usage_cd', 'cd mydir - Enter directory')}",
                     f"• {help_data.get('usage_ls', 'ls - See what is in current directory')}",
                     f"• {help_data.get('usage_code', 'Create a simple Python script - Ask Claude to code')}",
                     f"• {help_data.get('usage_file', 'Send a file to have Claude review it')}",
@@ -482,12 +475,10 @@ async def new_session(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     
     if localization and user_language_storage:
         start_coding_btn = await t(context, user_id, "commands_extended.new_session.button_start_coding")
-        change_project_btn = await t(context, user_id, "commands_extended.new_session.button_change_project")
         quick_actions_btn = await t(context, user_id, "commands_extended.new_session.button_quick_actions")
         help_btn = await t(context, user_id, "commands_extended.new_session.button_help")
     else:
         start_coding_btn = "📝 Start Coding"
-        change_project_btn = "📁 Change Project"
         quick_actions_btn = "📋 Quick Actions"
         help_btn = "❓ Help"
     
@@ -495,9 +486,6 @@ async def new_session(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         [
             InlineKeyboardButton(
                 start_coding_btn, callback_data="action:start_coding"
-            ),
-            InlineKeyboardButton(
-                change_project_btn, callback_data="action:show_projects"
             ),
         ],
         [
@@ -659,7 +647,7 @@ async def continue_session(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
             for msg in formatted_messages:
                 await message.reply_text(
-                    str(msg),
+                    msg.text,
                     parse_mode=None,
                 )
 
@@ -808,7 +796,7 @@ async def list_files(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
             [
                 InlineKeyboardButton(await t(context, user_id, "buttons.refresh"), callback_data="action:refresh_ls"),
                 InlineKeyboardButton(
-                    await t(context, user_id, "buttons.projects"), callback_data="action:show_projects"
+                    await t(context, user_id, "buttons.refresh"), callback_data="action:refresh_ls"
                 ),
             ]
         )
@@ -858,12 +846,12 @@ async def change_directory(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         await message.reply_text(
             "**Usage:** `/cd <directory>`\n\n"
             "**Examples:**\n"
-            "• `/cd myproject` - Enter subdirectory\n"
+            "• `/cd mydir` - Enter subdirectory\n"
             "• `/cd ..` - Go up one level\n"
             "• `/cd /` - Go to root of approved directory\n\n"
             "**Tips:**\n"
             "• Use `/ls` to see available directories\n"
-            "• Use `/projects` to see all projects",
+            "• Use `/ls` to see all subdirectories",
             parse_mode=None,
         )
         return
@@ -978,7 +966,7 @@ async def print_working_directory(
     keyboard = [
         [
             InlineKeyboardButton("📁 List Files", callback_data="action:ls"),
-            InlineKeyboardButton("📋 Projects", callback_data="action:show_projects"),
+            InlineKeyboardButton("🔄 Refresh", callback_data="action:refresh_pwd"),
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -992,74 +980,6 @@ async def print_working_directory(
     )
 
 
-async def show_projects(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle /projects command."""
-    user_id = get_user_id(update)
-    message = get_effective_message(update)
-    
-    if not user_id or not message:
-        return
-        
-    settings = context.bot_data.get("settings")
-    if not settings:
-        await message.reply_text(await t(context, user_id, "errors.settings_not_available"))
-        return
-    settings_typed = cast(Settings, settings)
-
-    try:
-        # Get directories in approved directory (these are "projects")
-        projects = []
-        for item in sorted(settings_typed.approved_directory.iterdir()):
-            if item.is_dir() and not item.name.startswith("."):
-                projects.append(item.name)
-
-        if not projects:
-            await message.reply_text(
-                "📁 **No Projects Found**\n\n"
-                "No subdirectories found in your approved directory.\n"
-                "Create some directories to organize your projects!"
-            )
-            return
-
-        # Create inline keyboard with project buttons
-        keyboard = []
-        for i in range(0, len(projects), 2):
-            row = []
-            for j in range(2):
-                if i + j < len(projects):
-                    project = projects[i + j]
-                    row.append(
-                        InlineKeyboardButton(
-                            f"📁 {project}", callback_data=f"cd:{project}"
-                        )
-                    )
-            keyboard.append(row)
-
-        # Add navigation buttons
-        keyboard.append(
-            [
-                InlineKeyboardButton("🏠 Go to Root", callback_data="cd:/"),
-                InlineKeyboardButton(
-                    "🔄 Refresh", callback_data="action:show_projects"
-                ),
-            ]
-        )
-
-        reply_markup = InlineKeyboardMarkup(keyboard)
-
-        project_list = "\n".join([f"• `{project}/`" for project in projects])
-
-        await message.reply_text(
-            f"📁 **Available Projects**\n\n"
-            f"{project_list}\n\n"
-            f"Click a project below to navigate to it:",
-            parse_mode=None,
-            reply_markup=reply_markup,
-        )
-
-    except Exception as e:
-        await message.reply_text(f"❌ Error loading projects: {str(e)}")
-        logger.error("Error in show_projects command", error=str(e), user_id=user_id)
 
 
 async def session_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -1253,7 +1173,6 @@ async def end_session(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             InlineKeyboardButton(await t(context, user_id, "buttons.continue_session"), callback_data="action:continue")
         ],
         [
-            InlineKeyboardButton(await t(context, user_id, "buttons.show_projects"), callback_data="action:show_projects"),
             InlineKeyboardButton(await t(context, user_id, "buttons.status"), callback_data="action:status")
         ],
         [
@@ -1340,7 +1259,7 @@ async def quick_actions(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
                 "🤖 **No Actions Available**\n\n"
                 "No quick actions are available for the current context.\n\n"
                 "**Try:**\n"
-                "• Navigating to a project directory with `/cd`\n"
+                "• Navigating to directories with `/cd`\n"
                 "• Creating some code files\n"
                 "• Starting a Claude session with `/new`"
             )
@@ -1381,105 +1300,6 @@ async def quick_actions(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         logger.error("Error in quick_actions command", error=str(e), user_id=user_id)
 
 
-async def git_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle /git command to show git repository information."""
-    user_id = get_user_id(update)
-    message = get_effective_message(update)
-    
-    if not user_id or not message:
-        return
-        
-    settings = context.bot_data.get("settings")
-    if not settings:
-        await message.reply_text(await t(context, user_id, "errors.settings_not_available"))
-        return
-    settings_typed = cast(Settings, settings)
-    
-    features = context.bot_data.get("features")
-
-    if not features or not features.is_enabled("git"):
-        await message.reply_text(
-            "❌ **Git Integration Disabled**\n\n"
-            "Git integration feature is not enabled.\n"
-            "Contact your administrator to enable this feature."
-        )
-        return
-
-    # Get current directory
-    current_dir = context.user_data.get(
-        "current_directory", settings_typed.approved_directory
-    ) if context.user_data else settings_typed.approved_directory
-
-    try:
-        git_integration = features.get_git_integration()
-        if not git_integration:
-            await message.reply_text(
-                "❌ **Git Integration Unavailable**\n\n"
-                "Git integration service is not available."
-            )
-            return
-
-        # Check if current directory is a git repository
-        if not (current_dir / ".git").exists():
-            await message.reply_text(
-                f"📂 **Not a Git Repository**\n\n"
-                f"Current directory `{current_dir.relative_to(settings_typed.approved_directory)}/` is not a git repository.\n\n"
-                f"**Options:**\n"
-                f"• Navigate to a git repository with `/cd`\n"
-                f"• Initialize a new repository (ask Claude to help)\n"
-                f"• Clone an existing repository (ask Claude to help)"
-            )
-            return
-
-        # Get git status
-        git_status = await git_integration.get_status(current_dir)
-
-        # Format status message
-        relative_path = current_dir.relative_to(settings_typed.approved_directory)
-        status_message = f"🔗 **Git Repository Status**\n\n"
-        status_message += f"📂 Directory: `{relative_path}/`\n"
-        status_message += f"🌿 Branch: `{git_status.branch}`\n"
-
-        if git_status.ahead > 0:
-            status_message += f"⬆️ Ahead: {git_status.ahead} commits\n"
-        if git_status.behind > 0:
-            status_message += f"⬇️ Behind: {git_status.behind} commits\n"
-
-        # Show file changes
-        if not git_status.is_clean:
-            status_message += f"\n**Changes:**\n"
-            if git_status.modified:
-                status_message += f"📝 Modified: {len(git_status.modified)} files\n"
-            if git_status.added:
-                status_message += f"➕ Added: {len(git_status.added)} files\n"
-            if git_status.deleted:
-                status_message += f"➖ Deleted: {len(git_status.deleted)} files\n"
-            if git_status.untracked:
-                status_message += f"❓ Untracked: {len(git_status.untracked)} files\n"
-        else:
-            status_message += "\n✅ Working directory clean\n"
-
-        # Create action buttons
-        keyboard = [
-            [
-                InlineKeyboardButton("📊 Show Diff", callback_data="git:diff"),
-                InlineKeyboardButton("📜 Show Log", callback_data="git:log"),
-            ],
-            [
-                InlineKeyboardButton("🔄 Refresh", callback_data="git:status"),
-                InlineKeyboardButton("📁 Files", callback_data="action:ls"),
-            ],
-        ]
-
-        reply_markup = InlineKeyboardMarkup(keyboard)
-
-        await message.reply_text(
-            status_message, parse_mode=None, reply_markup=reply_markup
-        )
-
-    except Exception as e:
-        await message.reply_text(f"❌ **Git Error**\n\n{str(e)}")
-        logger.error("Error in git_command", error=str(e), user_id=user_id)
 
 
 def _format_file_size(size: int) -> str:
@@ -1702,38 +1522,94 @@ async def pwd_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await safe_user_error(update, context, "errors.pwd_failed", e)
 
-async def projects_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Show project list."""
-    user_id = get_user_id(update)
-    message = get_effective_message(update)
-    
-    if not user_id or not message:
-        return
-    
-    try:
-        projects_text = await t(context, user_id, "projects.title", count=0)
-        await message.reply_text(projects_text)
-    except Exception as e:
-        await safe_user_error(update, context, "errors.projects_failed", e)
 
 
-# FIXED: Git command (line ~1241 - mixed language fix)
 async def git_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Git operations - fixed error handling."""
+    """Handle /git command with simple button interface."""
     user_id = get_user_id(update)
     message = get_effective_message(update)
-    
+
     if not user_id or not message:
         return
-        
+
+    settings = context.bot_data.get("settings")
+    if not settings:
+        await message.reply_text(await t(context, user_id, "errors.settings_not_available"))
+        return
+    settings_typed = cast(Settings, settings)
+
+    # Get current directory for context
+    current_dir = context.user_data.get(
+        "current_directory", settings_typed.approved_directory
+    ) if context.user_data else settings_typed.approved_directory
+
+    relative_path = current_dir.relative_to(settings_typed.approved_directory)
+
     try:
-        # Existing git logic...
-        git_text = await t(context, user_id, "commands.git.title")
-        await message.reply_text(f"🔗 **{git_text}**")
+        # Get localized texts
+        title = await t(context, user_id, "git.title")
+        description = await t(context, user_id, "git.description")
+
+        # Create message
+        current_dir_text = await t(context, user_id, "commands.pwd.current_directory")
+        message_text = f"{title}\n\n{description}\n\n📂 {current_dir_text}: {relative_path}/"
+
+        # Create button grid with localized labels
+        keyboard = [
+            [
+                InlineKeyboardButton(
+                    await t(context, user_id, "git.buttons.status"),
+                    callback_data="git:status"
+                ),
+                InlineKeyboardButton(
+                    await t(context, user_id, "git.buttons.add"),
+                    callback_data="git:add"
+                ),
+                InlineKeyboardButton(
+                    await t(context, user_id, "git.buttons.commit"),
+                    callback_data="git:commit"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    await t(context, user_id, "git.buttons.push"),
+                    callback_data="git:push"
+                ),
+                InlineKeyboardButton(
+                    await t(context, user_id, "git.buttons.pull"),
+                    callback_data="git:pull"
+                ),
+                InlineKeyboardButton(
+                    await t(context, user_id, "git.buttons.log"),
+                    callback_data="git:log"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    await t(context, user_id, "git.buttons.diff"),
+                    callback_data="git:diff"
+                ),
+                InlineKeyboardButton(
+                    await t(context, user_id, "git.buttons.branch"),
+                    callback_data="git:branch"
+                ),
+                InlineKeyboardButton(
+                    await t(context, user_id, "git.buttons.help"),
+                    callback_data="git:help"
+                )
+            ]
+        ]
+
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        await message.reply_text(
+            message_text, reply_markup=reply_markup
+        )
+
     except Exception as e:
-        error_msg = await t(context, user_id, "errors.git_operation_failed", error=str(e))
-        await message.reply_text(error_msg)
-        logger.error("Git operation failed", error=str(e), user_id=user_id)
+        error_msg = await t(context, user_id, "git.error")
+        await message.reply_text(error_msg.format(error=str(e)))
+        logger.error("Error in git_handler", error=str(e), user_id=user_id)
 
 
 def extract_auth_url(output: str) -> str:
@@ -2244,7 +2120,6 @@ def register_handlers(application):
     application.add_handler(CommandHandler("status", status_handler))
     application.add_handler(CommandHandler("actions", actions_handler))
     application.add_handler(CommandHandler("pwd", pwd_handler))
-    application.add_handler(CommandHandler("projects", projects_handler))
     application.add_handler(CommandHandler("ls", list_files))
     application.add_handler(CommandHandler("cd", change_directory))
     application.add_handler(CommandHandler("continue", continue_session))
