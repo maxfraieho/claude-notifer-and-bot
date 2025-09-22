@@ -219,6 +219,7 @@ async def handle_action_callback(
         "export": _handle_export_action,
         "settings": _handle_settings_action,
         "main_menu": _handle_main_menu_action,
+        "schedules": _handle_schedules_action,
     }
 
     handler = actions.get(action_type)
@@ -727,7 +728,7 @@ async def _handle_quick_actions_action(
         ],
         [
             InlineKeyboardButton("💾 Git Status", callback_data="quick_action:git_status"),
-            InlineKeyboardButton("🔍 Пошук TODO", callback_data="quick_action:grep"),
+            InlineKeyboardButton("📝 TODO List", callback_data="action:schedules"),
         ],
         [
             InlineKeyboardButton("📖 Читати файл", callback_data="file_edit:select_read"),
@@ -2310,6 +2311,34 @@ async def _handle_main_menu_action(query, context: ContextTypes.DEFAULT_TYPE) ->
             logger.error("Failed to send error message for main menu", error=str(nested_e), user_id=user_id)
 
 
+async def _handle_schedules_action(query, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle schedules action - opens schedules/TODO management menu."""
+    user_id = query.from_user.id
+
+    try:
+        # Import the schedule handler function
+        from ..handlers.command import schedules_handler
+
+        # Create a fake Update object for schedules_handler
+        class FakeUpdate:
+            def __init__(self, query):
+                self.callback_query = query
+                self.effective_user = query.from_user
+                self.effective_chat = query.message.chat
+                self.message = query.message
+
+        # Call the schedules handler
+        fake_update = FakeUpdate(query)
+        await schedules_handler(fake_update, context)
+
+    except Exception as e:
+        logger.error("Error in schedules action", error=str(e), user_id=user_id)
+        try:
+            await query.edit_message_text("❌ **Помилка завантаження TODO List**\n\nСпробуйте команду `/schedules`")
+        except Exception as nested_e:
+            logger.error("Failed to send schedules error message", error=str(nested_e), user_id=user_id)
+
+
 def _format_file_size(size: int) -> str:
     """Format file size in human-readable format."""
     for unit in ["B", "KB", "MB", "GB"]:
@@ -2597,14 +2626,17 @@ async def handle_quick_action_execution_callback(
         executing_text = await get_localized_text(context, user_id, "messages.executing_action", action=action_type)
         await query.edit_message_text(executing_text, parse_mode=None)
 
-        # Define action commands mapping
+        # Handle ls action specially to use the same logic as /ls command
+        if action_type == "ls":
+            await _handle_ls_action_for_quick(query, context)
+            return
+
+        # Define action commands mapping for other actions
         action_commands = {
-            "ls": "ls -la",
             "pwd": "pwd",
             "git_status": "git status",
             "git_diff": "git diff --color=never",
             "git_log": "git log --oneline -10",
-            "grep": "grep -r \"TODO\\|FIXME\\|BUG\" . --include=\"*.py\" --include=\"*.js\" --include=\"*.ts\" || echo 'No TODO/FIXME/BUG found'",
             "find_files": "find . -type f -name \"*.py\" -o -name \"*.js\" -o -name \"*.ts\" | head -20",
             "disk_usage": "du -sh * 2>/dev/null | sort -hr | head -10",
             "processes": "ps aux | head -10"
@@ -2667,6 +2699,72 @@ async def handle_quick_action_execution_callback(
         logger.error("Quick action execution failed", error=str(e), user_id=user_id, action_type=action_type)
         error_text = await get_localized_text(context, user_id, "errors.action_error", action=action_type, error=str(e))
         await query.edit_message_text(error_text, parse_mode=None)
+
+
+async def _handle_ls_action_for_quick(query, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle ls action for quick actions using same logic as /ls command."""
+    settings: Settings = context.bot_data["settings"]
+    current_dir = context.user_data.get(
+        "current_directory", settings.approved_directory
+    )
+
+    try:
+        # List directory contents (same logic as /ls command)
+        items = []
+        directories = []
+        files = []
+
+        for item in sorted(current_dir.iterdir()):
+            if item.name.startswith("."):
+                continue
+
+            if item.is_dir():
+                directories.append(f"📁 {item.name}/")
+            else:
+                try:
+                    size = item.stat().st_size
+                    size_str = _format_file_size(size)
+                    files.append(f"📄 {item.name} ({size_str})")
+                except OSError:
+                    files.append(f"📄 {item.name}")
+
+        items = directories + files
+        relative_path = current_dir.relative_to(settings.approved_directory)
+
+        if not items:
+            message = f"📂 `{relative_path}/`\n\n_(empty directory)_"
+        else:
+            message = f"📂 `{relative_path}/`\n\n"
+            max_items = 30  # Limit for inline display
+            if len(items) > max_items:
+                shown_items = items[:max_items]
+                message += "\n".join(shown_items)
+                message += f"\n\n_... and {len(items) - max_items} more items_"
+            else:
+                message += "\n".join(items)
+
+        # Add action buttons for quick actions
+        keyboard = [
+            [
+                InlineKeyboardButton("📖 Читати файл", callback_data="file_edit:select_read"),
+                InlineKeyboardButton("✏️ Редагувати файл", callback_data="file_edit:select_edit")
+            ],
+            [
+                InlineKeyboardButton("🔄 Продовжити", callback_data="conversation:continue"),
+                InlineKeyboardButton("📋 Меню", callback_data="action:quick_actions")
+            ]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        await query.edit_message_text(
+            f"✅ **Результат ls:**\n\n{message}",
+            reply_markup=reply_markup
+        )
+
+    except Exception as e:
+        logger.error("Error in ls quick action", error=str(e))
+        error_text = f"❌ Помилка при виконанні ls: {str(e)}"
+        await query.edit_message_text(error_text)
 
 
 async def handle_file_edit_callback(
