@@ -1,0 +1,905 @@
+# 🔍 Comprehensive UX Analysis Report
+**Claude Notifier Bot - Detailed Analysis**
+
+## 📊 Executive Summary
+Проаналізовано 765 UI елементів у проекті claude-notifer-and-bot. Виявлено 0 критичних, 5 важливих та 1 незначних проблем. Складність проекту: 10.0/10. Рівень підтримуваності: 5.0/10. Загальна оцінка: Потребує значних покращень.
+
+**Analysis Date:** 2025-09-22T19:36:12.077824
+**Project Path:** /home/vokov/projects/claude-notifer-and-bot
+
+## 📈 Key Metrics
+- **Total UI Elements:** 765
+- **Commands:** 7
+- **Buttons:** 182
+- **Handlers:** 10
+- **Complexity Score:** 10.0/10
+- **Maintainability:** 5.0/10
+- **Localization Coverage:** 30.0%
+
+## 🎯 UI Elements Inventory
+
+### Commands (7)
+- `/cd` - *callback.py:188*
+- `/cd` - *callback.py:198*
+- `/text_message` - *message.py:375*
+- `/text_message` - *message.py:396*
+- `/start` - *command.py:356*
+- `/continue` - *command.py:659*
+- `/continue` - *command.py:717*
+
+### Buttons (182)
+- `🔄 Continue` → `action:continue` - *callback.py:581*
+- `🔄 Refresh` → `action:refresh_status` - *callback.py:605*
+- `⬆️ Go Up` → `cd:..` - *callback.py:663*
+- `🏠 Root` → `cd:/` - *callback.py:664*
+- `🔄 Refresh` → `action:refresh_ls` - *callback.py:670*
+- `📋 Показати файли` → `quick_action:ls` - *callback.py:726*
+- `🏠 Де я?` → `quick_action:pwd` - *callback.py:727*
+- `💾 Git Status` → `quick_action:git_status` - *callback.py:730*
+- `📝 TODO List` → `action:schedules` - *callback.py:731*
+- `📖 Читати файл` → `file_edit:select_read` - *callback.py:734*
+- `✏️ Редагувати файл` → `file_edit:select_edit` - *callback.py:735*
+- `🔍 Знайти файли` → `quick_action:find_files` - *callback.py:738*
+- `🧪 Запустити тести` → `quick:test` - *callback.py:739*
+- `📝 Створити завдання` → `schedule:create_new` - *callback.py:1347*
+- `📋 Зі шаблону` → `schedule:from_template` - *callback.py:1348*
+- `🔙 Назад` → `schedule:list` - *callback.py:1349*
+- `➕ Додати завдання` → `schedule:add` - *callback.py:1369*
+- `⚙️ Налаштування` → `schedule:settings` - *callback.py:1370*
+- `➕ Додати` → `schedule:add` - *callback.py:1404*
+- `📝 Редагувати` → `schedule:edit` - *callback.py:1405*
+- `⚙️ Налаштування` → `schedule:settings` - *callback.py:1408*
+- `📊 Статистика` → `schedule:stats` - *callback.py:1409*
+- `🔄 Оновити` → `schedule:refresh` - *callback.py:1412*
+- `▶️ Запустити всі` → `schedule:run_all` - *callback.py:1413*
+- `🌙 Змінити DND` → `schedule:change_dnd` - *callback.py:1445*
+- `⚡ Налаштування` → `schedule:advanced` - *callback.py:1446*
+- `🔙 Назад` → `schedule:list` - *callback.py:1448*
+- `➕ Додати завдання` → `schedule:add` - *callback.py:1463*
+- `🔙 Назад` → `schedule:list` - *callback.py:1464*
+- `🔙 Назад` → `schedule:list` - *callback.py:1482*
+- `🔙 Назад` → `schedule:edit` - *callback.py:1496*
+- `🔙 Назад` → `schedule:edit` - *callback.py:1521*
+- `📋 Назад до списку` → `schedule:list` - *callback.py:1588*
+- `📋 Детальні логи` → `schedule:logs` - *callback.py:1609*
+- `🔙 Назад` → `schedule:list` - *callback.py:1610*
+- `❌ Скасувати` → `schedule:cancel_create` - *callback.py:1632*
+- `🔍 Аналіз коду` → `schedule:template:code_analysis` - *callback.py:1640*
+- `📊 Генерація звітів` → `schedule:template:report_generation` - *callback.py:1641*
+- `⚒️ Рефакторинг` → `schedule:template:refactoring` - *callback.py:1644*
+- `📝 Документація` → `schedule:template:documentation` - *callback.py:1645*
+- `🔒 Перевірка безпеки` → `schedule:template:security_audit` - *callback.py:1648*
+- `🧪 Тестування` → `schedule:template:testing` - *callback.py:1649*
+- `🔙 Назад` → `schedule:add` - *callback.py:1651*
+- `🔧 Змінити максимум завдань` → `schedule:change_max_tasks` - *callback.py:1693*
+- `⏰ Змінити тайм-аут` → `schedule:change_timeout` - *callback.py:1694*
+- `🔄 Змінити інтервал` → `schedule:change_interval` - *callback.py:1697*
+- `📝 Переключити логування` → `schedule:toggle_logging` - *callback.py:1698*
+- `🔙 Назад` → `schedule:settings` - *callback.py:1700*
+- `🔙 Назад` → `schedule:settings` - *callback.py:1727*
+- `📋 Назад до списку` → `schedule:list` - *callback.py:1740*
+- `1️⃣ Одне завдання` → `schedule:set_max:1` - *callback.py:1762*
+- `2️⃣ Два завдання` → `schedule:set_max:2` - *callback.py:1763*
+- `3️⃣ Три завдання` → `schedule:set_max:3` - *callback.py:1766*
+- `4️⃣ Чотири завдання` → `schedule:set_max:4` - *callback.py:1767*
+- `🔙 Назад` → `schedule:advanced` - *callback.py:1769*
+- `⚙️ Назад до налаштувань` → `schedule:advanced` - *callback.py:1791*
+- `🕑 2 хв (120с)` → `schedule:set_timeout:120` - *callback.py:1809*
+- `🕕 5 хв (300с)` → `schedule:set_timeout:300` - *callback.py:1810*
+- `🕙 10 хв (600с)` → `schedule:set_timeout:600` - *callback.py:1813*
+- `🕐 15 хв (900с)` → `schedule:set_timeout:900` - *callback.py:1814*
+- `🕕 30 хв (1800с)` → `schedule:set_timeout:1800` - *callback.py:1817*
+- `🕐 60 хв (3600с)` → `schedule:set_timeout:3600` - *callback.py:1818*
+- `🔙 Назад` → `schedule:advanced` - *callback.py:1820*
+- `⚙️ Назад до налаштувань` → `schedule:advanced` - *callback.py:1843*
+- `⚡ 30с` → `schedule:set_interval:30` - *callback.py:1861*
+- `🕐 1хв (60с)` → `schedule:set_interval:60` - *callback.py:1862*
+- `🕕 2хв (120с)` → `schedule:set_interval:120` - *callback.py:1865*
+- `🕙 5хв (300с)` → `schedule:set_interval:300` - *callback.py:1866*
+- `🔙 Назад` → `schedule:advanced` - *callback.py:1868*
+- `⚙️ Назад до налаштувань` → `schedule:advanced` - *callback.py:1893*
+- `⚙️ Назад до налаштувань` → `schedule:advanced` - *callback.py:1918*
+- `📋 Повернутися до списку` → `schedule:list` - *callback.py:1939*
+- `✅ Так, запустити` → `schedule:confirm_run_all` - *callback.py:1966*
+- `❌ Скасувати` → `schedule:list` - *callback.py:1967*
+- `📋 Повернутися до списку` → `schedule:list` - *callback.py:2020*
+- `📋 Повернутися до списку` → `schedule:list` - *callback.py:2032*
+- `📝 Створити завдання` → `schedule:create_new` - *callback.py:2046*
+- `❌ Скасувати` → `schedule:cancel_create` - *callback.py:2068*
+- `📝 Створити завдання` → `schedule:create_new` - *callback.py:2088*
+- `📋 Переглянути завдання` → `schedule:list` - *callback.py:2160*
+- `➕ Ще завдання` → `schedule:create_new` - *callback.py:2161*
+- `🔙 Назад` → `schedule:list` - *callback.py:2173*
+- `📝 Створити завдання` → `schedule:create_new` - *callback.py:2187*
+- `🔙 Назад` → `schedule:list` - *callback.py:2188*
+- `🔄 Продовжити діалог` → `continue` - *callback.py:2468*
+- `🔙 Назад` → `schedule:from_template` - *callback.py:2593*
+- `🔄 Продовжити` → `conversation:continue` - *callback.py:2671*
+- `📋 Меню` → `action:quick_actions` - *callback.py:2672*
+- `📖 Читати файл` → `file_edit:select_read` - *callback.py:2679*
+- `✏️ Редагувати файл` → `file_edit:select_edit` - *callback.py:2680*
+- `📊 Git diff` → `quick_action:git_diff` - *callback.py:2684*
+- `📜 Git log` → `quick_action:git_log` - *callback.py:2685*
+- `📖 Читати файл` → `file_edit:select_read` - *callback.py:2750*
+- `✏️ Редагувати файл` → `file_edit:select_edit` - *callback.py:2751*
+- `🔄 Продовжити` → `conversation:continue` - *callback.py:2754*
+- `📋 Меню` → `action:quick_actions` - *callback.py:2755*
+- `❌ Скасувати` → `action:quick_actions` - *callback.py:2792*
+- `❌ Скасувати` → `action:quick_actions` - *callback.py:2815*
+- `🔙 Назад` → `file_edit:select_edit` - *callback.py:2835*
+- `🔙 Назад` → `file_edit:select_edit` - *callback.py:2846*
+- `🔙 Назад` → `file_edit:select_edit` - *callback.py:2860*
+- `❌ Скасувати редагування` → `file_edit:cancel` - *callback.py:2909*
+- `🔙 Назад` → `file_edit:select_edit` - *callback.py:2921*
+- `📋 Швидкі дії` → `action:quick_actions` - *callback.py:2933*
+- `🔄 Перевірити ще раз` → `claude_status:check` - *callback.py:2992*
+- `📈 Історія` → `claude_status:history` - *callback.py:2993*
+- `🔔 Сповіщення` → `claude_status:notifications` - *callback.py:2994*
+- `🔄 Оновити` → `claude_status:history` - *callback.py:3040*
+- `🔙 Назад` → `claude_status:check` - *callback.py:3041*
+- `🔙 Назад` → `claude_status:check` - *callback.py:3070*
+- `🔙 Статус` → `claude_status:check` - *callback.py:3082*
+- `🔄 Спробувати ще раз` → `claude_status:check` - *callback.py:3091*
+- `⏰ Зараз (під час DND)` → `schedule:time:dnd` - *message.py:975*
+- `🌅 Завтра вранці` → `schedule:time:morning` - *message.py:976*
+- `🕘 Завтра ввечері` → `schedule:time:evening` - *message.py:979*
+- `📅 Щоденно` → `schedule:time:daily` - *message.py:980*
+- `🔄 Щотижня` → `schedule:time:weekly` - *message.py:983*
+- `⚙️ Налаштувати час` → `schedule:time:custom` - *message.py:984*
+- `❌ Скасувати` → `schedule:cancel_create` - *message.py:986*
+- `❌ Скасувати` → `schedule:cancel_create` - *message.py:1009*
+- `❌ Скасувати` → `schedule:cancel_create` - *message.py:1021*
+- `❌ Скасувати` → `schedule:cancel_create` - *message.py:1038*
+- `✅ Створити завдання` → `schedule:confirm_task` - *message.py:1070*
+- `✏️ Редагувати` → `schedule:edit_task` - *message.py:1071*
+- `❌ Скасувати` → `schedule:cancel_create` - *message.py:1073*
+- `❌ Скасувати` → `action:quick_actions` - *message.py:1110*
+- `❌ Скасувати` → `action:quick_actions` - *message.py:1122*
+- `🔙 Назад` → `file_edit:select_read` - *message.py:1138*
+- `🔙 Назад` → `file_edit:select_read` - *message.py:1149*
+- `🔙 Назад` → `file_edit:select_read` - *message.py:1163*
+- `✏️ Редагувати файл` → `file_edit:select_edit` - *message.py:1192*
+- `📋 Меню` → `action:quick_actions` - *message.py:1193*
+- `🔙 Назад` → `file_edit:select_read` - *message.py:1208*
+- `🔙 Назад` → `file_edit:select_edit` - *message.py:1221*
+- `🔙 Назад` → `file_edit:select_edit` - *message.py:1232*
+- `🔙 Назад` → `file_edit:select_edit` - *message.py:1245*
+- `❌ Скасувати редагування` → `file_edit:cancel` - *message.py:1298*
+- `🔙 Назад` → `file_edit:select_edit` - *message.py:1309*
+- `📋 Швидкі дії` → `action:quick_actions` - *message.py:1321*
+- `📋 Швидкі дії` → `action:quick_actions` - *message.py:1346*
+- `✅ Продовжити` → `file_edit:confirm_save` - *message.py:1371*
+- `❌ Скасувати` → `file_edit:cancel` - *message.py:1372*
+- `🔙 Назад` → `file_edit:select_edit` - *message.py:1384*
+- `📖 Перевірити зміни` → `file_edit:select_read` - *message.py:1420*
+- `📋 Меню` → `action:quick_actions` - *message.py:1421*
+- `🔙 Повернутися` → `action:quick_actions` - *message.py:1442*
+- `📤 Експорт` → `dnd:export` - *dnd_prompts.py:54*
+- `📥 Імпорт` → `dnd:import` - *dnd_prompts.py:55*
+- `📁 List Files` → `action:ls` - *command.py:968*
+- `🔄 Refresh` → `action:refresh_pwd` - *command.py:969*
+- `🔄 Continue` → `action:continue` - *command.py:1039*
+- `📤 Export` → `action:export` - *command.py:1056*
+- `🔄 Refresh` → `action:refresh_status` - *command.py:1057*
+- `📝 Markdown` → `export:markdown` - *command.py:1110*
+- `🌐 HTML` → `export:html` - *command.py:1111*
+- `📋 JSON` → `export:json` - *command.py:1114*
+- `❌ Cancel` → `export:cancel` - *command.py:1115*
+- `➕ Додати завдання` → `schedule:add` - *command.py:1344*
+- `⚙️ Налаштування` → `schedule:settings` - *command.py:1345*
+- `➕ Додати` → `schedule:add` - *command.py:1384*
+- `📝 Редагувати` → `schedule:edit` - *command.py:1385*
+- `⚙️ Налаштування` → `schedule:settings` - *command.py:1388*
+- `📊 Статистика` → `schedule:stats` - *command.py:1389*
+- `🔄 Оновити` → `schedule:refresh` - *command.py:1392*
+- `▶️ Запустити всі` → `schedule:run_all` - *command.py:1393*
+- `📝 Створити завдання` → `schedule:create_new` - *command.py:1419*
+- `📋 Зі шаблону` → `schedule:from_template` - *command.py:1420*
+- `🔙 Назад` → `schedule:list` - *command.py:1421*
+- `🔄 Оновити` → `claude_status:refresh` - *command.py:3171*
+- `📊 Історія` → `claude_status:history` - *command.py:3172*
+- `🔔 Сповіщення` → `claude_status:notifications` - *command.py:3175*
+- `⚙️ Налаштування` → `claude_status:settings` - *command.py:3176*
+- `❌ Вимкнути сповіщення` → `claude_notifications:disable` - *command.py:3237*
+- `✅ Увімкнути сповіщення` → `claude_notifications:enable` - *command.py:3239*
+- `📊 Історія` → `claude_notifications:history` - *command.py:3243*
+- `🔄 Статус` → `claude_status:refresh` - *command.py:3244*
+- `⬅️ Назад` → `claude_status:main` - *command.py:3246*
+- `🔄 Оновити` → `claude_status:history` - *command.py:3360*
+- `📊 Статус` → `claude_status:refresh` - *command.py:3361*
+- `⬅️ Назад` → `claude_status:main` - *command.py:3363*
+- `🔧 Налаштування` → `prompts_settings` - *scheduled_prompts_handler.py:54*
+- `📊 Історія` → `prompts_history` - *scheduled_prompts_handler.py:55*
+
+### Callbacks (576)
+- `action:ls` - *callback.py:170*
+- `action:ls` - *callback.py:170*
+- `action:new_session` - *callback.py:171*
+- `action:new_session` - *callback.py:171*
+- `action:status` - *callback.py:174*
+- `action:status` - *callback.py:174*
+- `action:full_help` - *callback.py:295*
+- `action:full_help` - *callback.py:295*
+- `action:main_menu` - *callback.py:296*
+- `action:main_menu` - *callback.py:296*
+- `action:main_menu` - *callback.py:318*
+- `action:main_menu` - *callback.py:318*
+- `action:start_coding` - *callback.py:350*
+- `action:start_coding` - *callback.py:350*
+- `action:quick_actions` - *callback.py:353*
+- `action:quick_actions` - *callback.py:353*
+- `action:help` - *callback.py:354*
+- `action:help` - *callback.py:354*
+- `action:new_session` - *callback.py:393*
+- `action:new_session` - *callback.py:393*
+- `action:status` - *callback.py:396*
+- `action:status` - *callback.py:396*
+- `action:new_session` - *callback.py:509*
+- `action:new_session` - *callback.py:509*
+- `action:status` - *callback.py:512*
+- `action:status` - *callback.py:512*
+- `action:new_session` - *callback.py:530*
+- `action:new_session` - *callback.py:530*
+- `action:continue` - *callback.py:581*
+- `action:continue` - *callback.py:581*
+- `action:end_session` - *callback.py:583*
+- `action:end_session` - *callback.py:583*
+- `action:new_session` - *callback.py:590*
+- `action:new_session` - *callback.py:590*
+- `action:new_session` - *callback.py:598*
+- `action:new_session` - *callback.py:598*
+- `action:refresh_status` - *callback.py:605*
+- `action:refresh_status` - *callback.py:605*
+- `cd:..` - *callback.py:663*
+- `cd:..` - *callback.py:663*
+- `cd:/` - *callback.py:664*
+- `cd:/` - *callback.py:664*
+- `action:refresh_ls` - *callback.py:670*
+- `action:refresh_ls` - *callback.py:670*
+- `action:refresh_ls` - *callback.py:672*
+- `action:refresh_ls` - *callback.py:672*
+- `quick_action:ls` - *callback.py:726*
+- `quick_action:ls` - *callback.py:726*
+- `quick_action:pwd` - *callback.py:727*
+- `quick_action:pwd` - *callback.py:727*
+- `quick_action:git_status` - *callback.py:730*
+- `quick_action:git_status` - *callback.py:730*
+- `action:schedules` - *callback.py:731*
+- `action:schedules` - *callback.py:731*
+- `file_edit:select_read` - *callback.py:734*
+- `file_edit:select_read` - *callback.py:734*
+- `file_edit:select_edit` - *callback.py:735*
+- `file_edit:select_edit` - *callback.py:735*
+- `quick_action:find_files` - *callback.py:738*
+- `quick_action:find_files` - *callback.py:738*
+- `quick:test` - *callback.py:739*
+- `quick:test` - *callback.py:739*
+- `action:new_session` - *callback.py:741*
+- `action:new_session` - *callback.py:741*
+- `git:back` - *callback.py:1004*
+- `git:back` - *callback.py:1004*
+- `git:status` - *callback.py:1025*
+- `git:status` - *callback.py:1025*
+- `git:add` - *callback.py:1029*
+- `git:add` - *callback.py:1029*
+- `git:commit` - *callback.py:1033*
+- `git:commit` - *callback.py:1033*
+- `git:push` - *callback.py:1039*
+- `git:push` - *callback.py:1039*
+- `git:pull` - *callback.py:1043*
+- `git:pull` - *callback.py:1043*
+- `git:log` - *callback.py:1047*
+- `git:log` - *callback.py:1047*
+- `git:diff` - *callback.py:1053*
+- `git:diff` - *callback.py:1053*
+- `git:branch` - *callback.py:1057*
+- `git:branch` - *callback.py:1057*
+- `git:help` - *callback.py:1061*
+- `git:help` - *callback.py:1061*
+- `git:back` - *callback.py:1156*
+- `git:back` - *callback.py:1156*
+- `git:help` - *callback.py:1160*
+- `git:help` - *callback.py:1160*
+- `action:help` - *callback.py:1290*
+- `action:help` - *callback.py:1290*
+- `action:help` - *callback.py:1315*
+- `action:help` - *callback.py:1315*
+- `schedule:create_new` - *callback.py:1347*
+- `schedule:create_new` - *callback.py:1347*
+- `schedule:from_template` - *callback.py:1348*
+- `schedule:from_template` - *callback.py:1348*
+- `schedule:list` - *callback.py:1349*
+- `schedule:list` - *callback.py:1349*
+- `schedule:add` - *callback.py:1369*
+- `schedule:add` - *callback.py:1369*
+- `schedule:settings` - *callback.py:1370*
+- `schedule:settings` - *callback.py:1370*
+- `schedule:add` - *callback.py:1404*
+- `schedule:add` - *callback.py:1404*
+- `schedule:edit` - *callback.py:1405*
+- `schedule:edit` - *callback.py:1405*
+- `schedule:settings` - *callback.py:1408*
+- `schedule:settings` - *callback.py:1408*
+- `schedule:stats` - *callback.py:1409*
+- `schedule:stats` - *callback.py:1409*
+- `schedule:refresh` - *callback.py:1412*
+- `schedule:refresh` - *callback.py:1412*
+- `schedule:run_all` - *callback.py:1413*
+- `schedule:run_all` - *callback.py:1413*
+- `schedule:change_dnd` - *callback.py:1445*
+- `schedule:change_dnd` - *callback.py:1445*
+- `schedule:advanced` - *callback.py:1446*
+- `schedule:advanced` - *callback.py:1446*
+- `schedule:list` - *callback.py:1448*
+- `schedule:list` - *callback.py:1448*
+- `schedule:add` - *callback.py:1463*
+- `schedule:add` - *callback.py:1463*
+- `schedule:list` - *callback.py:1464*
+- `schedule:list` - *callback.py:1464*
+- `schedule:list` - *callback.py:1482*
+- `schedule:list` - *callback.py:1482*
+- `schedule:edit` - *callback.py:1496*
+- `schedule:edit` - *callback.py:1496*
+- `schedule:edit` - *callback.py:1521*
+- `schedule:edit` - *callback.py:1521*
+- `schedule:list` - *callback.py:1588*
+- `schedule:list` - *callback.py:1588*
+- `schedule:logs` - *callback.py:1609*
+- `schedule:logs` - *callback.py:1609*
+- `schedule:list` - *callback.py:1610*
+- `schedule:list` - *callback.py:1610*
+- `schedule:cancel_create` - *callback.py:1632*
+- `schedule:cancel_create` - *callback.py:1632*
+- `schedule:template:code_analysis` - *callback.py:1640*
+- `schedule:template:code_analysis` - *callback.py:1640*
+- `schedule:template:report_generation` - *callback.py:1641*
+- `schedule:template:report_generation` - *callback.py:1641*
+- `schedule:template:refactoring` - *callback.py:1644*
+- `schedule:template:refactoring` - *callback.py:1644*
+- `schedule:template:documentation` - *callback.py:1645*
+- `schedule:template:documentation` - *callback.py:1645*
+- `schedule:template:security_audit` - *callback.py:1648*
+- `schedule:template:security_audit` - *callback.py:1648*
+- `schedule:template:testing` - *callback.py:1649*
+- `schedule:template:testing` - *callback.py:1649*
+- `schedule:add` - *callback.py:1651*
+- `schedule:add` - *callback.py:1651*
+- `schedule:change_max_tasks` - *callback.py:1693*
+- `schedule:change_max_tasks` - *callback.py:1693*
+- `schedule:change_timeout` - *callback.py:1694*
+- `schedule:change_timeout` - *callback.py:1694*
+- `schedule:change_interval` - *callback.py:1697*
+- `schedule:change_interval` - *callback.py:1697*
+- `schedule:toggle_logging` - *callback.py:1698*
+- `schedule:toggle_logging` - *callback.py:1698*
+- `schedule:settings` - *callback.py:1700*
+- `schedule:settings` - *callback.py:1700*
+- `schedule:settings` - *callback.py:1727*
+- `schedule:settings` - *callback.py:1727*
+- `schedule:list` - *callback.py:1740*
+- `schedule:list` - *callback.py:1740*
+- `schedule:set_max:1` - *callback.py:1762*
+- `schedule:set_max:1` - *callback.py:1762*
+- `schedule:set_max:2` - *callback.py:1763*
+- `schedule:set_max:2` - *callback.py:1763*
+- `schedule:set_max:3` - *callback.py:1766*
+- `schedule:set_max:3` - *callback.py:1766*
+- `schedule:set_max:4` - *callback.py:1767*
+- `schedule:set_max:4` - *callback.py:1767*
+- `schedule:advanced` - *callback.py:1769*
+- `schedule:advanced` - *callback.py:1769*
+- `schedule:advanced` - *callback.py:1791*
+- `schedule:advanced` - *callback.py:1791*
+- `schedule:set_timeout:120` - *callback.py:1809*
+- `schedule:set_timeout:120` - *callback.py:1809*
+- `schedule:set_timeout:300` - *callback.py:1810*
+- `schedule:set_timeout:300` - *callback.py:1810*
+- `schedule:set_timeout:600` - *callback.py:1813*
+- `schedule:set_timeout:600` - *callback.py:1813*
+- `schedule:set_timeout:900` - *callback.py:1814*
+- `schedule:set_timeout:900` - *callback.py:1814*
+- `schedule:set_timeout:1800` - *callback.py:1817*
+- `schedule:set_timeout:1800` - *callback.py:1817*
+- `schedule:set_timeout:3600` - *callback.py:1818*
+- `schedule:set_timeout:3600` - *callback.py:1818*
+- `schedule:advanced` - *callback.py:1820*
+- `schedule:advanced` - *callback.py:1820*
+- `schedule:advanced` - *callback.py:1843*
+- `schedule:advanced` - *callback.py:1843*
+- `schedule:set_interval:30` - *callback.py:1861*
+- `schedule:set_interval:30` - *callback.py:1861*
+- `schedule:set_interval:60` - *callback.py:1862*
+- `schedule:set_interval:60` - *callback.py:1862*
+- `schedule:set_interval:120` - *callback.py:1865*
+- `schedule:set_interval:120` - *callback.py:1865*
+- `schedule:set_interval:300` - *callback.py:1866*
+- `schedule:set_interval:300` - *callback.py:1866*
+- `schedule:advanced` - *callback.py:1868*
+- `schedule:advanced` - *callback.py:1868*
+- `schedule:advanced` - *callback.py:1893*
+- `schedule:advanced` - *callback.py:1893*
+- `schedule:advanced` - *callback.py:1918*
+- `schedule:advanced` - *callback.py:1918*
+- `schedule:list` - *callback.py:1939*
+- `schedule:list` - *callback.py:1939*
+- `schedule:confirm_run_all` - *callback.py:1966*
+- `schedule:confirm_run_all` - *callback.py:1966*
+- `schedule:list` - *callback.py:1967*
+- `schedule:list` - *callback.py:1967*
+- `schedule:list` - *callback.py:2020*
+- `schedule:list` - *callback.py:2020*
+- `schedule:list` - *callback.py:2032*
+- `schedule:list` - *callback.py:2032*
+- `schedule:create_new` - *callback.py:2046*
+- `schedule:create_new` - *callback.py:2046*
+- `schedule:cancel_create` - *callback.py:2068*
+- `schedule:cancel_create` - *callback.py:2068*
+- `schedule:create_new` - *callback.py:2088*
+- `schedule:create_new` - *callback.py:2088*
+- `schedule:list` - *callback.py:2160*
+- `schedule:list` - *callback.py:2160*
+- `schedule:create_new` - *callback.py:2161*
+- `schedule:create_new` - *callback.py:2161*
+- `schedule:list` - *callback.py:2173*
+- `schedule:list` - *callback.py:2173*
+- `schedule:create_new` - *callback.py:2187*
+- `schedule:create_new` - *callback.py:2187*
+- `schedule:list` - *callback.py:2188*
+- `schedule:list` - *callback.py:2188*
+- `action:help` - *callback.py:2215*
+- `action:help` - *callback.py:2215*
+- `action:quick_actions` - *callback.py:2216*
+- `action:quick_actions` - *callback.py:2216*
+- `action:new_session` - *callback.py:2243*
+- `action:new_session` - *callback.py:2243*
+- `action:continue` - *callback.py:2244*
+- `action:continue` - *callback.py:2244*
+- `action:status` - *callback.py:2247*
+- `action:status` - *callback.py:2247*
+- `action:export` - *callback.py:2250*
+- `action:export` - *callback.py:2250*
+- `action:settings` - *callback.py:2251*
+- `action:settings` - *callback.py:2251*
+- `action:help` - *callback.py:2254*
+- `action:help` - *callback.py:2254*
+- `lang:select` - *callback.py:2255*
+- `lang:select` - *callback.py:2255*
+- `continue` - *callback.py:2468*
+- `continue` - *callback.py:2468*
+- `schedule:from_template` - *callback.py:2593*
+- `schedule:from_template` - *callback.py:2593*
+- `conversation:continue` - *callback.py:2671*
+- `conversation:continue` - *callback.py:2671*
+- `action:quick_actions` - *callback.py:2672*
+- `action:quick_actions` - *callback.py:2672*
+- `file_edit:select_read` - *callback.py:2679*
+- `file_edit:select_read` - *callback.py:2679*
+- `file_edit:select_edit` - *callback.py:2680*
+- `file_edit:select_edit` - *callback.py:2680*
+- `quick_action:git_diff` - *callback.py:2684*
+- `quick_action:git_diff` - *callback.py:2684*
+- `quick_action:git_log` - *callback.py:2685*
+- `quick_action:git_log` - *callback.py:2685*
+- `file_edit:select_read` - *callback.py:2750*
+- `file_edit:select_read` - *callback.py:2750*
+- `file_edit:select_edit` - *callback.py:2751*
+- `file_edit:select_edit` - *callback.py:2751*
+- `conversation:continue` - *callback.py:2754*
+- `conversation:continue` - *callback.py:2754*
+- `action:quick_actions` - *callback.py:2755*
+- `action:quick_actions` - *callback.py:2755*
+- `action:quick_actions` - *callback.py:2792*
+- `action:quick_actions` - *callback.py:2792*
+- `action:quick_actions` - *callback.py:2815*
+- `action:quick_actions` - *callback.py:2815*
+- `file_edit:select_edit` - *callback.py:2835*
+- `file_edit:select_edit` - *callback.py:2835*
+- `file_edit:select_edit` - *callback.py:2846*
+- `file_edit:select_edit` - *callback.py:2846*
+- `file_edit:select_edit` - *callback.py:2860*
+- `file_edit:select_edit` - *callback.py:2860*
+- `file_edit:cancel` - *callback.py:2909*
+- `file_edit:cancel` - *callback.py:2909*
+- `file_edit:select_edit` - *callback.py:2921*
+- `file_edit:select_edit` - *callback.py:2921*
+- `action:quick_actions` - *callback.py:2933*
+- `action:quick_actions` - *callback.py:2933*
+- `claude_status:check` - *callback.py:2992*
+- `claude_status:check` - *callback.py:2992*
+- `claude_status:history` - *callback.py:2993*
+- `claude_status:history` - *callback.py:2993*
+- `claude_status:notifications` - *callback.py:2994*
+- `claude_status:notifications` - *callback.py:2994*
+- `claude_status:history` - *callback.py:3040*
+- `claude_status:history` - *callback.py:3040*
+- `claude_status:check` - *callback.py:3041*
+- `claude_status:check` - *callback.py:3041*
+- `claude_status:check` - *callback.py:3070*
+- `claude_status:check` - *callback.py:3070*
+- `claude_status:check` - *callback.py:3082*
+- `claude_status:check` - *callback.py:3082*
+- `claude_status:check` - *callback.py:3091*
+- `claude_status:check` - *callback.py:3091*
+- `schedule:time:dnd` - *message.py:975*
+- `schedule:time:dnd` - *message.py:975*
+- `schedule:time:morning` - *message.py:976*
+- `schedule:time:morning` - *message.py:976*
+- `schedule:time:evening` - *message.py:979*
+- `schedule:time:evening` - *message.py:979*
+- `schedule:time:daily` - *message.py:980*
+- `schedule:time:daily` - *message.py:980*
+- `schedule:time:weekly` - *message.py:983*
+- `schedule:time:weekly` - *message.py:983*
+- `schedule:time:custom` - *message.py:984*
+- `schedule:time:custom` - *message.py:984*
+- `schedule:cancel_create` - *message.py:986*
+- `schedule:cancel_create` - *message.py:986*
+- `schedule:cancel_create` - *message.py:1009*
+- `schedule:cancel_create` - *message.py:1009*
+- `schedule:cancel_create` - *message.py:1021*
+- `schedule:cancel_create` - *message.py:1021*
+- `schedule:cancel_create` - *message.py:1038*
+- `schedule:cancel_create` - *message.py:1038*
+- `schedule:confirm_task` - *message.py:1070*
+- `schedule:confirm_task` - *message.py:1070*
+- `schedule:edit_task` - *message.py:1071*
+- `schedule:edit_task` - *message.py:1071*
+- `schedule:cancel_create` - *message.py:1073*
+- `schedule:cancel_create` - *message.py:1073*
+- `action:quick_actions` - *message.py:1110*
+- `action:quick_actions` - *message.py:1110*
+- `action:quick_actions` - *message.py:1122*
+- `action:quick_actions` - *message.py:1122*
+- `file_edit:select_read` - *message.py:1138*
+- `file_edit:select_read` - *message.py:1138*
+- `file_edit:select_read` - *message.py:1149*
+- `file_edit:select_read` - *message.py:1149*
+- `file_edit:select_read` - *message.py:1163*
+- `file_edit:select_read` - *message.py:1163*
+- `file_edit:select_edit` - *message.py:1192*
+- `file_edit:select_edit` - *message.py:1192*
+- `action:quick_actions` - *message.py:1193*
+- `action:quick_actions` - *message.py:1193*
+- `file_edit:select_read` - *message.py:1208*
+- `file_edit:select_read` - *message.py:1208*
+- `file_edit:select_edit` - *message.py:1221*
+- `file_edit:select_edit` - *message.py:1221*
+- `file_edit:select_edit` - *message.py:1232*
+- `file_edit:select_edit` - *message.py:1232*
+- `file_edit:select_edit` - *message.py:1245*
+- `file_edit:select_edit` - *message.py:1245*
+- `file_edit:cancel` - *message.py:1298*
+- `file_edit:cancel` - *message.py:1298*
+- `file_edit:select_edit` - *message.py:1309*
+- `file_edit:select_edit` - *message.py:1309*
+- `action:quick_actions` - *message.py:1321*
+- `action:quick_actions` - *message.py:1321*
+- `action:quick_actions` - *message.py:1346*
+- `action:quick_actions` - *message.py:1346*
+- `file_edit:confirm_save` - *message.py:1371*
+- `file_edit:confirm_save` - *message.py:1371*
+- `file_edit:cancel` - *message.py:1372*
+- `file_edit:cancel` - *message.py:1372*
+- `file_edit:select_edit` - *message.py:1384*
+- `file_edit:select_edit` - *message.py:1384*
+- `file_edit:select_read` - *message.py:1420*
+- `file_edit:select_read` - *message.py:1420*
+- `action:quick_actions` - *message.py:1421*
+- `action:quick_actions` - *message.py:1421*
+- `action:quick_actions` - *message.py:1442*
+- `action:quick_actions` - *message.py:1442*
+- `mcp_add_wizard` - *mcp_commands.py:78*
+- `mcp_add_wizard` - *mcp_commands.py:78*
+- `mcp_add_wizard` - *mcp_commands.py:140*
+- `mcp_add_wizard` - *mcp_commands.py:140*
+- `mcp_refresh_all` - *mcp_commands.py:144*
+- `mcp_refresh_all` - *mcp_commands.py:144*
+- `mcp_system_status` - *mcp_commands.py:150*
+- `mcp_system_status` - *mcp_commands.py:150*
+- `mcp_cancel` - *mcp_commands.py:270*
+- `mcp_cancel` - *mcp_commands.py:270*
+- `mcp_list` - *mcp_commands.py:356*
+- `mcp_list` - *mcp_commands.py:356*
+- `mcp_select_context` - *mcp_commands.py:360*
+- `mcp_select_context` - *mcp_commands.py:360*
+- `mcp_refresh_all` - *mcp_commands.py:366*
+- `mcp_refresh_all` - *mcp_commands.py:366*
+- `mcp_cancel` - *mcp_commands.py:405*
+- `mcp_cancel` - *mcp_commands.py:405*
+- `mcp_clear_context` - *mcp_commands.py:455*
+- `mcp_clear_context` - *mcp_commands.py:455*
+- `dnd:create` - *dnd_prompts.py:46*
+- `dnd:create` - *dnd_prompts.py:46*
+- `dnd:list` - *dnd_prompts.py:47*
+- `dnd:list` - *dnd_prompts.py:47*
+- `dnd:settings` - *dnd_prompts.py:50*
+- `dnd:settings` - *dnd_prompts.py:50*
+- `dnd:stats` - *dnd_prompts.py:51*
+- `dnd:stats` - *dnd_prompts.py:51*
+- `dnd:export` - *dnd_prompts.py:54*
+- `dnd:export` - *dnd_prompts.py:54*
+- `dnd:import` - *dnd_prompts.py:55*
+- `dnd:import` - *dnd_prompts.py:55*
+- `dnd:templates` - *dnd_prompts.py:138*
+- `dnd:templates` - *dnd_prompts.py:138*
+- `dnd:menu` - *dnd_prompts.py:139*
+- `dnd:menu` - *dnd_prompts.py:139*
+- `dnd:create` - *dnd_prompts.py:300*
+- `dnd:create` - *dnd_prompts.py:300*
+- `dnd:menu` - *dnd_prompts.py:301*
+- `dnd:menu` - *dnd_prompts.py:301*
+- `mcp_cancel` - *mcp_callbacks.py:218*
+- `mcp_cancel` - *mcp_callbacks.py:218*
+- `mcp_cancel` - *mcp_callbacks.py:299*
+- `mcp_cancel` - *mcp_callbacks.py:299*
+- `mcp_list` - *mcp_callbacks.py:430*
+- `mcp_list` - *mcp_callbacks.py:430*
+- `mcp_clear_context` - *mcp_callbacks.py:482*
+- `mcp_clear_context` - *mcp_callbacks.py:482*
+- `action:new_session` - *command.py:292*
+- `action:new_session` - *command.py:292*
+- `action:continue` - *command.py:293*
+- `action:continue` - *command.py:293*
+- `action:status` - *command.py:296*
+- `action:status` - *command.py:296*
+- `action:export` - *command.py:299*
+- `action:export` - *command.py:299*
+- `action:settings` - *command.py:300*
+- `action:settings` - *command.py:300*
+- `action:help` - *command.py:303*
+- `action:help` - *command.py:303*
+- `lang:select` - *command.py:304*
+- `lang:select` - *command.py:304*
+- `action:new_session` - *command.py:330*
+- `action:new_session` - *command.py:330*
+- `action:continue` - *command.py:331*
+- `action:continue` - *command.py:331*
+- `action:status` - *command.py:334*
+- `action:status` - *command.py:334*
+- `action:export` - *command.py:337*
+- `action:export` - *command.py:337*
+- `action:settings` - *command.py:338*
+- `action:settings` - *command.py:338*
+- `action:help` - *command.py:341*
+- `action:help` - *command.py:341*
+- `lang:select` - *command.py:342*
+- `lang:select` - *command.py:342*
+- `action:start_coding` - *command.py:488*
+- `action:start_coding` - *command.py:488*
+- `action:quick_actions` - *command.py:493*
+- `action:quick_actions` - *command.py:493*
+- `action:help` - *command.py:495*
+- `action:help` - *command.py:495*
+- `action:new_session` - *command.py:679*
+- `action:new_session` - *command.py:679*
+- `action:status` - *command.py:682*
+- `action:status` - *command.py:682*
+- `cd:..` - *command.py:790*
+- `cd:..` - *command.py:790*
+- `cd:/` - *command.py:791*
+- `cd:/` - *command.py:791*
+- `action:refresh_ls` - *command.py:797*
+- `action:refresh_ls` - *command.py:797*
+- `action:refresh_ls` - *command.py:799*
+- `action:refresh_ls` - *command.py:799*
+- `action:ls` - *command.py:968*
+- `action:ls` - *command.py:968*
+- `action:refresh_pwd` - *command.py:969*
+- `action:refresh_pwd` - *command.py:969*
+- `action:continue` - *command.py:1039*
+- `action:continue` - *command.py:1039*
+- `action:new_session` - *command.py:1041*
+- `action:new_session` - *command.py:1041*
+- `action:new_session` - *command.py:1049*
+- `action:new_session` - *command.py:1049*
+- `action:export` - *command.py:1056*
+- `action:export` - *command.py:1056*
+- `action:refresh_status` - *command.py:1057*
+- `action:refresh_status` - *command.py:1057*
+- `export:markdown` - *command.py:1110*
+- `export:markdown` - *command.py:1110*
+- `export:html` - *command.py:1111*
+- `export:html` - *command.py:1111*
+- `export:json` - *command.py:1114*
+- `export:json` - *command.py:1114*
+- `export:cancel` - *command.py:1115*
+- `export:cancel` - *command.py:1115*
+- `action:new_session` - *command.py:1172*
+- `action:new_session` - *command.py:1172*
+- `action:continue` - *command.py:1173*
+- `action:continue` - *command.py:1173*
+- `action:status` - *command.py:1176*
+- `action:status` - *command.py:1176*
+- `action:export` - *command.py:1179*
+- `action:export` - *command.py:1179*
+- `action:settings` - *command.py:1180*
+- `action:settings` - *command.py:1180*
+- `action:help` - *command.py:1183*
+- `action:help` - *command.py:1183*
+- `lang:select` - *command.py:1184*
+- `lang:select` - *command.py:1184*
+- `schedule:add` - *command.py:1344*
+- `schedule:add` - *command.py:1344*
+- `schedule:settings` - *command.py:1345*
+- `schedule:settings` - *command.py:1345*
+- `schedule:add` - *command.py:1384*
+- `schedule:add` - *command.py:1384*
+- `schedule:edit` - *command.py:1385*
+- `schedule:edit` - *command.py:1385*
+- `schedule:settings` - *command.py:1388*
+- `schedule:settings` - *command.py:1388*
+- `schedule:stats` - *command.py:1389*
+- `schedule:stats` - *command.py:1389*
+- `schedule:refresh` - *command.py:1392*
+- `schedule:refresh` - *command.py:1392*
+- `schedule:run_all` - *command.py:1393*
+- `schedule:run_all` - *command.py:1393*
+- `schedule:create_new` - *command.py:1419*
+- `schedule:create_new` - *command.py:1419*
+- `schedule:from_template` - *command.py:1420*
+- `schedule:from_template` - *command.py:1420*
+- `schedule:list` - *command.py:1421*
+- `schedule:list` - *command.py:1421*
+- `git:status` - *command.py:1562*
+- `git:status` - *command.py:1562*
+- `git:add` - *command.py:1566*
+- `git:add` - *command.py:1566*
+- `git:commit` - *command.py:1570*
+- `git:commit` - *command.py:1570*
+- `git:push` - *command.py:1576*
+- `git:push` - *command.py:1576*
+- `git:pull` - *command.py:1580*
+- `git:pull` - *command.py:1580*
+- `git:log` - *command.py:1584*
+- `git:log` - *command.py:1584*
+- `git:diff` - *command.py:1590*
+- `git:diff` - *command.py:1590*
+- `git:branch` - *command.py:1594*
+- `git:branch` - *command.py:1594*
+- `git:help` - *command.py:1598*
+- `git:help` - *command.py:1598*
+- `claude_status:refresh` - *command.py:3171*
+- `claude_status:refresh` - *command.py:3171*
+- `claude_status:history` - *command.py:3172*
+- `claude_status:history` - *command.py:3172*
+- `claude_status:notifications` - *command.py:3175*
+- `claude_status:notifications` - *command.py:3175*
+- `claude_status:settings` - *command.py:3176*
+- `claude_status:settings` - *command.py:3176*
+- `claude_notifications:disable` - *command.py:3237*
+- `claude_notifications:disable` - *command.py:3237*
+- `claude_notifications:enable` - *command.py:3239*
+- `claude_notifications:enable` - *command.py:3239*
+- `claude_notifications:history` - *command.py:3243*
+- `claude_notifications:history` - *command.py:3243*
+- `claude_status:refresh` - *command.py:3244*
+- `claude_status:refresh` - *command.py:3244*
+- `claude_status:main` - *command.py:3246*
+- `claude_status:main` - *command.py:3246*
+- `claude_status:history` - *command.py:3360*
+- `claude_status:history` - *command.py:3360*
+- `claude_status:refresh` - *command.py:3361*
+- `claude_status:refresh` - *command.py:3361*
+- `claude_status:main` - *command.py:3363*
+- `claude_status:main` - *command.py:3363*
+- `prompts_settings` - *scheduled_prompts_handler.py:54*
+- `prompts_settings` - *scheduled_prompts_handler.py:54*
+- `prompts_history` - *scheduled_prompts_handler.py:55*
+- `prompts_history` - *scheduled_prompts_handler.py:55*
+- `toggle_prompts_system` - *scheduled_prompts_handler.py:210*
+- `toggle_prompts_system` - *scheduled_prompts_handler.py:210*
+
+## 🔄 User Interaction Flows
+
+### Bot Initialization (Simple)
+**Entry Points:** /start
+**Steps:**
+1. Send /start
+1. Receive welcome message
+1. See available options
+**Exit Points:** Main menu, Help command
+
+### Interactive Navigation (Medium)
+**Entry Points:** Any command with buttons
+**Steps:**
+1. Execute command
+1. See inline buttons
+1. Navigate through options
+**Exit Points:** Complete action, Cancel operation
+
+## ⚠️ Issues Analysis
+
+### ⚠️ Major Issues
+
+**No clear authentication pattern found**
+- **Location:** /home/vokov/projects/claude-notifer-and-bot/src/bot/middleware/__init__.py
+- **Fix:** Implement clear user authentication and authorization
+
+**No clear authentication pattern found**
+- **Location:** /home/vokov/projects/claude-notifer-and-bot/src/bot/middleware/rate_limit.py
+- **Fix:** Implement clear user authentication and authorization
+
+**No clear authentication pattern found**
+- **Location:** /home/vokov/projects/claude-notifer-and-bot/src/bot/middleware/security.py
+- **Fix:** Implement clear user authentication and authorization
+
+**No clear authentication pattern found**
+- **Location:** /home/vokov/projects/claude-notifer-and-bot/src/bot/middleware/claude_availability.py
+- **Fix:** Implement clear user authentication and authorization
+
+**No localization system found**
+- **Location:** /home/vokov/projects/claude-notifer-and-bot
+- **Fix:** Implement internationalization for Ukrainian/English support
+
+### ℹ️ Minor Issues (1)
+- Large number of features may overwhelm users
+
+## 💡 Recommendations
+- ⚠️ ВАЖЛИВО: Розв'язати основні проблеми юзабіліті та надійності
+- 📋 Розглянути спрощення інтерфейсу та групування команд
+- 🌐 Впровадити повноцінну локалізацію українською та англійською
+- 📱 Оптимізувати для мобільних пристроїв Telegram
+- 🎯 Створити інтерактивний онбординг для нових користувачів
+- 📊 Додати аналітику використання для покращення UX
+- 🔄 Впровадити прогрес-індикатори для довгих операцій
+- 💡 Додати контекстну допомогу та підказки
+- 🧪 Створити автоматизовані тести для UI компонентів
+
+## 📋 Implementation Plan
+
+### Phase 2: Основні покращення
+**Priority:** High
+**Timeline:** 3-5 днів
+**Description:** Покращення юзабіліті та надійності
+**Tasks:**
+- [ ] Покращити: No clear authentication pattern found
+- [ ] Покращити: No clear authentication pattern found
+- [ ] Покращити: No clear authentication pattern found
+- [ ] Покращити: No clear authentication pattern found
+- [ ] Покращити: No localization system found
+
+### Phase 3: Покращення UX
+**Priority:** Medium
+**Timeline:** 1-2 тижні
+**Description:** Оптимізація користувацького досвіду
+**Tasks:**
+- [ ] Створити інтуїтивну навігацію
+- [ ] Додати прогрес-індикатори
+- [ ] Впровадити контекстну допомогу
+- [ ] Оптимізувати для мобільних
+
+### Phase 4: Розширений функціонал
+**Priority:** Low
+**Timeline:** 2-3 тижні
+**Description:** Додання нових можливостей та покращень
+**Tasks:**
+- [ ] Впровадити повну локалізацію
+- [ ] Додати аналітику використання
+- [ ] Створити персоналізацію
+- [ ] Додати голосові команди
+
+## 🎯 Next Steps
+
+1. **Immediate Actions** (1-2 days)
+   - [ ] Fix all critical issues
+   - [ ] Address security vulnerabilities
+   - [ ] Ensure basic functionality works
+
+2. **Short Term** (1 week)
+   - [ ] Resolve major usability issues
+   - [ ] Improve error handling
+   - [ ] Add basic localization
+
+3. **Medium Term** (2-3 weeks)
+   - [ ] Implement comprehensive UX improvements
+   - [ ] Add advanced features
+   - [ ] Optimize performance
+
+4. **Long Term** (1+ month)
+   - [ ] Full feature expansion
+   - [ ] Advanced analytics
+   - [ ] Community features
+
+---
+*Analysis generated by Moon Architect Bot*
+*Report Date: 2025-09-22 19:36:12*

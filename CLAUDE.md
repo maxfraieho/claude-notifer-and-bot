@@ -68,6 +68,9 @@ The application follows a layered architecture with clear separation of concerns
 - `handlers/`: Command handlers, message handlers, callback handlers
 - `middleware/`: Authentication, rate limiting, security validation
 - `features/`: Modular features like availability monitoring, git integration
+- `ui/`: Enhanced UI components (navigation, progress indicators)
+- `integration/`: Integration layer for enhanced modules
+- `utils/`: Enhanced utilities (error handling)
 
 **Claude Integration Layer** (`src/claude/`):
 - `facade.py`: High-level integration facade with tool validation
@@ -92,6 +95,13 @@ The application follows a layered architecture with clear separation of concerns
 - `settings.py`: Pydantic settings with environment variable loading
 - `loader.py`: Configuration loading and validation
 - `features.py`: Feature flag management
+
+**Enhanced Features** (`src/locales/`, `src/localization/`):
+- `locales/`: Translation files for multiple languages (UA/EN)
+- `localization/i18n.py`: Dynamic localization system
+- `ui/navigation.py`: Advanced navigation with breadcrumbs and grouping
+- `ui/progress.py`: Visual progress indicators for long operations
+- `utils/error_handler.py`: Centralized error handling with user-friendly messages
 
 ### Key Design Patterns
 

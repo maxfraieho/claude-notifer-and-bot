@@ -1,3 +1,15 @@
+import logging
+from typing import List
+
+logger = logging.getLogger(__name__)
+
+
+def check_user_access(user_id: int, whitelist: List[int]) -> bool:
+    """Покращена перевірка доступу користувача"""
+    is_allowed = user_id in whitelist
+    logger.info(f"Access check for user {user_id}: {'allowed' if is_allowed else 'denied'}")
+    return is_allowed
+
 """Telegram bot authentication middleware."""
 
 from datetime import datetime

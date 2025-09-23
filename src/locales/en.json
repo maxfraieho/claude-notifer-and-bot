@@ -1,0 +1,21 @@
+{
+  "commands": {
+    "start": "🚀 Start working with Claude",
+    "help": "📚 Help",
+    "status": "📊 Status",
+    "continue": "🔄 Continue",
+    "new_session": "🆕 New Session"
+  },
+  "buttons": {
+    "continue": "🔄 Continue",
+    "cancel": "❌ Cancel",
+    "back": "🔙 Back",
+    "menu": "📋 Menu"
+  },
+  "messages": {
+    "welcome": "Welcome! I'm Claude Code Bot. I'll help you with development.",
+    "session_started": "Session started",
+    "session_ended": "Session ended",
+    "error": "An error occurred"
+  }
+}

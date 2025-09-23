@@ -2316,20 +2316,21 @@ async def _handle_schedules_action(query, context: ContextTypes.DEFAULT_TYPE) ->
     user_id = query.from_user.id
 
     try:
-        # Import the schedule handler function
-        from ..handlers.command import schedules_handler
+        # Import the schedule command function
+        from ..handlers.command import schedules_command
 
-        # Create a fake Update object for schedules_handler
-        class FakeUpdate:
+        # Create a proper Update object from callback query
+        class CallbackUpdate:
             def __init__(self, query):
                 self.callback_query = query
                 self.effective_user = query.from_user
                 self.effective_chat = query.message.chat
-                self.message = query.message
+                self.effective_message = query.message
+                self.message = None
 
-        # Call the schedules handler
-        fake_update = FakeUpdate(query)
-        await schedules_handler(fake_update, context)
+        # Call the schedules command
+        callback_update = CallbackUpdate(query)
+        await schedules_command(callback_update, context)
 
     except Exception as e:
         logger.error("Error in schedules action", error=str(e), user_id=user_id)

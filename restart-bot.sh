@@ -25,17 +25,28 @@ fi
 
 # Start bot
 echo "🚀 Starting bot..."
-cd /home/vokov/claude-notifer-and-bot
+
+# Get the directory where this script is located (bot root)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+echo "📂 Bot directory: $SCRIPT_DIR"
 
 # Check if virtual environment exists
-if [ ! -d ".venv" ]; then
-    echo "❌ Virtual environment not found! Run setup first."
+if [ ! -d "/tmp/claude-bot-simple" ]; then
+    echo "❌ Virtual environment not found at /tmp/claude-bot-simple! Run setup first."
     exit 1
 fi
 
-# Activate virtual environment and start bot
-source .venv/bin/activate
-nohup python -m src.main > /tmp/bot.log 2>&1 &
+# Check if launch script exists
+if [ ! -f "./run-ultra-low-memory.sh" ]; then
+    echo "❌ Launch script not found! Expected: $SCRIPT_DIR/run-ultra-low-memory.sh"
+    exit 1
+fi
+
+# Activate virtual environment and start bot using optimal script
+echo "🔥 Using ultra-low-memory configuration..."
+nohup ./run-ultra-low-memory.sh > /tmp/bot.log 2>&1 &
 
 # Wait a moment and check if bot started successfully
 sleep 3

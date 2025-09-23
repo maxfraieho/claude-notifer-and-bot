@@ -39,6 +39,7 @@ from src.storage.session_storage import SQLiteSessionStorage
 from src.localization import LocalizationManager, UserLanguageStorage
 from src.mcp.manager import MCPManager
 from src.mcp.context_handler import MCPContextHandler
+from src.bot.integration import initialize_enhanced_modules, get_enhanced_integration
 
 
 def setup_logging(debug: bool = False) -> None:
@@ -250,6 +251,10 @@ async def create_application(config: Settings) -> Dict[str, Any]:
         "mcp_context_handler": mcp_context_handler,
         "image_command_handler": image_command_handler,
     }
+
+    # Initialize enhanced modules
+    logger.info("Initializing enhanced modules")
+    await initialize_enhanced_modules()
 
     bot = ClaudeCodeBot(config, dependencies)
 

@@ -7,9 +7,11 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 VENV_PATH="/tmp/claude-bot-simple"
-PROJECT_DIR="/home/vokov/projects/claude-notifer-and-bot"
+# Get the directory where this script is located (project root)
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo -e "${GREEN}🔥 Запуск бота з екстремальною оптимізацією пам'яті${NC}"
+echo -e "${YELLOW}📂 Робоча директорія: $PROJECT_DIR${NC}"
 
 # Перевірити, чи не запущений вже бот
 if pgrep -f "python -m src.main" > /dev/null; then
@@ -52,8 +54,8 @@ cd "$PROJECT_DIR"
 
 echo -e "${GREEN}✅ Запуск бота з екстремальними обмеженнями...${NC}"
 
-# Запуск з timeout та catch OOM
-timeout 3600 python -m src.main --debug "$@" || {
+# Запуск без timeout для постійної роботи
+python -m src.main --debug "$@" || {
     echo -e "${RED}❌ Бот завершився (можливо через пам'ять)${NC}"
     echo "Спробуйте перезапустити або збільшити swap"
     exit 1

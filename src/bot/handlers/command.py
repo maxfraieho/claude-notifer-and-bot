@@ -2169,11 +2169,16 @@ async def restart_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         restarting_text = await t(context, user_id, "commands.restart.restarting")
         status_msg = await message.reply_text(restarting_text)
 
-        # Run the restart script
-        script_path = "/home/vokov/claude-notifer-and-bot/restart-bot.sh"
+        # Run the restart script - find it relative to the bot's working directory
+        import os
+
+        # Get the bot's root directory (where main.py is located)
+        bot_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+        script_path = os.path.join(bot_root, "restart-bot.sh")
+
         if os.path.exists(script_path):
             # Execute restart script in background
-            subprocess.Popen([script_path], cwd="/home/vokov/claude-notifer-and-bot")
+            subprocess.Popen([script_path], cwd=bot_root)
 
             # The current process will be killed by the script, so this might not send
             initiated_text = await t(context, user_id, "commands.restart.initiated")
