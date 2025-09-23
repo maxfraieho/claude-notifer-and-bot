@@ -245,6 +245,89 @@ docker compose up -d --build
 
 Система працює ТІЛЬКИ через архівування робочих Claude CLI налаштувань.
 
+## Git SSH Configuration for Bot Environment
+
+### Problem Description
+
+When using the `/git` command through the Telegram bot, Git push operations may fail with authentication errors because:
+
+1. **SSH Agent unavailable** - The bot process doesn't have access to SSH agent
+2. **HTTPS repository URL** - Repository configured for HTTPS instead of SSH
+3. **Missing SSH key context** - Claude CLI subprocess doesn't inherit SSH configuration
+
+### Solution: Configure Git for SSH Authentication
+
+#### 1. Switch Repository to SSH URL
+
+```bash
+# Change from HTTPS to SSH
+git remote set-url origin git@github.com:username/repository.git
+
+# Verify the change
+git remote -v
+```
+
+#### 2. Configure Git SSH Command
+
+```bash
+# Set global Git SSH configuration
+git config --global core.sshCommand "ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes"
+
+# Or set for current repository only
+git config core.sshCommand "ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes"
+```
+
+#### 3. Test SSH Connection
+
+```bash
+# Test GitHub SSH connection
+ssh -T git@github.com -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes
+
+# Expected output: "Hi username! You've successfully authenticated..."
+```
+
+#### 4. Set Environment Variable (Optional)
+
+```bash
+# For current session
+export GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes"
+
+# Add to bot environment in .env file
+echo 'GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes"' >> .env
+```
+
+#### 5. Verify Git Push Works
+
+```bash
+# Test push operation
+git push origin main
+
+# Or current branch
+git push origin $(git branch --show-current)
+```
+
+### Important Notes
+
+- **SSH Key Path**: Replace `~/.ssh/id_ed25519` with your actual SSH key path
+- **Repository URL**: Ensure you're using `git@github.com:username/repo.git` format
+- **Bot Restart**: Restart the bot after configuration changes to apply environment variables
+- **Security**: Keep SSH private keys secure and never expose them in logs
+
+### Troubleshooting
+
+**Error: "Permission denied (publickey)"**
+- Verify SSH key is added to GitHub account
+- Check SSH key permissions: `chmod 600 ~/.ssh/id_ed25519`
+- Test SSH connection manually
+
+**Error: "src refspec main does not match any"**
+- Check current branch: `git branch -a`
+- Push to correct branch: `git push origin your-current-branch`
+
+**Error: "Could not open a connection to your authentication agent"**
+- Use direct SSH key specification instead of SSH agent
+- Configure `core.sshCommand` as shown above
+
 ## Common Development Workflows
 
 1. **Adding new bot commands**: Add handler in `src/bot/handlers/command.py` and register in `src/bot/core.py`

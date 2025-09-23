@@ -83,6 +83,7 @@ This bot features a layered architecture with clear separation of concerns:
 
 - **[DEPLOY.md](./DEPLOY.md)** - Complete production deployment guide
 - **[CLAUDE.md](./CLAUDE.md)** - Development guide and architecture details
+- **[Git SSH Setup](./docs/GIT_SSH_SETUP.md)** - Configure Git SSH for bot operations
 - **Docker Hub**: https://hub.docker.com/r/kroschu/claude-code-telegram
 
 ## 🔧 Configuration
