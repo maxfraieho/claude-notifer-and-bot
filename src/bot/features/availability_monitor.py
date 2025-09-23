@@ -118,8 +118,11 @@ class ClaudeAvailabilityMonitor:
             reset_time_kyiv = datetime.combine(today, time_obj, tzinfo=kyiv_tz)
             
             # If the time is in the past today, assume it means tomorrow
-            if reset_time_kyiv <= datetime.now(kyiv_tz):
-                reset_time_kyiv = reset_time_kyiv.replace(day=reset_time_kyiv.day + 1)
+            current_time_kyiv = datetime.now(kyiv_tz)
+            if reset_time_kyiv <= current_time_kyiv:
+                # Add one day properly using timedelta
+                from datetime import timedelta
+                reset_time_kyiv = reset_time_kyiv + timedelta(days=1)
             
             # Convert to UTC
             reset_time_utc = reset_time_kyiv.astimezone(ZoneInfo("UTC"))
