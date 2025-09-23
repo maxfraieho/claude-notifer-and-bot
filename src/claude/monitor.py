@@ -125,11 +125,20 @@ class ToolMonitor:
                 "wget",
                 "nc ",
                 "netcat",
-                ">",
-                ">>",
-                "|",
-                "&",
-                ";",
+                "> /dev/",     # Dangerous redirect to device files
+                ">> /dev/",    # Dangerous append to device files
+                "> /etc/",     # Dangerous redirect to system files
+                ">> /etc/",    # Dangerous append to system files
+                ">/dev/",      # Dangerous redirect without space
+                ">>/dev/",     # Dangerous append without space
+                ">/etc/",      # Dangerous redirect without space
+                ">>/etc/",     # Dangerous append without space
+                " | rm ",      # Piping to dangerous commands
+                " | sudo ",    # Piping to sudo
+                "; rm ",       # Command chaining with rm
+                "; sudo ",     # Command chaining with sudo
+                "&& rm ",      # AND chaining with rm
+                "&& sudo ",    # AND chaining with sudo
                 "$(",
                 "`",
             ]
