@@ -17,15 +17,15 @@ from typing import Any, Dict, List, Optional
 import structlog
 
 from src.exceptions import SecurityError
-
-# from src.exceptions import AuthenticationError  # Future use
+from src.errors import AuthenticationError
+from .rbac import RBACManager, Permission
 
 logger = structlog.get_logger()
 
 
 @dataclass
 class UserSession:
-    """User session data."""
+    """Enhanced user session data with RBAC support."""
 
     user_id: int
     auth_provider: str
@@ -33,6 +33,7 @@ class UserSession:
     last_activity: datetime
     user_info: Optional[Dict[str, Any]] = None
     session_timeout: timedelta = timedelta(hours=24)
+    rbac_manager: Optional[RBACManager] = None
 
     def __post_init__(self) -> None:
         if self.last_activity is None:
@@ -45,6 +46,27 @@ class UserSession:
     def refresh(self) -> None:
         """Refresh session activity."""
         self.last_activity = datetime.utcnow()
+
+    def has_permission(self, permission: Permission) -> bool:
+        """Check if user has specific permission."""
+        if not self.rbac_manager:
+            return False
+        return self.rbac_manager.has_permission(self.user_id, permission)
+
+    def check_permission(self, permission: Permission, raise_exception: bool = True) -> bool:
+        """Check permission and optionally raise exception."""
+        if not self.rbac_manager:
+            if raise_exception:
+                raise AuthenticationError("RBAC not initialized", user_id=self.user_id)
+            return False
+        return self.rbac_manager.check_permission(self.user_id, permission, raise_exception)
+
+    def get_roles(self) -> List[str]:
+        """Get user's role names."""
+        if not self.rbac_manager:
+            return []
+        user_roles = self.rbac_manager.get_user_roles(self.user_id)
+        return [ur.role_name for ur in user_roles]
 
 
 class AuthProvider(ABC):

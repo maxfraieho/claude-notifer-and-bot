@@ -12,33 +12,12 @@ from typing import Any, Dict
 import structlog
 
 from src import __version__
-from src.bot.core import ClaudeCodeBot
-from src.claude.facade import ClaudeIntegration
-from src.claude import (
-    ClaudeProcessManager,
-    SessionManager,
-    ToolMonitor,
-)
-# Temporarily disable SDK integration
-# from src.claude.sdk_integration import ClaudeSDKManager
 from src.config.features import FeatureFlags
 from src.config.loader import load_config
 from src.config.settings import Settings
 from src.exceptions import ConfigurationError
-from src.security.audit import AuditLogger, InMemoryAuditStorage
-from src.security.auth import (
-    AuthenticationManager,
-    InMemoryTokenStorage,
-    TokenAuthProvider,
-    WhitelistAuthProvider,
-)
-from src.security.rate_limiter import RateLimiter
-from src.security.validators import SecurityValidator
-from src.storage.facade import Storage
-from src.storage.session_storage import SQLiteSessionStorage
-from src.localization import LocalizationManager, UserLanguageStorage
-from src.mcp.manager import MCPManager
-from src.mcp.context_handler import MCPContextHandler
+from src.errors import handle_errors, ErrorHandler, DevClaudeError
+from src.di import ApplicationContainer, initialize_di, shutdown_di, get_di_container
 from src.bot.integration import initialize_enhanced_modules, get_enhanced_integration
 
 
@@ -135,139 +114,40 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+@handle_errors(retry_count=2, operation_name="create_application")
 async def create_application(config: Settings) -> Dict[str, Any]:
-    """Create and configure the application components."""
+    """
+    Create and configure the application components using DI Container.
+
+    This replaces manual dependency management with professional DI patterns
+    as recommended by Enhanced Architect Bot analysis.
+    """
     logger = structlog.get_logger()
-    logger.info("Creating application components")
+    logger.info("Creating application components via DI Container")
+
+    # Initialize DI container
+    container = await initialize_di(config)
 
     # Initialize storage system
-    storage = Storage(config.database_url)
+    storage = container.storage_providers.storage_factory()
     await storage.initialize()
 
-    # Create security components
-    providers = []
-
-    # Add whitelist provider if users are configured
-    # if config.allowed_users:
-    #     providers.append(WhitelistAuthProvider(config.allowed_users))
-
-    # Add token provider if enabled
-    if config.enable_token_auth:
-        token_storage = InMemoryTokenStorage()  # TODO: Use database storage
-        providers.append(TokenAuthProvider(config.auth_token_secret, token_storage))
-
-    # Fall back to allowing all users in development mode
-    if not providers and config.development_mode:
-        logger.warning(
-            "No auth providers configured - creating development-only allow-all provider"
-        )
-        providers.append(WhitelistAuthProvider([], allow_all_dev=True))
-    elif not providers:
-        raise ConfigurationError("No authentication providers configured")
-
-    auth_manager = AuthenticationManager(providers)
-    security_validator = SecurityValidator(
-        config.approved_directory, 
-        flexible_mode=getattr(config, 'security_flexible_mode', False)
-    )
-    rate_limiter = RateLimiter(config)
-
-    # Create audit storage and logger
-    audit_storage = InMemoryAuditStorage()  # TODO: Use database storage in production
-    audit_logger = AuditLogger(audit_storage)
-
-    # Create Claude integration components with persistent storage
-    session_storage = SQLiteSessionStorage(storage.db_manager)
-    session_manager = SessionManager(config, session_storage)
-    tool_monitor = ToolMonitor(config, security_validator)
-
-    # Create Claude manager based on configuration
-    if config.use_sdk:
-        logger.info("Using Claude Python SDK integration")
-        # Temporarily disable SDK integration
-        # sdk_manager = ClaudeSDKManager(config)
-        sdk_manager = None
-        process_manager = None
-    else:
-        logger.info("Using Claude CLI subprocess integration")
-        process_manager = ClaudeProcessManager(config)
-        sdk_manager = None
-
-    # Create main Claude integration facade
-    claude_integration = ClaudeIntegration(
-        config=config,
-        process_manager=process_manager,
-        sdk_manager=sdk_manager,
-        session_manager=session_manager,
-        tool_monitor=tool_monitor,
-    )
-
-    # Create localization components
-    localization_manager = None
-    user_language_storage = None
-    
-    if config.enable_localization:
-        logger.info("Initializing localization system")
-        localization_manager = LocalizationManager()
-        user_language_storage = UserLanguageStorage(storage)
-        logger.info("Localization system initialized", 
-                   available_languages=list(localization_manager.get_available_languages().keys()))
-
-    # Create image processing components
-    if config.enable_image_processing:
-        logger.info("Initializing image processing system")
-        from src.bot.features.image_processor import ImageProcessor
-        from src.bot.handlers.image_command import ImageCommandHandler
-        
-        image_processor = ImageProcessor(config, security_validator)
-        image_command_handler = ImageCommandHandler(config, image_processor)
-        logger.info("Image processing system initialized")
-    else:
-        image_command_handler = None
-
-    # Create MCP components
-    logger.info("Initializing MCP management system")
-    mcp_manager = MCPManager(config, storage)
-    
-    # Create MCP context handler
-    mcp_context_handler = MCPContextHandler(
-        mcp_manager=mcp_manager,
-        claude_integration=claude_integration,
-        storage=storage
-    )
-    logger.info("MCP system initialized")
-
-    # Create bot with all dependencies
-    dependencies = {
-        "auth_manager": auth_manager,
-        "security_validator": security_validator,
-        "rate_limiter": rate_limiter,
-        "audit_logger": audit_logger,
-        "claude_integration": claude_integration,
-        "storage": storage,
-        "localization": localization_manager,
-        "user_language_storage": user_language_storage,
-        "mcp_manager": mcp_manager,
-        "mcp_context_handler": mcp_context_handler,
-        "image_command_handler": image_command_handler,
-    }
+    # Wire storage dependency
+    container.storage.storage.override(storage)
 
     # Initialize enhanced modules
     logger.info("Initializing enhanced modules")
     await initialize_enhanced_modules()
 
-    bot = ClaudeCodeBot(config, dependencies)
+    # Create application via container factory
+    app_components = container.application_factory()
 
-    logger.info("Application components created successfully")
+    logger.info("Application components created successfully via DI Container")
 
-    return {
-        "bot": bot,
-        "claude_integration": claude_integration,
-        "storage": storage,
-        "config": config,
-    }
+    return app_components
 
 
+@handle_errors(retry_count=1, operation_name="run_application")
 async def run_application(app: Dict[str, Any]) -> None:
     """Run the application with graceful shutdown handling."""
     logger = structlog.get_logger()
@@ -317,6 +197,7 @@ async def run_application(app: Dict[str, Any]) -> None:
             await bot.stop()
             await claude_integration.shutdown()
             await storage.close()
+            await shutdown_di()  # Shutdown DI container
         except Exception as e:
             logger.error("Error during shutdown", error=str(e))
 
