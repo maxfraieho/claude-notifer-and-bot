@@ -1477,42 +1477,76 @@ async def help_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     try:
-        # Fixed help text to avoid localization issues found by testing
-        help_text = """📋 **Claude Code Telegram Bot - Comprehensive Help**
+        # Get localized help text
+        localization = context.bot_data.get("localization")
+        user_language_storage = context.bot_data.get("user_language_storage")
 
-**🧭 Navigation Commands:**
-• `/ls` - List files and directories in current location
-• `/cd <directory>` - Change to specified directory
-• `/pwd` - Show current working directory
-• `/projects` - Show available projects
-• `/back` - Navigate back to previous directory
+        help_text = None
 
-**🤖 Session Management:**
-• `/new` - Start a new Claude session
-• `/continue [message]` - Continue previous session or start new one
-• `/end` - End current Claude session
-• `/status` - Show session status and usage information
-• `/export` - Export session history
+        if localization and user_language_storage:
+            # Try to get full help text from translations
+            user_lang = await user_language_storage.get_user_language(user_id)
+            if not user_lang:
+                user_lang = "uk"  # Default to Ukrainian
 
-**⚡ Quick Actions:**
-• `/actions` - Show context-aware quick action buttons
-• `/git` - Show Git repository status and information
-• `/search` - Search for files and content in project
-• `/run` - Run scripts and commands
-• `/edit` - Quick file editing
+            help_data = localization.translations.get(user_lang, {}).get("help", {})
 
-**ℹ️ Information:**
-• `/help` - Show this help message
-• `/version` - Show bot version information
+            if help_data:
+                # Get title and commands from localization
+                title = help_data.get("title", "🤖 **Довідка Claude Code Telegram Bot**")
+                commands = help_data.get("commands", "")
 
-**💡 Usage Examples:**
-• `cd my-project` - Enter project directory
-• `ls` - See what files are available
-• `Create a Python script that...` - Ask Claude to code
-• Send a file to have Claude review it
+                if commands:
+                    help_text = f"{title}\n\n{commands}"
 
-**🔒 Security:** All operations are logged and validated.
-📊 Use `/status` to check your usage limits and current session."""
+        # Fallback to Ukrainian help if localization fails
+        if not help_text:
+            help_text = """🤖 **Довідка Claude Code Telegram Bot**
+
+**Команди навігації:**
+• `/ls` - Показати файли і директорії
+• `/cd <директорія>` - Змінити директорію
+• `/pwd` - Показати поточну директорію
+• `/projects` - Показати доступні проекти
+
+**Команди сесії:**
+• `/new` - Почати нову сесію Claude
+• `/continue` - Продовжити останню сесію
+• `/status` - Показати статус сесії
+• `/export` - Експорт історії сесії
+
+**DRACON система (Візуальне моделювання):**
+• `/dracon help` - Довідка по DRACON
+• `/dracon diagram <категорія> <файл>` - 🎨 Візуальна діаграма
+• `/dracon list [категорія]` - Список схем
+• `/dracon analyze <yaml>` - Аналіз схеми
+• `/refactor` - Реверс-інжиніринг коду в DRACON
+
+**Спеціальні команди:**
+• `/actions` - Показати швидкі дії
+• `/git` - Команди Git репозиторію
+• `/claude` - Авторизувати Claude CLI
+• `/img` - Обробка зображень з Claude
+
+**MCP команди:**
+• `/mcpadd` - Додати MCP сервер
+• `/mcplist` - Список MCP серверів
+• `/mcpselect` - Вибрати активний контекст
+• `/mcpask` - Запит з MCP контекстом
+• `/mcpremove` - Видалити MCP сервер
+• `/mcpstatus` - Статус MCP системи
+
+**Планувальник:**
+• `/schedules` - Управління задачами
+• `/add_schedule` - Додати нову задачу
+
+**Системні команди:**
+• `/restart` - Перезапустити бота
+
+**Поради:**
+• Надсилайте текстові файли для перегляду
+• Використовуйте конкретні запити
+• Перевіряйте статус командою `/status`"""
 
         await message.reply_text(help_text, parse_mode='Markdown')
         logger.info("Help command executed", user_id=user_id)
