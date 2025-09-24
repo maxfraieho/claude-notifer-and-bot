@@ -136,31 +136,63 @@ class InteractiveBotTester:
         return test_results
 
     async def _analyze_response(self, command: str, response_text: str) -> dict:
-        """Analyze individual command response"""
-        result = {
-            "command": command,
-            "response": response_text,
-            "status": "success",
-            "issues": [],
-            "score": 100
-        }
+        """Analyze individual command response using enhanced validator"""
+        try:
+            # Try to import and use enhanced validation system
+            from src.testing.response_validator import validate_bot_response
 
-        # Special analysis for /pwd command
-        if command == "/pwd" and "pwd.title" in response_text.lower():
-            result["issues"].append("Localization key returned instead of actual directory")
-            result["status"] = "issues_found"
-            result["score"] = 30
+            validation_report = validate_bot_response(command, response_text)
 
-        # Check for other common issues
-        if self._is_error_response(response_text):
-            result["issues"].append("Error in response")
-            result["status"] = "error"
-            result["score"] = 20
+            # Convert validation report to legacy format for compatibility
+            result = {
+                "command": command,
+                "response": response_text,
+                "status": "success" if validation_report.overall_status.value == "success" else "error",
+                "issues": [issue.message for issue in validation_report.issues],
+                "score": validation_report.score,
+                "validation_details": {
+                    "overall_status": validation_report.overall_status.value,
+                    "recommendations": validation_report.recommendations,
+                    "metadata": validation_report.metadata
+                }
+            }
 
-        # Check for empty or unclear responses
-        if len(response_text.strip()) < 10:
-            result["issues"].append("Very short response")
-            result["score"] -= 20
+            # Update status based on validation results
+            if validation_report.overall_status.value == "critical":
+                result["status"] = "critical"
+            elif validation_report.overall_status.value == "error":
+                result["status"] = "error"
+            elif validation_report.overall_status.value == "warning":
+                result["status"] = "warning"
+            elif validation_report.issues:
+                result["status"] = "issues_found"
+
+        except ImportError:
+            # Fallback to legacy validation logic
+            result = {
+                "command": command,
+                "response": response_text,
+                "status": "success",
+                "issues": [],
+                "score": 100
+            }
+
+            # Special analysis for /pwd command
+            if command == "/pwd" and "pwd.title" in response_text.lower():
+                result["issues"].append("Localization key returned instead of actual directory")
+                result["status"] = "issues_found"
+                result["score"] = 30
+
+            # Check for other common issues
+            if self._is_error_response(response_text):
+                result["issues"].append("Error in response")
+                result["status"] = "error"
+                result["score"] = 20
+
+            # Check for empty or unclear responses
+            if len(response_text.strip()) < 10:
+                result["issues"].append("Very short response")
+                result["score"] -= 20
 
         return result
 
