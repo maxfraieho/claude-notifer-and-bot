@@ -9,7 +9,8 @@ from telegram import Update
 from telegram.ext import ContextTypes
 import structlog
 
-from ..utils.message import get_user_id, get_effective_message
+from ...localization.util import get_user_id, get_effective_message
+from ...localization.util import t
 from ..utils.error_handler import safe_user_error
 
 logger = structlog.get_logger(__name__)
