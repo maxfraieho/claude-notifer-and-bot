@@ -134,6 +134,13 @@ class ClaudeCodeBot:
             BotCommand("claude_status", "Show Claude CLI availability status"),
             BotCommand("claude_notifications", "Manage Claude availability notifications"),
             BotCommand("claude_history", "Show Claude availability history"),
+            # Additional commands from testing findings
+            BotCommand("version", "Show bot version information"),
+            BotCommand("projects", "Show available projects"),
+            BotCommand("back", "Navigate back to previous directory"),
+            BotCommand("run", "Run scripts and commands"),
+            BotCommand("edit", "Quick file editing"),
+            BotCommand("search", "Search files and content"),
         ]
 
         # Add image processing command if enabled
@@ -155,7 +162,7 @@ class ClaudeCodeBot:
 
     def _register_handlers(self) -> None:
         """Register all command and message handlers."""
-        from .handlers import callback, command, message, mcp_commands
+        from .handlers import callback, command, message, mcp_commands, additional_commands
 
         # Command handlers
         handlers = [
@@ -182,6 +189,13 @@ class ClaudeCodeBot:
             ("claude_status", command.claude_status_command),
             ("claude_notifications", command.claude_notifications_command),
             ("claude_history", command.claude_history_command),
+            # Additional commands from testing findings
+            ("version", command.version_handler),
+            ("projects", additional_commands.projects_handler),
+            ("back", additional_commands.back_handler),
+            ("run", additional_commands.run_handler),
+            ("edit", additional_commands.edit_handler),
+            ("search", additional_commands.search_handler),
         ]
 
         # Add image processing command if enabled
