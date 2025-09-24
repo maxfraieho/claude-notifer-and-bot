@@ -1,14 +1,14 @@
 [tool.poetry]
 name = "claude-code-telegram"
-version = "0.1.1"
-description = "Telegram bot for remote Claude Code access with comprehensive configuration management"
+version = "2.1.0"
+description = "Enterprise-grade Telegram bot with professional DI, RBAC, and error handling for Claude Code access"
 authors = ["Richard Atkinson <richardatk01@gmail.com>"]
 license = "MIT"
 readme = "README.md"
 homepage = "https://github.com/richardatkinson/claude-code-telegram"
 repository = "https://github.com/richardatkinson/claude-code-telegram"
 documentation = "https://github.com/richardatkinson/claude-code-telegram/blob/main/docs/"
-keywords = ["telegram", "bot", "claude", "ai", "development", "remote", "coding"]
+keywords = ["telegram", "bot", "claude", "ai", "development", "remote", "coding", "enterprise", "rbac", "dependency-injection", "error-handling"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",

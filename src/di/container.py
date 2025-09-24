@@ -2,185 +2,474 @@
 Enhanced Dependency Injection Container for DevClaude_bot
 
 This implements the DI Container recommendation from Enhanced Architect Bot analysis.
-Replaces manual dependency management with a professional DI framework.
+Uses lightweight custom DI implementation compatible with Python 3.12.
 """
 
-from typing import Dict, Any
-from dependency_injector import containers, providers
-from dependency_injector.wiring import Provide, inject
+from typing import Dict, Any, TypeVar, Type, Callable, Optional, Union
 import structlog
+from abc import ABC, abstractmethod
 
 from src.config.settings import Settings
-from .providers import (
-    SecurityProvidersContainer,
-    ClaudeProvidersContainer,
-    BotProvidersContainer,
-    StorageProvidersContainer,
-)
-
 
 logger = structlog.get_logger(__name__)
 
+T = TypeVar('T')
 
-class ApplicationContainer(containers.DeclarativeContainer):
+
+class Provider(ABC):
+    """Base provider class for dependency injection."""
+
+    @abstractmethod
+    def provide(self, container: 'DIContainer') -> Any:
+        """Provide the dependency."""
+        pass
+
+
+class FactoryProvider(Provider):
+    """Factory provider that creates new instances."""
+
+    def __init__(self, factory: Callable, *args, **kwargs):
+        self.factory = factory
+        self.args = args
+        self.kwargs = kwargs
+
+    def provide(self, container: 'DIContainer') -> Any:
+        """Create new instance using factory."""
+        # Resolve dependencies in args and kwargs
+        resolved_args = []
+        for arg in self.args:
+            if isinstance(arg, Provider):
+                resolved_args.append(arg.provide(container))
+            else:
+                resolved_args.append(arg)
+
+        resolved_kwargs = {}
+        for key, value in self.kwargs.items():
+            if isinstance(value, Provider):
+                resolved_kwargs[key] = value.provide(container)
+            else:
+                resolved_kwargs[key] = value
+
+        return self.factory(*resolved_args, **resolved_kwargs)
+
+
+class SingletonProvider(Provider):
+    """Singleton provider that caches instances."""
+
+    def __init__(self, factory: Callable, *args, **kwargs):
+        self.factory = factory
+        self.args = args
+        self.kwargs = kwargs
+        self._instance = None
+        self._created = False
+
+    def provide(self, container: 'DIContainer') -> Any:
+        """Get or create singleton instance."""
+        if not self._created:
+            # Resolve dependencies in args and kwargs
+            resolved_args = []
+            for arg in self.args:
+                if isinstance(arg, Provider):
+                    resolved_args.append(arg.provide(container))
+                else:
+                    resolved_args.append(arg)
+
+            resolved_kwargs = {}
+            for key, value in self.kwargs.items():
+                if isinstance(value, Provider):
+                    resolved_kwargs[key] = value.provide(container)
+                else:
+                    resolved_kwargs[key] = value
+
+            self._instance = self.factory(*resolved_args, **resolved_kwargs)
+            self._created = True
+
+        return self._instance
+
+
+class ValueProvider(Provider):
+    """Value provider that returns static values."""
+
+    def __init__(self, value: Any):
+        self.value = value
+
+    def provide(self, container: 'DIContainer') -> Any:
+        """Return static value."""
+        return self.value
+
+
+class DIContainer:
     """
-    Main application dependency injection container.
+    Lightweight Dependency Injection Container.
 
-    Implements professional DI patterns as recommended by Enhanced Architect Bot:
-    - Centralized dependency management
-    - Type-safe configuration injection
-    - Proper lifecycle management
-    - Clear separation of concerns
-    """
-
-    # Wire with main modules
-    wiring_config = containers.WiringConfiguration(
-        modules=[
-            "src.main",
-            "src.bot.core",
-            "src.claude.facade",
-            "src.security.auth",
-        ]
-    )
-
-    # Configuration provider
-    config = providers.Dependency(instance_of=Settings)
-
-    # Storage container
-    storage = providers.DependenciesContainer()
-    storage_providers = providers.Container(
-        StorageProvidersContainer,
-        config=config,
-        storage=storage.storage,
-    )
-
-    # Security container
-    security = providers.DependenciesContainer()
-    security_providers = providers.Container(
-        SecurityProvidersContainer,
-        config=config,
-        storage=storage.storage,
-    )
-
-    # Claude integration container
-    claude = providers.DependenciesContainer()
-    claude_providers = providers.Container(
-        ClaudeProvidersContainer,
-        config=config,
-        storage=storage.storage,
-        security_validator=security.security_validator,
-    )
-
-    # Bot container
-    bot = providers.DependenciesContainer()
-    bot_providers = providers.Container(
-        BotProvidersContainer,
-        config=config,
-        storage=storage.storage,
-        security=security,
-        claude=claude,
-    )
-
-    # Application factory
-    @providers.singleton
-    @inject
-    def application_factory(
-        self,
-        config: Settings = Provide[config],
-        storage: Any = Provide[storage.storage],
-        bot: Any = Provide[bot.bot],
-        claude_integration: Any = Provide[claude.claude_integration],
-    ) -> Dict[str, Any]:
-        """Create configured application components."""
-        logger.info("Creating application via DI container")
-
-        return {
-            "bot": bot,
-            "claude_integration": claude_integration,
-            "storage": storage,
-            "config": config,
-        }
-
-    # Health check service
-    @providers.singleton
-    def health_service(self) -> "HealthService":
-        """Create health monitoring service."""
-        from .health import HealthService
-        return HealthService(
-            storage=self.storage.storage(),
-            claude_integration=self.claude.claude_integration(),
-            security=self.security.auth_manager(),
-        )
-
-
-class DIManager:
-    """
-    Dependency Injection Manager for simplified container management.
-
-    Provides convenience methods for container initialization and wiring.
+    Implements professional DI patterns recommended by Enhanced Architect Bot.
     """
 
     def __init__(self):
-        self.container: ApplicationContainer = None
+        self._providers: Dict[str, Provider] = {}
+        self._config: Optional[Settings] = None
+
+    def register(self, name: str, provider: Provider):
+        """Register a provider with a name."""
+        self._providers[name] = provider
+        logger.debug("Provider registered", name=name, provider_type=type(provider).__name__)
+
+    def factory(self, name: str, factory: Callable, *args, **kwargs):
+        """Register a factory provider."""
+        self.register(name, FactoryProvider(factory, *args, **kwargs))
+
+    def singleton(self, name: str, factory: Callable, *args, **kwargs):
+        """Register a singleton provider."""
+        self.register(name, SingletonProvider(factory, *args, **kwargs))
+
+    def value(self, name: str, value: Any):
+        """Register a value provider."""
+        self.register(name, ValueProvider(value))
+
+    def get(self, name: str) -> Any:
+        """Get dependency by name."""
+        if name not in self._providers:
+            raise KeyError(f"Provider '{name}' not found")
+
+        return self._providers[name].provide(self)
+
+    def has(self, name: str) -> bool:
+        """Check if provider exists."""
+        return name in self._providers
+
+    def set_config(self, config: Settings):
+        """Set configuration."""
+        self._config = config
+        self.value("config", config)
+
+    def get_config(self) -> Settings:
+        """Get configuration."""
+        if not self._config:
+            raise ValueError("Configuration not set")
+        return self._config
+
+
+class ApplicationContainer:
+    """
+    Main application container with pre-configured providers.
+
+    Implements the architecture recommended by Enhanced Architect Bot.
+    """
+
+    def __init__(self):
+        self.container = DIContainer()
         self._initialized = False
 
-    async def initialize(self, config: Settings) -> ApplicationContainer:
-        """Initialize the DI container with configuration."""
+    async def initialize(self, config: Settings):
+        """Initialize container with configuration."""
         if self._initialized:
-            logger.warning("DI container already initialized")
-            return self.container
+            logger.warning("Container already initialized")
+            return
 
         logger.info("Initializing DI container")
 
-        # Create container
-        self.container = ApplicationContainer()
+        # Set configuration
+        self.container.set_config(config)
 
-        # Provide configuration
-        self.container.config.override(config)
+        # Register storage providers
+        await self._register_storage_providers(config)
 
-        # Wire dependencies
-        self.container.wire(modules=[
-            "src.main",
-            "src.bot.core",
-            "src.claude.facade",
-            "src.security.auth",
-        ])
+        # Register security providers
+        await self._register_security_providers(config)
+
+        # Register Claude providers
+        await self._register_claude_providers(config)
+
+        # Register bot providers
+        await self._register_bot_providers(config)
+
+        # Register application factory
+        self._register_application_factory()
 
         self._initialized = True
         logger.info("DI container initialized successfully")
 
-        return self.container
+    async def _register_storage_providers(self, config: Settings):
+        """Register storage layer providers."""
+        from src.storage.facade import Storage
+        from src.storage.session_storage import SQLiteSessionStorage
 
-    def get_container(self) -> ApplicationContainer:
-        """Get the initialized container."""
-        if not self._initialized:
-            raise RuntimeError("DI container not initialized. Call initialize() first.")
-        return self.container
+        # Storage singleton
+        self.container.singleton("storage", Storage, config.database_url)
+
+        # Session storage factory
+        def create_session_storage():
+            storage = self.container.get("storage")
+            return SQLiteSessionStorage(storage.db_manager)
+
+        self.container.factory("session_storage", create_session_storage)
+
+    async def _register_security_providers(self, config: Settings):
+        """Register security layer providers."""
+        from src.security.rbac import RBACManager
+        from src.security.auth import (
+            AuthenticationManager, WhitelistAuthProvider,
+            TokenAuthProvider, InMemoryTokenStorage
+        )
+        from src.security.validators import SecurityValidator
+        from src.security.rate_limiter import RateLimiter
+        from src.security.audit import AuditLogger, InMemoryAuditStorage
+
+        # RBAC Manager
+        def create_rbac_manager():
+            storage = self.container.get("storage")
+            return RBACManager(storage=storage)
+
+        self.container.singleton("rbac_manager", create_rbac_manager)
+
+        # Auth providers
+        allowed_users = getattr(config, 'allowed_users', [])
+        self.container.factory(
+            "whitelist_auth_provider",
+            WhitelistAuthProvider,
+            allowed_users,
+            allow_all_dev=config.development_mode
+        )
+
+        if config.enable_token_auth:
+            self.container.factory("token_storage", InMemoryTokenStorage)
+
+            def create_token_auth_provider():
+                token_storage = self.container.get("token_storage")
+                return TokenAuthProvider(config.auth_token_secret, token_storage)
+
+            self.container.factory("token_auth_provider", create_token_auth_provider)
+
+        # Auth manager
+        def create_auth_manager():
+            providers = [self.container.get("whitelist_auth_provider")]
+            if config.enable_token_auth:
+                providers.append(self.container.get("token_auth_provider"))
+
+            rbac_manager = self.container.get("rbac_manager")
+            return AuthenticationManager(providers, rbac_manager=rbac_manager)
+
+        self.container.singleton("auth_manager", create_auth_manager)
+
+        # Security validator
+        self.container.factory(
+            "security_validator",
+            SecurityValidator,
+            config.approved_directory,
+            flexible_mode=False
+        )
+
+        # Rate limiter
+        self.container.factory("rate_limiter", RateLimiter, config)
+
+        # Audit components
+        self.container.factory("audit_storage", InMemoryAuditStorage)
+
+        def create_audit_logger():
+            audit_storage = self.container.get("audit_storage")
+            return AuditLogger(audit_storage)
+
+        self.container.factory("audit_logger", create_audit_logger)
+
+    async def _register_claude_providers(self, config: Settings):
+        """Register Claude integration providers."""
+        from src.claude.session import SessionManager
+        from src.claude.monitor import ToolMonitor
+        from src.claude.integration import ClaudeProcessManager
+        from src.claude.facade import ClaudeIntegration
+
+        # Session manager
+        def create_session_manager():
+            session_storage = self.container.get("session_storage")
+            return SessionManager(config, session_storage)
+
+        self.container.factory("session_manager", create_session_manager)
+
+        # Tool monitor
+        def create_tool_monitor():
+            security_validator = self.container.get("security_validator")
+            return ToolMonitor(config, security_validator)
+
+        self.container.factory("tool_monitor", create_tool_monitor)
+
+        # Process manager (for CLI mode)
+        if not config.use_sdk:
+            self.container.factory("process_manager", ClaudeProcessManager, config)
+
+        # Claude integration facade
+        def create_claude_integration():
+            process_manager = self.container.get("process_manager") if not config.use_sdk else None
+            session_manager = self.container.get("session_manager")
+            tool_monitor = self.container.get("tool_monitor")
+
+            return ClaudeIntegration(
+                config=config,
+                process_manager=process_manager,
+                sdk_manager=None,  # SDK disabled for now
+                session_manager=session_manager,
+                tool_monitor=tool_monitor
+            )
+
+        self.container.singleton("claude_integration", create_claude_integration)
+
+    async def _register_bot_providers(self, config: Settings):
+        """Register bot layer providers."""
+        # Localization (if enabled)
+        if config.enable_localization:
+            from src.localization import LocalizationManager, UserLanguageStorage
+
+            self.container.factory("localization_manager", LocalizationManager)
+
+            def create_user_language_storage():
+                storage = self.container.get("storage")
+                return UserLanguageStorage(storage)
+
+            self.container.factory("user_language_storage", create_user_language_storage)
+
+        # MCP components
+        from src.mcp.manager import MCPManager
+        from src.mcp.context_handler import MCPContextHandler
+
+        def create_mcp_manager():
+            storage = self.container.get("storage")
+            return MCPManager(config, storage)
+
+        self.container.factory("mcp_manager", create_mcp_manager)
+
+        def create_mcp_context_handler():
+            mcp_manager = self.container.get("mcp_manager")
+            claude_integration = self.container.get("claude_integration")
+            storage = self.container.get("storage")
+            return MCPContextHandler(
+                mcp_manager=mcp_manager,
+                claude_integration=claude_integration,
+                storage=storage
+            )
+
+        self.container.factory("mcp_context_handler", create_mcp_context_handler)
+
+        # Image processing (if enabled)
+        if config.enable_image_processing:
+            from src.bot.features.image_processor import ImageProcessor
+            from src.bot.handlers.image_command import ImageCommandHandler
+
+            def create_image_processor():
+                security_validator = self.container.get("security_validator")
+                return ImageProcessor(config, security_validator)
+
+            self.container.factory("image_processor", create_image_processor)
+
+            def create_image_command_handler():
+                image_processor = self.container.get("image_processor")
+                return ImageCommandHandler(config, image_processor)
+
+            self.container.factory("image_command_handler", create_image_command_handler)
+
+        # Bot dependencies
+        def create_bot_dependencies():
+            dependencies = {
+                "auth_manager": self.container.get("auth_manager"),
+                "security_validator": self.container.get("security_validator"),
+                "rate_limiter": self.container.get("rate_limiter"),
+                "audit_logger": self.container.get("audit_logger"),
+                "claude_integration": self.container.get("claude_integration"),
+                "storage": self.container.get("storage"),
+                "mcp_manager": self.container.get("mcp_manager"),
+                "mcp_context_handler": self.container.get("mcp_context_handler"),
+            }
+
+            # Add optional components
+            if config.enable_localization:
+                dependencies["localization"] = self.container.get("localization_manager")
+                dependencies["user_language_storage"] = self.container.get("user_language_storage")
+
+            if config.enable_image_processing:
+                dependencies["image_command_handler"] = self.container.get("image_command_handler")
+
+            return dependencies
+
+        self.container.factory("bot_dependencies", create_bot_dependencies)
+
+        # Main bot instance
+        from src.bot.core import ClaudeCodeBot
+
+        def create_bot():
+            dependencies = self.container.get("bot_dependencies")
+            return ClaudeCodeBot(config, dependencies)
+
+        self.container.singleton("bot", create_bot)
+
+    def _register_application_factory(self):
+        """Register application factory."""
+        def create_application():
+            return {
+                "bot": self.container.get("bot"),
+                "claude_integration": self.container.get("claude_integration"),
+                "storage": self.container.get("storage"),
+                "config": self.container.get("config"),
+            }
+
+        self.container.factory("application", create_application)
+
+    def get(self, name: str) -> Any:
+        """Get dependency by name."""
+        return self.container.get(name)
+
+    def has(self, name: str) -> bool:
+        """Check if dependency exists."""
+        return self.container.has(name)
 
     async def shutdown(self):
-        """Shutdown the DI container."""
-        if self.container:
-            logger.info("Shutting down DI container")
-            self.container.unwire()
-            self._initialized = False
-            logger.info("DI container shutdown complete")
+        """Shutdown container and cleanup resources."""
+        logger.info("Shutting down DI container")
+
+        # Cleanup singletons if they have cleanup methods
+        try:
+            if self.has("storage"):
+                storage = self.get("storage")
+                if hasattr(storage, 'close'):
+                    await storage.close()
+        except Exception as e:
+            logger.error("Error closing storage", error=str(e))
+
+        try:
+            if self.has("claude_integration"):
+                claude = self.get("claude_integration")
+                if hasattr(claude, 'shutdown'):
+                    await claude.shutdown()
+        except Exception as e:
+            logger.error("Error shutting down Claude integration", error=str(e))
+
+        self._initialized = False
+        logger.info("DI container shutdown complete")
 
 
-# Global DI manager instance
-di_manager = DIManager()
+# Global container instance
+_global_container: Optional[ApplicationContainer] = None
 
 
-# Convenience functions
 async def initialize_di(config: Settings) -> ApplicationContainer:
     """Initialize the global DI container."""
-    return await di_manager.initialize(config)
+    global _global_container
+
+    if _global_container is None:
+        _global_container = ApplicationContainer()
+
+    await _global_container.initialize(config)
+    return _global_container
 
 
 def get_di_container() -> ApplicationContainer:
     """Get the global DI container."""
-    return di_manager.get_container()
+    if _global_container is None:
+        raise RuntimeError("DI container not initialized. Call initialize_di() first.")
+    return _global_container
 
 
 async def shutdown_di():
     """Shutdown the global DI container."""
-    await di_manager.shutdown()
+    global _global_container
+
+    if _global_container:
+        await _global_container.shutdown()
+        _global_container = None

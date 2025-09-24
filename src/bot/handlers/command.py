@@ -1517,8 +1517,9 @@ async def pwd_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     
     try:
-        pwd_text = await t(context, user_id, "pwd.title", directory=str(Path.cwd()))
-        await message.reply_text(pwd_text)
+        current_dir = str(Path.cwd())
+        pwd_text = f"📂 **Current Directory**\n\n`{current_dir}`"
+        await message.reply_text(pwd_text, parse_mode='Markdown')
     except Exception as e:
         await safe_user_error(update, context, "errors.pwd_failed", e)
 

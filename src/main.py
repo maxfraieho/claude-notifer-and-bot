@@ -129,18 +129,15 @@ async def create_application(config: Settings) -> Dict[str, Any]:
     container = await initialize_di(config)
 
     # Initialize storage system
-    storage = container.storage_providers.storage_factory()
+    storage = container.get("storage")
     await storage.initialize()
-
-    # Wire storage dependency
-    container.storage.storage.override(storage)
 
     # Initialize enhanced modules
     logger.info("Initializing enhanced modules")
     await initialize_enhanced_modules()
 
     # Create application via container factory
-    app_components = container.application_factory()
+    app_components = container.get("application")
 
     logger.info("Application components created successfully via DI Container")
 

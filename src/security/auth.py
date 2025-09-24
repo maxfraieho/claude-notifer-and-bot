@@ -243,13 +243,14 @@ class TokenAuthProvider(AuthProvider):
 class AuthenticationManager:
     """Main authentication manager supporting multiple providers."""
 
-    def __init__(self, providers: List[AuthProvider]):
+    def __init__(self, providers: List[AuthProvider], rbac_manager: Optional[RBACManager] = None):
         if not providers:
             raise SecurityError("At least one authentication provider is required")
 
         self.providers = providers
+        self.rbac_manager = rbac_manager
         self.sessions: Dict[int, UserSession] = {}
-        logger.info("Authentication manager initialized", providers=len(self.providers))
+        logger.info("Authentication manager initialized", providers=len(self.providers), rbac_enabled=rbac_manager is not None)
 
     async def authenticate_user(
         self, user_id: int, credentials: Optional[Dict[str, Any]] = None
@@ -285,13 +286,23 @@ class AuthenticationManager:
     async def _create_session(self, user_id: int, provider: AuthProvider) -> None:
         """Create authenticated session."""
         user_info = await provider.get_user_info(user_id)
-        self.sessions[user_id] = UserSession(
+        session = UserSession(
             user_id=user_id,
             auth_provider=provider.__class__.__name__,
             created_at=datetime.utcnow(),
             last_activity=datetime.utcnow(),
             user_info=user_info,
+            rbac_manager=self.rbac_manager,
         )
+
+        self.sessions[user_id] = session
+
+        # Assign default role if RBAC is enabled and user has no roles
+        if self.rbac_manager:
+            user_roles = self.rbac_manager.get_user_roles(user_id)
+            if not user_roles:
+                await self.rbac_manager.assign_role(user_id, "user")
+                logger.info("Assigned default role 'user'", user_id=user_id)
 
         logger.info(
             "Session created", user_id=user_id, provider=provider.__class__.__name__
@@ -346,6 +357,18 @@ class AuthenticationManager:
         """Get count of active sessions."""
         self._cleanup_expired_sessions()
         return len(self.sessions)
+
+    async def authenticate(self, user_id: int, credentials: Optional[Dict[str, Any]] = None) -> Optional[UserSession]:
+        """Authenticate user and return session if successful."""
+        success = await self.authenticate_user(user_id, credentials)
+        if success:
+            return self.get_session(user_id)
+        return None
+
+    async def cleanup(self):
+        """Cleanup resources and sessions."""
+        self.sessions.clear()
+        logger.info("Authentication manager cleaned up")
 
     def get_session_info(self, user_id: int) -> Optional[Dict[str, Any]]:
         """Get session information for user."""

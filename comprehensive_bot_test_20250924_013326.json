@@ -1,0 +1,296 @@
+{
+  "target_bot": "@DevClaude_bot",
+  "test_timestamp": "2025-09-24T01:32:14.538272",
+  "test_categories": {
+    "basic_commands": {
+      "/start": {
+        "command": "/start",
+        "status": "success",
+        "response": "👋 Welcome to Claude Code Telegram Bot, Max!\n\n🤖 I help you access Claude Code remotely through Telegram.\n\n**Available Commands:**\n• `/help` - Show detailed help\n• `/new` - Start a new Claude session\n• `/ls` - List files in current directory\n• `/cd <dir>` - Change directory\n• `/status` - Show session status\n• `/actions` - Show quick actions\n• `/git` - Git repository commands\n\n**Quick Start:**\n1. Use `/projects` to see available projects\n2. Use `/cd <project>` to navigate to a project\n3. Send any message to start coding with Claude!\n\n🔒 Your access is secured and all actions are logged.\n📊 Use `/status` to check your usage limits.",
+        "response_length": 633,
+        "has_keyboard": true,
+        "issues": [],
+        "score": 100
+      },
+      "/help": {
+        "command": "/help",
+        "status": "issues_found",
+        "response": "help.title\n\nhelp.commands",
+        "response_length": 25,
+        "has_keyboard": false,
+        "issues": [
+          "Localization key instead of content"
+        ],
+        "score": 50
+      },
+      "/status": {
+        "command": "/status",
+        "status": "success",
+        "response": "📊 Bot Status\n\n📂 Current Directory: /home/vokov/projects/claude-notifer-and-bot\n🤖 Claude Session: ❌ Inactive",
+        "response_length": 107,
+        "has_keyboard": false,
+        "issues": [],
+        "score": 100
+      },
+      "/new": {
+        "command": "/new",
+        "status": "success",
+        "response": "🔄 Session cleared",
+        "response_length": 17,
+        "has_keyboard": false,
+        "issues": [],
+        "score": 100
+      },
+      "/version": {
+        "command": "/version",
+        "status": "no_response",
+        "response": null,
+        "issues": [
+          "No response received"
+        ],
+        "score": 0
+      }
+    },
+    "navigation_commands": {
+      "/pwd": {
+        "command": "/pwd",
+        "status": "success",
+        "response": "📂 Current Directory\n\n/home/vokov/projects/claude-notifer-and-bot",
+        "response_length": 64,
+        "has_keyboard": false,
+        "issues": [],
+        "score": 100
+      },
+      "/ls": {
+        "command": "/ls",
+        "status": "success",
+        "response": "📂 `./`\n\n📁 -img-/\n📁 architect-tools/\n📁 archive/\n📁 attached_assets/\n📁 bot-cli-prompts/\n📁 claude-auth-backup/\n📁 claude-bot/\n📁 claude_config/\n📁 data/\n📁 docs/\n📁 drn/\n📁 perplexity/\n📁 prompts/\n📁 scripts/\n📁 src/\n📁 target_project/\n📁 temp_files/\n📁 tests/\n📁 tools/\n📁 venv/\n📄 ACTIONS_COMMAND_FIX_PROMPT.md (5.6KB)\n📄 ARCHITECTURE_v2.1.md (10.7KB)\n📄 CLAUDE.md (10.8KB)\n📄 CLAUDE_AUTH_FIX_LOG.md (4.4KB)\n📄 CLAUDE_AVAILABILITY_MONITORING_SOLUTION.md (11.0KB)\n📄 CLAUDE_VISION_INTEGRATION.md (9.0KB)\n📄 CRITICAL_ISSUES_RESOLUTION_PLAN.md (16.6KB)\n📄 Claude_Architect_Bot_Perplexity_Prompt.md (8.6KB)\n📄 DEBUG_IMG_COMMAND.md (9.1KB)\n📄 DEPLOY.md (9.2KB)\n📄 DEPLOYMENT.md (4.8KB)\n📄 DEPLOYMENT_READY.md (2.7KB)\n📄 DEVELOPMENT.md (4.7KB)\n📄 DND_TASKS_EXECUTION_REPORT.md (8.1KB)\n📄 DRACON_SUBSYSTEM_PROMPT.json (15.7KB)\n📄 Dockerfile (4.1KB)\n📄 INTEGRATION_COMPLETE_SUMMARY.md (11.0KB)\n📄 PERPLEXITY_IMPORT_COMPLETE.md (8.1KB)\n📄 PERPLEXITY_IMPORT_STRATEGY.md (5.6KB)\n📄 PROJECT_COMPLETION_SUMMARY.md (12.9KB)\n📄 QUICK_ACTIONS_ANALYSIS.md (6.7KB)\n📄 QUICK_START.md (3.4KB)\n📄 README.md (6.2KB)\n📄 RELEASE_NOTES_v0.2.0.md (9.8KB)\n📄 REPLIT_CLAUDE_AUTH_GUIDE.md (5.8KB)\n📄 SECURITY.md (8.4KB)\n📄 SESSION_SUMMARY_20250914_1407.md (4.4KB)\n📄 SSH_FIX_GUIDE.md (2.0KB)\n📄 TESTING_METHODOLOGY.md (17.9KB)\n📄 TRANSFER_BRIEF.md (14.2KB)\n\n_... and 53 more items_",
+        "response_length": 1306,
+        "has_keyboard": true,
+        "issues": [],
+        "score": 100
+      },
+      "/projects": {
+        "command": "/projects",
+        "status": "no_response",
+        "response": null,
+        "issues": [
+          "No response received"
+        ],
+        "score": 0
+      },
+      "/cd": {
+        "command": "/cd",
+        "status": "success",
+        "response": "**Usage:** `/cd <directory>`\n\n**Examples:**\n• `/cd mydir` - Enter subdirectory\n• `/cd ..` - Go up one level\n• `/cd /` - Go to root of approved directory\n\n**Tips:**\n• Use `/ls` to see available directories\n• Use `/ls` to see all subdirectories",
+        "response_length": 242,
+        "has_keyboard": false,
+        "issues": [],
+        "score": 100
+      },
+      "/back": {
+        "command": "/back",
+        "status": "no_response",
+        "response": null,
+        "issues": [
+          "No response received"
+        ],
+        "score": 0
+      }
+    },
+    "action_commands": {
+      "/actions": {
+        "command": "/actions",
+        "status": "success",
+        "response": "🚀 **Quick Actions**\n\nChoose a development task:\n\n📂 Context: `./`",
+        "response_length": 64,
+        "has_keyboard": true,
+        "issues": [],
+        "score": 100
+      },
+      "/git": {
+        "command": "/git",
+        "status": "success",
+        "response": "🔧 **Git Management**\n\nEssential Git operations for your project:\n\n📂 commands.pwd.current_directory: ./",
+        "response_length": 102,
+        "has_keyboard": true,
+        "issues": [],
+        "score": 100
+      },
+      "/run": {
+        "command": "/run",
+        "status": "no_response",
+        "response": null,
+        "issues": [
+          "No response received"
+        ],
+        "score": 0
+      },
+      "/edit": {
+        "command": "/edit",
+        "status": "no_response",
+        "response": null,
+        "issues": [
+          "No response received"
+        ],
+        "score": 0
+      },
+      "/search": {
+        "command": "/search",
+        "status": "no_response",
+        "response": null,
+        "issues": [
+          "No response received"
+        ],
+        "score": 0
+      }
+    },
+    "keyboard_interactions": {
+      "/actions": {
+        "status": "has_inline_keyboard",
+        "has_inline_keyboard": true,
+        "has_reply_keyboard": false,
+        "keyboard_buttons": [
+          "📋 Show Files",
+          "🏠 Current Location",
+          "💾 Git Status",
+          "🔍 Search TODOs",
+          "🔍 Find Code Files",
+          "🧪 Run Tests"
+        ],
+        "response_text": "🚀 **Quick Actions**\n\nChoose a development task:\n\n📂 Context: `./`"
+      }
+    },
+    "workflow_testing": {
+      "onboarding_flow": {
+        "workflow": "onboarding_flow",
+        "commands": [
+          "/start",
+          "/help"
+        ],
+        "results": {
+          "/start": {
+            "command": "/start",
+            "status": "success",
+            "response": "👋 Welcome to Claude Code Telegram Bot, Max!\n\n🤖 I help you access Claude Code remotely through Telegram.\n\n**Available Commands:**\n• `/help` - Show detailed help\n• `/new` - Start a new Claude session\n• `/ls` - List files in current directory\n• `/cd <dir>` - Change directory\n• `/status` - Show session status\n• `/actions` - Show quick actions\n• `/git` - Git repository commands\n\n**Quick Start:**\n1. Use `/projects` to see available projects\n2. Use `/cd <project>` to navigate to a project\n3. Send any message to start coding with Claude!\n\n🔒 Your access is secured and all actions are logged.\n📊 Use `/status` to check your usage limits.",
+            "response_length": 633,
+            "has_keyboard": true,
+            "issues": [],
+            "score": 100
+          },
+          "/help": {
+            "command": "/help",
+            "status": "issues_found",
+            "response": "help.title\n\nhelp.commands",
+            "response_length": 25,
+            "has_keyboard": false,
+            "issues": [
+              "Localization key instead of content"
+            ],
+            "score": 50
+          }
+        },
+        "status": "issues_found",
+        "issues": [
+          "/help: ['Localization key instead of content']"
+        ]
+      },
+      "project_navigation": {
+        "workflow": "project_navigation",
+        "commands": [
+          "/projects",
+          "/pwd",
+          "/ls"
+        ],
+        "results": {
+          "/projects": {
+            "command": "/projects",
+            "status": "no_response",
+            "response": null,
+            "issues": [
+              "No response received"
+            ],
+            "score": 0
+          },
+          "/pwd": {
+            "command": "/pwd",
+            "status": "success",
+            "response": "📂 Current Directory\n\n/home/vokov/projects/claude-notifer-and-bot",
+            "response_length": 64,
+            "has_keyboard": false,
+            "issues": [],
+            "score": 100
+          },
+          "/ls": {
+            "command": "/ls",
+            "status": "success",
+            "response": "📂 `./`\n\n📁 -img-/\n📁 architect-tools/\n📁 archive/\n📁 attached_assets/\n📁 bot-cli-prompts/\n📁 claude-auth-backup/\n📁 claude-bot/\n📁 claude_config/\n📁 data/\n📁 docs/\n📁 drn/\n📁 perplexity/\n📁 prompts/\n📁 scripts/\n📁 src/\n📁 target_project/\n📁 temp_files/\n📁 tests/\n📁 tools/\n📁 venv/\n📄 ACTIONS_COMMAND_FIX_PROMPT.md (5.6KB)\n📄 ARCHITECTURE_v2.1.md (10.7KB)\n📄 CLAUDE.md (10.8KB)\n📄 CLAUDE_AUTH_FIX_LOG.md (4.4KB)\n📄 CLAUDE_AVAILABILITY_MONITORING_SOLUTION.md (11.0KB)\n📄 CLAUDE_VISION_INTEGRATION.md (9.0KB)\n📄 CRITICAL_ISSUES_RESOLUTION_PLAN.md (16.6KB)\n📄 Claude_Architect_Bot_Perplexity_Prompt.md (8.6KB)\n📄 DEBUG_IMG_COMMAND.md (9.1KB)\n📄 DEPLOY.md (9.2KB)\n📄 DEPLOYMENT.md (4.8KB)\n📄 DEPLOYMENT_READY.md (2.7KB)\n📄 DEVELOPMENT.md (4.7KB)\n📄 DND_TASKS_EXECUTION_REPORT.md (8.1KB)\n📄 DRACON_SUBSYSTEM_PROMPT.json (15.7KB)\n📄 Dockerfile (4.1KB)\n📄 INTEGRATION_COMPLETE_SUMMARY.md (11.0KB)\n📄 PERPLEXITY_IMPORT_COMPLETE.md (8.1KB)\n📄 PERPLEXITY_IMPORT_STRATEGY.md (5.6KB)\n📄 PROJECT_COMPLETION_SUMMARY.md (12.9KB)\n📄 QUICK_ACTIONS_ANALYSIS.md (6.7KB)\n📄 QUICK_START.md (3.4KB)\n📄 README.md (6.2KB)\n📄 RELEASE_NOTES_v0.2.0.md (9.8KB)\n📄 REPLIT_CLAUDE_AUTH_GUIDE.md (5.8KB)\n📄 SECURITY.md (8.4KB)\n📄 SESSION_SUMMARY_20250914_1407.md (4.4KB)\n📄 SSH_FIX_GUIDE.md (2.0KB)\n📄 TESTING_METHODOLOGY.md (17.9KB)\n📄 TRANSFER_BRIEF.md (14.2KB)\n\n_... and 53 more items_",
+            "response_length": 1306,
+            "has_keyboard": true,
+            "issues": [],
+            "score": 100
+          }
+        },
+        "status": "issues_found",
+        "issues": [
+          "/projects: ['No response received']"
+        ]
+      },
+      "session_management": {
+        "workflow": "session_management",
+        "commands": [
+          "/status",
+          "/new"
+        ],
+        "results": {
+          "/status": {
+            "command": "/status",
+            "status": "success",
+            "response": "📊 Bot Status\n\n📂 Current Directory: /home/vokov/projects/claude-notifer-and-bot\n🤖 Claude Session: ❌ Inactive",
+            "response_length": 107,
+            "has_keyboard": false,
+            "issues": [],
+            "score": 100
+          },
+          "/new": {
+            "command": "/new",
+            "status": "success",
+            "response": "🔄 Session cleared",
+            "response_length": 17,
+            "has_keyboard": false,
+            "issues": [],
+            "score": 100
+          }
+        },
+        "status": "success",
+        "issues": []
+      }
+    }
+  },
+  "issues_found": [],
+  "ux_assessment": {
+    "response_quality": "good",
+    "command_coverage": "moderate",
+    "keyboard_usability": "limited",
+    "error_handling": "needs_improvement",
+    "localization": "broken",
+    "overall_ux_score": 50
+  },
+  "recommendations": [
+    "🔧 Fix localization system - replace keys with actual content",
+    "🌐 Implement proper multilingual support",
+    "🧪 Implement comprehensive automated testing",
+    "📊 Add response validation and error handling",
+    "👥 Conduct user acceptance testing",
+    "📝 Create detailed command documentation",
+    "🔍 Monitor bot performance and user satisfaction"
+  ],
+  "overall_status": "poor",
+  "test_summary": {
+    "total_tests": 19,
+    "successful_tests": 9,
+    "failed_tests": 10,
+    "issues_found": 9,
+    "success_rate": "47.4%"
+  }
+}

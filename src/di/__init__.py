@@ -1,17 +1,10 @@
 """Dependency Injection module for enhanced DevClaude_bot architecture."""
 
-from .container import ApplicationContainer
-from .providers import (
-    SecurityProvidersContainer,
-    ClaudeProvidersContainer,
-    BotProvidersContainer,
-    StorageProvidersContainer,
-)
+from .container import ApplicationContainer, initialize_di, shutdown_di, get_di_container
 
 __all__ = [
     "ApplicationContainer",
-    "SecurityProvidersContainer",
-    "ClaudeProvidersContainer",
-    "BotProvidersContainer",
-    "StorageProvidersContainer",
+    "initialize_di",
+    "shutdown_di",
+    "get_di_container",
 ]

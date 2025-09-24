@@ -1,0 +1,63 @@
+{
+  "target_bot": "@DevClaude_bot",
+  "test_timestamp": "2025-09-24T01:30:00.104457",
+  "commands_tested": {
+    "/start": {
+      "command": "/start",
+      "response": "👋 Welcome to Claude Code Telegram Bot, Max!\n\n🤖 I help you access Claude Code remotely through Telegram.\n\n**Available Commands:**\n• `/help` - Show detailed help\n• `/new` - Start a new Claude session\n• `/ls` - List files in current directory\n• `/cd <dir>` - Change directory\n• `/status` - Show session status\n• `/actions` - Show quick actions\n• `/git` - Git repository commands\n\n**Quick Start:**\n1. Use `/projects` to see available projects\n2. Use `/cd <project>` to navigate to a project\n3. Send any message to start coding with Claude!\n\n🔒 Your access is secured and all actions are logged.\n📊 Use `/status` to check your usage limits.",
+      "status": "success",
+      "issues": [],
+      "score": 100
+    },
+    "/help": {
+      "command": "/help",
+      "response": "help.title\n\nhelp.commands",
+      "status": "success",
+      "issues": [],
+      "score": 100
+    },
+    "/pwd": {
+      "command": "/pwd",
+      "response": "📂 Current Directory\n\n/home/vokov/projects/claude-notifer-and-bot",
+      "status": "success",
+      "issues": [],
+      "score": 100
+    },
+    "/status": {
+      "command": "/status",
+      "response": "📊 Bot Status\n\n📂 Current Directory: /home/vokov/projects/claude-notifer-and-bot\n🤖 Claude Session: ❌ Inactive",
+      "status": "success",
+      "issues": [],
+      "score": 100
+    },
+    "/settings": {
+      "status": "no_response",
+      "response": null,
+      "issues": [
+        "No response received"
+      ]
+    },
+    "/language": {
+      "status": "no_response",
+      "response": null,
+      "issues": [
+        "No response received"
+      ]
+    }
+  },
+  "issues_found": [
+    {
+      "command": "/help",
+      "issue": "Problematic response detected",
+      "response": "help.title\n\nhelp.commands",
+      "detected_problems": [
+        "Localization key instead of actual content"
+      ]
+    }
+  ],
+  "recommendations": [
+    "Perform end-to-end testing of user workflows",
+    "Review error handling and user feedback"
+  ],
+  "overall_status": "minor_issues"
+}
