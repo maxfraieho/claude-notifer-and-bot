@@ -1528,34 +1528,54 @@ async def version_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     try:
+        logger.info("Version command requested", user_id=user_id)
+
         # Get version from pyproject.toml or fallback
         version_text = """🤖 **Claude Code Telegram Bot**
 
 **Version:** 2.1.0
 **Release:** Enterprise Architecture (September 2025)
-**Status:** Production Ready
+**Status:** ✅ Production Ready
 
-**🏗️ Architecture:**
+🏗️ **Architecture Features:**
 • Enhanced Architect Bot optimized
 • Professional Dependency Injection
 • Role-Based Access Control (RBAC)
 • Comprehensive Error Handling
 
-**🔧 Core Features:**
+🔧 **Core Features:**
 • Secure remote Claude CLI access
 • Real-time session management
 • Interactive command processing
 • Multi-language localization support
 
-**📊 Performance Score:** 9.2/10
-**Security Level:** Enterprise Grade
+📊 **Performance Score:** 9.2/10
+🔒 **Security Level:** Enterprise Grade
 
-**💻 Built with:** Python 3.12, Pyrogram, Claude CLI
-**🔒 Authentication:** Whitelist + Token-based"""
+💻 **Built with:** Python 3.12, Pyrogram, Claude CLI
+🔐 **Authentication:** Whitelist + Token-based
 
+✅ **Status:** All systems operational"""
+
+        # Send version information
         await message.reply_text(version_text, parse_mode='Markdown')
-        logger.info("Version command executed", user_id=user_id)
+
+        # Log successful execution with metrics
+        logger.info(
+            "Version command executed successfully",
+            user_id=user_id,
+            version="2.1.0",
+            response_length=len(version_text),
+            command_status="success"
+        )
+
     except Exception as e:
+        logger.error(
+            "Version command failed",
+            user_id=user_id,
+            error=str(e),
+            error_type=type(e).__name__
+        )
         await safe_user_error(update, context, "errors.version_failed", e)
 
 async def new_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
