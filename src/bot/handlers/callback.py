@@ -76,6 +76,30 @@ async def handle_callback_query(
             await handle_mcp_callback(update, context)
             return
 
+        # Check for context callbacks
+        if data.startswith("context_"):
+            context_commands = context.bot_data.get("context_commands")
+            if context_commands:
+                await context_commands.handle_callback_query(update, context)
+            else:
+                logger.warning("Context commands not available")
+                await query.edit_message_text(
+                    "❌ Система контекстної пам'яті недоступна"
+                )
+            return
+
+        # Check for menu callbacks
+        if data.startswith("menu_"):
+            unified_menu = context.bot_data.get("unified_menu")
+            if unified_menu:
+                await unified_menu.handle_menu_callback(update, context)
+            else:
+                logger.warning("Unified menu not available")
+                await query.edit_message_text(
+                    "❌ Система меню недоступна"
+                )
+            return
+
         handler = handlers.get(action)
         if handler:
             logger.info("Executing callback handler", action=action, param=param, user_id=user_id)
@@ -216,7 +240,7 @@ async def handle_action_callback(
         "quick_actions": _handle_quick_actions_action,
         "refresh_status": _handle_refresh_status_action,
         "refresh_ls": _handle_refresh_ls_action,
-        "export": _handle_export_action,
+        "context": _handle_context_action,
         "settings": _handle_settings_action,
         "main_menu": _handle_main_menu_action,
         "schedules": _handle_schedules_action,
@@ -763,18 +787,33 @@ async def _handle_refresh_ls_action(query, context: ContextTypes.DEFAULT_TYPE) -
     await _handle_ls_action(query, context)
 
 
-async def _handle_export_action(query, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle export action."""
-    await query.edit_message_text(
-        "📤 **Export Session**\n\n"
-        "Session export functionality will be available once the storage layer is implemented.\n\n"
-        "**Planned features:**\n"
-        "• Export conversation history\n"
-        "• Save session state\n"
-        "• Share conversations\n"
-        "• Create session backups\n\n"
-        "_Coming in the next development phase!_"
-    )
+async def _handle_context_action(query, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle context action."""
+    try:
+        context_commands = context.bot_data.get("context_commands")
+        if context_commands:
+            # Create a fake update object from callback query
+            class FakeUpdate:
+                def __init__(self, callback_query):
+                    self.callback_query = callback_query
+                    self.effective_user = callback_query.from_user
+                    self.effective_chat = callback_query.message.chat
+
+            fake_update = FakeUpdate(query)
+            await context_commands.handle_context_status(fake_update, context)
+        else:
+            await query.edit_message_text(
+                "🧠 **Context Management**\n\n"
+                "Context management is not properly initialized.\n\n"
+                "Please check the bot configuration."
+            )
+    except Exception as e:
+        logger.error("Failed to handle context action", error=str(e))
+        await query.edit_message_text(
+            "❌ **Error**\n\n"
+            "Failed to load context information.\n\n"
+            "Please try again later."
+        )
 
 
 async def handle_quick_action_callback(
@@ -2247,7 +2286,7 @@ async def _handle_main_menu_action(query, context: ContextTypes.DEFAULT_TYPE) ->
                 InlineKeyboardButton(await t(context, user_id, "buttons.status"), callback_data="action:status")
             ],
             [
-                InlineKeyboardButton(await t(context, user_id, "buttons.export"), callback_data="action:export"),
+                InlineKeyboardButton(await t(context, user_id, "buttons.context"), callback_data="action:context"),
                 InlineKeyboardButton(await t(context, user_id, "buttons.settings"), callback_data="action:settings")
             ],
             [

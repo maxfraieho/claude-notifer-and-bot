@@ -148,6 +148,21 @@ async def handle_text_message(
         "Processing text message", user_id=user_id, message_length=len(message_text)
     )
 
+    # Check if user is in context search mode
+    if context.user_data.get("awaiting_context_search"):
+        context.user_data["awaiting_context_search"] = False
+        context_commands = context.bot_data.get("context_commands")
+        if context_commands:
+            await context_commands.handle_context_search_query(update, context, message_text)
+            return
+        else:
+            await update.message.reply_text(
+                "❌ **Система контекстної пам'яті недоступна**\n\n"
+                "Пошук в контексті тимчасово недоступний.",
+                parse_mode="Markdown"
+            )
+            return
+
     # First check if this is a Claude authentication code
     if await handle_claude_auth_code(update, context):
         return
@@ -383,7 +398,8 @@ async def handle_text_message(
         # Clean up progress message if it exists
         try:
             await progress_msg.delete()
-        except:
+        except Exception as e:
+            logger.debug("Failed to delete progress message during error handling", error=str(e))
             pass
 
         error_msg = f"❌ **Error processing message**\n\n{str(e)}"

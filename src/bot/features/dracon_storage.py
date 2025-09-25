@@ -267,7 +267,8 @@ Generated visual and export formats of schemas.
                         with open(metadata_path, 'r', encoding='utf-8') as f:
                             metadata = json.load(f)
                             schema_info['metadata'] = metadata
-                    except:
+                    except Exception as e:
+                        logger.warning("Failed to load metadata for schema", schema=schema_file, error=str(e))
                         pass
 
                 schemas.append(schema_info)

@@ -14,7 +14,6 @@ class I18n:
 
     def __init__(self, default_locale: str = "uk"):
         self.default_locale = default_locale
-        self.current_locale = default_locale
         self.translations: Dict[str, Dict[str, Any]] = {}
         self.load_translations()
 
@@ -36,16 +35,20 @@ class I18n:
                 logger.error(f"Помилка завантаження {locale_file}: {e}")
 
     def set_locale(self, locale: str):
-        """Встановити поточну локаль"""
+        """Deprecated: do not set global current locale in multi-worker environments.
+        Locale should be passed explicitly to `get()` or managed per-user in storage.
+        This method will only log an informational message for backward compatibility.
+        """
         if locale in self.translations:
-            self.current_locale = locale
-            logger.info(f"Локаль змінено на {locale}")
+            logger.info(f"(deprecated) requested to set locale to {locale}; use per-request locale storage instead")
         else:
             logger.warning(f"Локаль {locale} не знайдено")
 
     def get(self, key: str, locale: Optional[str] = None) -> str:
-        """Отримати переклад за ключем"""
-        target_locale = locale or self.current_locale
+        """Отримати переклад за ключем.
+        Не використовує mutable process-wide current_locale — очікує explicit locale або використовує default_locale.
+        """
+        target_locale = locale or self.default_locale
 
         if target_locale not in self.translations:
             target_locale = self.default_locale

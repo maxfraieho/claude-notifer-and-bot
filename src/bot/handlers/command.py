@@ -34,8 +34,8 @@ def safe_terminate_process(process: Optional[pexpect.spawn]) -> None:
         logger.debug("Error terminating process", error=str(e))
         try:
             process.close()
-        except:
-            pass
+        except Exception as close_error:
+            logger.debug("Error closing process", error=str(close_error))
 
 
 # Pexpect functions for Claude CLI authentication
@@ -124,8 +124,8 @@ async def claude_auth_with_pexpect(timeout: int = 30) -> Tuple[bool, str, Option
                     if available:
                         output_buffer += available
                         logger.debug("Read additional output", content=available[:100])
-                except:
-                    pass
+                except Exception as read_error:
+                    logger.debug("Error reading additional output", error=str(read_error))
                 continue
                 
         # Якщо дійшли сюди - не знайшли URL
@@ -284,7 +284,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         
         # Enhanced unified menu with all essential functions
         continue_session_text = await t(context, user_id, "buttons.continue_session")
-        export_session_text = await t(context, user_id, "buttons.export")
+        export_session_text = await t(context, user_id, "buttons.context")
         settings_text = await t(context, user_id, "buttons.settings")
 
         keyboard = [
@@ -334,7 +334,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
                 InlineKeyboardButton(await t(context, user_id, "buttons.check_status"), callback_data="action:status"),
             ],
             [
-                InlineKeyboardButton(await t(context, user_id, "buttons.export"), callback_data="action:export"),
+                InlineKeyboardButton(await t(context, user_id, "buttons.context"), callback_data="action:context"),
                 InlineKeyboardButton(await t(context, user_id, "buttons.settings"), callback_data="action:settings"),
             ],
             [
@@ -1176,7 +1176,7 @@ async def end_session(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             InlineKeyboardButton(await t(context, user_id, "buttons.status"), callback_data="action:status")
         ],
         [
-            InlineKeyboardButton(await t(context, user_id, "buttons.export"), callback_data="action:export"),
+            InlineKeyboardButton(await t(context, user_id, "buttons.context"), callback_data="action:context"),
             InlineKeyboardButton(await t(context, user_id, "buttons.settings"), callback_data="action:settings")
         ],
         [
@@ -1886,8 +1886,8 @@ async def extract_auth_url_from_claude_login() -> Tuple[bool, str, Optional[pexp
         try:
             if child and child.isalive():
                 child.terminate(force=True)
-        except:
-            pass
+        except Exception as term_error:
+            logger.debug("Error terminating child process", error=str(term_error))
         return False, f"No authentication URL found. Output: {output_buffer}", None
 
     except Exception as e:
@@ -1895,8 +1895,8 @@ async def extract_auth_url_from_claude_login() -> Tuple[bool, str, Optional[pexp
         try:
             if 'child' in locals() and child and child.isalive():
                 child.terminate(force=True)
-        except:
-            pass
+        except Exception as cleanup_error:
+            logger.debug("Error during process cleanup", error=str(cleanup_error))
         return False, f"Error starting claude login: {str(e)}", None
 
 
@@ -2089,7 +2089,8 @@ async def login_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         if 'claude_auth_process' in context.user_data:
             try:
                 context.user_data['claude_auth_process'].close()
-            except:
+            except Exception as e:
+                logger.debug("Failed to close Claude auth process during error cleanup", error=str(e))
                 pass
             context.user_data.pop('claude_auth_process', None)
 
@@ -2183,7 +2184,8 @@ async def handle_claude_auth_code(update: Update, context: ContextTypes.DEFAULT_
         if 'claude_auth_process' in context.user_data:
             try:
                 context.user_data['claude_auth_process'].close()
-            except:
+            except Exception as e:
+                logger.debug("Failed to close Claude auth process during auth code processing", error=str(e))
                 pass
             context.user_data.pop('claude_auth_process', None)
 
@@ -2398,23 +2400,54 @@ async def audit_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         # Згенерувати звіт
         report = format_audit_report(result)
 
-        # Відправити звіт
-        if len(report) > 4096:
-            # Розбити на частини для Telegram
-            chunks = [report[i:i+4000] for i in range(0, len(report), 4000)]
+        # Зберегти звіт у файл
+        from pathlib import Path
+        import json
+        from datetime import datetime
 
-            await status_msg.edit_text(f"✅ **Аудит завершено!**\n\nЗнайдено {result.total_issues} проблем.\nВідправляю звіт...")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        audit_dir = Path("audit_results")
+        audit_dir.mkdir(exist_ok=True)
 
-            for i, chunk in enumerate(chunks):
-                if i == 0:
-                    await message.reply_text(chunk, parse_mode=None)
-                else:
-                    await message.reply_text(f"**Частина {i+1}:**\n\n{chunk}", parse_mode=None)
+        # Створити детальний JSON звіт
+        audit_data = {
+            "timestamp": timestamp,
+            "focus_area": focus_area,
+            "total_issues": result.total_issues,
+            "critical_count": result.critical_count,
+            "high_count": getattr(result, 'high_count', 0),
+            "medium_count": getattr(result, 'medium_count', 0),
+            "low_count": getattr(result, 'low_count', 0),
+            "issues": [
+                {
+                    "severity": issue.severity,
+                    "category": issue.category,
+                    "description": issue.description,
+                    "file_path": getattr(issue, 'file_path', None),
+                    "line_number": getattr(issue, 'line_number', None)
+                }
+                for issue in result.issues
+            ],
+            "report_text": report
+        }
 
-                if i < len(chunks) - 1:
-                    await asyncio.sleep(1)  # Уникнути rate limit
-        else:
-            await status_msg.edit_text(report, parse_mode=None)
+        json_file = audit_dir / f"audit_{timestamp}.json"
+        with open(json_file, 'w', encoding='utf-8') as f:
+            json.dump(audit_data, f, ensure_ascii=False, indent=2)
+
+        # Створити короткий синопсис
+        synopsis = f"🔍 **Аудит завершено** ({timestamp})\n"
+        synopsis += f"📊 **Проблем:** {result.total_issues}"
+        if result.critical_count > 0:
+            synopsis += f" (🚨 {result.critical_count} критичних)"
+        synopsis += f"\n📄 **Звіт:** `{json_file}`"
+
+        # Відправити короткий синопсис замість повного звіту
+        await status_msg.edit_text(synopsis)
+
+        # Для швидкого аудиту або коротких звітів показати додатково
+        if focus_area == "quick" or len(report) <= 500:
+            await message.reply_text(f"📋 **Короткий звіт:**\n\n{report[:1000]}{'...' if len(report) > 1000 else ''}", parse_mode=None)
 
         # Додатковий аналіз для критичних проблем
         critical_issues = [i for i in result.issues if i.severity == "CRITICAL"]
@@ -2436,7 +2469,8 @@ async def audit_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
         try:
             await status_msg.edit_text(error_msg)
-        except:
+        except Exception as e:
+            logger.debug("Failed to edit status message, sending new message", error=str(e))
             await message.reply_text(error_msg)
 
 
@@ -2905,7 +2939,8 @@ DRACON (Дружелюбные Русские Алгоритмы, Которые
 
         try:
             await message.reply_text(error_msg)
-        except:
+        except Exception as e:
+            logger.error("Failed to send DRACON error message", error=str(e))
             # Fallback if message fails
             pass
 
@@ -3230,7 +3265,8 @@ architecture_summary:
 
         try:
             await message.reply_text(error_msg)
-        except:
+        except Exception as e:
+            logger.error("Failed to send DRACON error message", error=str(e))
             # Fallback if message fails
             pass
 
@@ -3502,3 +3538,56 @@ async def claude_history_command(update: Update, context: ContextTypes.DEFAULT_T
     except Exception as e:
         logger.error("Error in claude_history command", error=str(e), user_id=user_id, exc_info=True)
         await safe_critical_error(message, context, e, "claude_history")
+
+
+async def context_status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Show persistent context memory status and management options."""
+    message = update.message
+    user_id = update.effective_user.id
+
+    try:
+        logger.info("Context status command requested", user_id=user_id)
+
+        # Get context commands handler
+        context_commands = context.bot_data.get("context_commands")
+        if not context_commands:
+            await message.reply_text(
+                "❌ **Система контекстної пам'яті недоступна**\n\n"
+                "Контекстна пам'ять не налаштована або тимчасово недоступна.",
+                parse_mode="Markdown"
+            )
+            return
+
+        # Handle context status
+        await context_commands.handle_context_status(update, context)
+
+    except Exception as e:
+        logger.error("Error in context_status command", error=str(e), user_id=user_id, exc_info=True)
+        await safe_critical_error(message, context, e, "context_status")
+
+
+
+async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Команда /menu - показати головне меню з кнопками."""
+    user_id = update.effective_user.id
+    message = update.effective_message
+
+    if not user_id or not message:
+        return
+
+    try:
+        unified_menu = context.bot_data.get("unified_menu")
+        if not unified_menu:
+            await message.reply_text(
+                "❌ **Система меню недоступна**\n\n"
+                "Головне меню не налаштоване або тимчасово недоступне.",
+                parse_mode="Markdown"
+            )
+            return
+
+        # Show main menu
+        await unified_menu.show_main_menu(update, context)
+
+    except Exception as e:
+        logger.error("Error in menu command", error=str(e), user_id=user_id, exc_info=True)
+        await safe_critical_error(message, context, e, "menu")

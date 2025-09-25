@@ -291,7 +291,8 @@ class ImageCommandHandler:
                     # Try to send a fallback message
                     try:
                         await message.reply_text(f"Частина відповіді #{i+1}: {response_msg.text[:1000]}")
-                    except:
+                    except Exception as e:
+                        logger.error("Failed to send fallback message for response part", part_index=i+1, error=str(e))
                         pass
 
                 if i < len(formatted_messages) - 1:
@@ -432,7 +433,8 @@ class ImageCommandHandler:
                 max_images=self.max_images_per_batch,
                 max_size=self.settings.image_max_file_size // (1024 * 1024)
             )
-        except:
+        except Exception as e:
+            logger.debug("Failed to get localized instructions, using default", error=str(e))
             return (
                 f"📸 **Image Processing Mode**\n\n"
                 f"Please send your images (up to {self.max_images_per_batch} files). "

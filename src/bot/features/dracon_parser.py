@@ -223,7 +223,8 @@ class DraconYAMLParser:
 
         try:
             return datetime.fromisoformat(dt_str.replace('Z', '+00:00'))
-        except:
+        except Exception as e:
+            logger.warning("Failed to parse datetime string, using current time", datetime_str=dt_str, error=str(e))
             return datetime.now()
 
     def _parse_canvas(self, canvas_data: Dict[str, Any]) -> CanvasProperties:

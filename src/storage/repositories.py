@@ -15,6 +15,7 @@ import structlog
 from .database import DatabaseManager
 from .models import (
     AuditLogModel,
+    ContextEntryModel,
     CostTrackingModel,
     MessageModel,
     SessionModel,
@@ -532,6 +533,176 @@ class CostTrackingRepository:
             )
             rows = await cursor.fetchall()
             return [dict(row) for row in rows]
+
+
+class ContextRepository:
+    """Context entry data access for persistent conversation memory."""
+
+    def __init__(self, db_manager: DatabaseManager):
+        """Initialize repository."""
+        self.db = db_manager
+
+    async def save_context_entry(self, entry: ContextEntryModel) -> ContextEntryModel:
+        """Save context entry to storage."""
+        async with self.db.get_connection() as conn:
+            cursor = await conn.execute(
+                """
+                INSERT INTO context_entries
+                (user_id, project_path, content, timestamp, session_id,
+                 message_type, importance, metadata)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    entry.user_id,
+                    entry.project_path,
+                    entry.content,
+                    entry.timestamp,
+                    entry.session_id,
+                    entry.message_type,
+                    entry.importance,
+                    json.dumps(entry.metadata) if entry.metadata else None,
+                ),
+            )
+            await conn.commit()
+            entry.entry_id = cursor.lastrowid
+
+            logger.debug("Context entry saved",
+                        user_id=entry.user_id,
+                        entry_id=entry.entry_id,
+                        message_type=entry.message_type)
+            return entry
+
+    async def get_user_context_entries(
+        self,
+        user_id: int,
+        project_path: str,
+        limit: int = 100
+    ) -> List[ContextEntryModel]:
+        """Get context entries for user and project."""
+        async with self.db.get_connection() as conn:
+            cursor = await conn.execute(
+                """
+                SELECT * FROM context_entries
+                WHERE user_id = ? AND project_path = ?
+                ORDER BY timestamp DESC, importance ASC
+                LIMIT ?
+                """,
+                (user_id, project_path, limit),
+            )
+            rows = await cursor.fetchall()
+            return [ContextEntryModel.from_row(row) for row in rows]
+
+    async def get_recent_context_entries(
+        self,
+        user_id: int,
+        project_path: str,
+        days: int = 7,
+        limit: int = 50
+    ) -> List[ContextEntryModel]:
+        """Get recent context entries for user."""
+        async with self.db.get_connection() as conn:
+            cursor = await conn.execute(
+                """
+                SELECT * FROM context_entries
+                WHERE user_id = ? AND project_path = ?
+                AND timestamp >= datetime('now', '-{} days')
+                ORDER BY timestamp DESC, importance ASC
+                LIMIT ?
+                """.format(days),
+                (user_id, project_path, limit),
+            )
+            rows = await cursor.fetchall()
+            return [ContextEntryModel.from_row(row) for row in rows]
+
+    async def search_context_entries(
+        self,
+        user_id: int,
+        project_path: str,
+        search_text: str,
+        limit: int = 20
+    ) -> List[ContextEntryModel]:
+        """Search context entries by content."""
+        async with self.db.get_connection() as conn:
+            cursor = await conn.execute(
+                """
+                SELECT * FROM context_entries
+                WHERE user_id = ? AND project_path = ?
+                AND content LIKE ?
+                ORDER BY timestamp DESC, importance ASC
+                LIMIT ?
+                """,
+                (user_id, project_path, f"%{search_text}%", limit),
+            )
+            rows = await cursor.fetchall()
+            return [ContextEntryModel.from_row(row) for row in rows]
+
+    async def delete_old_context_entries(
+        self,
+        user_id: int,
+        project_path: str,
+        max_age_days: int = 30
+    ) -> int:
+        """Delete old context entries."""
+        async with self.db.get_connection() as conn:
+            cursor = await conn.execute(
+                """
+                DELETE FROM context_entries
+                WHERE user_id = ? AND project_path = ?
+                AND timestamp < datetime('now', '-{} days')
+                """.format(max_age_days),
+                (user_id, project_path),
+            )
+            await conn.commit()
+            deleted_count = cursor.rowcount
+
+            if deleted_count > 0:
+                logger.info("Deleted old context entries",
+                           user_id=user_id,
+                           project_path=project_path,
+                           deleted_count=deleted_count)
+
+            return deleted_count
+
+    async def clear_user_context(self, user_id: int, project_path: str) -> int:
+        """Clear all context entries for user and project."""
+        async with self.db.get_connection() as conn:
+            cursor = await conn.execute(
+                """
+                DELETE FROM context_entries
+                WHERE user_id = ? AND project_path = ?
+                """,
+                (user_id, project_path),
+            )
+            await conn.commit()
+            deleted_count = cursor.rowcount
+
+            logger.info("Cleared user context",
+                       user_id=user_id,
+                       project_path=project_path,
+                       deleted_count=deleted_count)
+
+            return deleted_count
+
+    async def get_context_stats(self, user_id: int, project_path: str) -> Dict[str, any]:
+        """Get context statistics for user."""
+        async with self.db.get_connection() as conn:
+            cursor = await conn.execute(
+                """
+                SELECT
+                    COUNT(*) as total_entries,
+                    COUNT(DISTINCT session_id) as sessions_count,
+                    MIN(timestamp) as first_entry,
+                    MAX(timestamp) as last_entry,
+                    SUM(CASE WHEN importance = 1 THEN 1 ELSE 0 END) as high_importance,
+                    SUM(CASE WHEN importance = 2 THEN 1 ELSE 0 END) as medium_importance,
+                    SUM(CASE WHEN importance = 3 THEN 1 ELSE 0 END) as low_importance
+                FROM context_entries
+                WHERE user_id = ? AND project_path = ?
+                """,
+                (user_id, project_path),
+            )
+
+            return dict(await cursor.fetchone())
 
 
 class AnalyticsRepository:

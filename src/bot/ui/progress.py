@@ -23,7 +23,8 @@ class ProgressIndicator:
 
         try:
             await self.message.edit_text(initial_text)
-        except:
+        except Exception as e:
+            # Ignore telegram edit errors (message too old, etc.)
             pass
 
     async def update(self, step: int, text: str = ""):
@@ -43,7 +44,8 @@ class ProgressIndicator:
 
         try:
             await self.message.edit_text(message_text)
-        except:
+        except Exception as e:
+            # Ignore telegram edit errors (message too old, etc.)
             pass
 
     async def complete(self, final_text: str = "✅ Завершено!"):
@@ -52,7 +54,8 @@ class ProgressIndicator:
 
         try:
             await self.message.edit_text(final_text)
-        except:
+        except Exception as e:
+            # Ignore telegram edit errors (message too old, etc.)
             pass
 
 class StatusMessage:
@@ -64,7 +67,8 @@ class StatusMessage:
         try:
             await message._client.send_chat_action(message.chat.id, "typing")
             await asyncio.sleep(duration)
-        except:
+        except Exception as e:
+            # Ignore telegram API errors
             pass
 
     @staticmethod
@@ -72,7 +76,8 @@ class StatusMessage:
         """Показати повідомлення про обробку"""
         try:
             return await message.reply_text(text)
-        except:
+        except Exception as e:
+            # Ignore telegram API errors
             return None
 
     @staticmethod
@@ -80,7 +85,8 @@ class StatusMessage:
         """Оновити статусне повідомлення"""
         try:
             await status_message.edit_text(new_text)
-        except:
+        except Exception as e:
+            # Ignore telegram edit errors (message too old, etc.)
             pass
 
 def create_progress_indicator(message: Message) -> ProgressIndicator:

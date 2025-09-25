@@ -9,6 +9,7 @@ from typing import Any, Callable, Dict, List, Optional, Union, TYPE_CHECKING
 import structlog
 
 from ..config.settings import Settings
+from .context_memory import ContextMemoryManager
 from .exceptions import ClaudeToolValidationError
 from .integration import ClaudeProcessManager, ClaudeResponse, StreamUpdate
 from .monitor import ToolMonitor
@@ -32,6 +33,7 @@ class ClaudeIntegration:
         sdk_manager: Optional[Any] = None,
         session_manager: Optional[SessionManager] = None,
         tool_monitor: Optional[ToolMonitor] = None,
+        context_memory: Optional[ContextMemoryManager] = None,
     ):
         """Initialize Claude integration facade."""
         self.config = config
@@ -50,6 +52,7 @@ class ClaudeIntegration:
 
         self.session_manager = session_manager
         self.tool_monitor = tool_monitor
+        self.context_memory = context_memory
         self._sdk_failed_count = 0  # Track SDK failures for adaptive fallback
 
     async def run_command(
@@ -61,12 +64,33 @@ class ClaudeIntegration:
         on_stream: Optional[Callable[[StreamUpdate], None]] = None,
     ) -> ClaudeResponse:
         """Run Claude Code command with full integration."""
-        # Add Ukrainian language instruction to prompt
-        enhanced_prompt = f"""ВАЖЛИВО: Відповідай ТІЛЬКИ українською мовою. Користувач з України і очікує відповіді українською.
+        # Load context if context memory is available
+        context_prompt = ""
+        if self.context_memory:
+            context_prompt = await self.context_memory.get_context_for_claude(
+                user_id=user_id,
+                project_path=str(working_directory),
+                query=prompt,
+                max_entries=15
+            )
 
-{prompt}
+        # Build enhanced prompt with context and language instruction
+        enhanced_prompt_parts = ["ВАЖЛИВО: Відповідай ТІЛЬКИ українською мовою. Користувач з України і очікує відповіді українською."]
 
-ОБОВ'ЯЗКОВО відповідай українською мовою!"""
+        if context_prompt:
+            enhanced_prompt_parts.extend([
+                "",
+                context_prompt,
+                ""
+            ])
+
+        enhanced_prompt_parts.extend([
+            prompt,
+            "",
+            "ОБОВ'ЯЗКОВО відповідай українською мовою!"
+        ])
+
+        enhanced_prompt = "\n".join(enhanced_prompt_parts)
         logger.info(
             "Running Claude command",
             user_id=user_id,
@@ -213,6 +237,43 @@ class ClaudeIntegration:
 
             # Ensure response has the correct session_id
             response.session_id = final_session_id
+
+            # Save conversation to context memory
+            if self.context_memory and not response.is_error:
+                try:
+                    # Save user prompt
+                    await self.context_memory.add_message_to_context(
+                        user_id=user_id,
+                        project_path=str(working_directory),
+                        session_id=final_session_id,
+                        content=prompt,  # Original prompt without Ukrainian instructions
+                        message_type="user",
+                        importance=2
+                    )
+
+                    # Save Claude response (truncated if too long)
+                    response_content = response.content
+                    if len(response_content) > 1000:
+                        response_content = response_content[:1000] + "... [truncated]"
+
+                    await self.context_memory.add_message_to_context(
+                        user_id=user_id,
+                        project_path=str(working_directory),
+                        session_id=final_session_id,
+                        content=response_content,
+                        message_type="assistant",
+                        importance=2
+                    )
+
+                    logger.debug("Conversation saved to context memory",
+                                user_id=user_id,
+                                session_id=final_session_id)
+
+                except Exception as e:
+                    logger.error("Failed to save conversation to context memory",
+                                user_id=user_id,
+                                session_id=final_session_id,
+                                error=str(e))
 
             logger.info(
                 "Claude command completed",

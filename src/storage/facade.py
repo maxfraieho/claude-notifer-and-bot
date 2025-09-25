@@ -4,14 +4,16 @@ Provides simple API for the rest of the application.
 """
 
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, TYPE_CHECKING
 
 import structlog
 
-from ..claude.integration import ClaudeResponse
+if TYPE_CHECKING:
+    from ..claude.integration import ClaudeResponse
 from .database import DatabaseManager
 from .models import (
     AuditLogModel,
+    ContextEntryModel,
     MessageModel,
     SessionModel,
     ToolUsageModel,
@@ -20,6 +22,7 @@ from .models import (
 from .repositories import (
     AnalyticsRepository,
     AuditLogRepository,
+    ContextRepository,
     CostTrackingRepository,
     MessageRepository,
     SessionRepository,
@@ -43,6 +46,7 @@ class Storage:
         self.audit = AuditLogRepository(self.db_manager)
         self.costs = CostTrackingRepository(self.db_manager)
         self.analytics = AnalyticsRepository(self.db_manager)
+        self.context = ContextRepository(self.db_manager)
 
     async def initialize(self):
         """Initialize storage system."""
@@ -66,7 +70,7 @@ class Storage:
         user_id: int,
         session_id: str,
         prompt: str,
-        response: ClaudeResponse,
+        response: "ClaudeResponse",
         ip_address: Optional[str] = None,
     ):
         """Save complete Claude interaction."""

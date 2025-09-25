@@ -111,6 +111,21 @@ CREATE TABLE cost_tracking (
     FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
 
+-- Context entries table for persistent conversation memory
+CREATE TABLE context_entries (
+    entry_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    project_path TEXT NOT NULL,
+    content TEXT NOT NULL,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    session_id TEXT NOT NULL,
+    message_type TEXT NOT NULL CHECK(message_type IN ('user', 'assistant', 'system', 'summary')),
+    importance INTEGER DEFAULT 2 CHECK(importance IN (1, 2, 3)),
+    metadata JSON,
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    FOREIGN KEY (session_id) REFERENCES sessions(session_id)
+);
+
 -- Indexes for performance
 CREATE INDEX idx_sessions_user_id ON sessions(user_id);
 CREATE INDEX idx_sessions_project_path ON sessions(project_path);
@@ -119,6 +134,10 @@ CREATE INDEX idx_messages_timestamp ON messages(timestamp);
 CREATE INDEX idx_audit_log_user_id ON audit_log(user_id);
 CREATE INDEX idx_audit_log_timestamp ON audit_log(timestamp);
 CREATE INDEX idx_cost_tracking_user_date ON cost_tracking(user_id, date);
+CREATE INDEX idx_context_entries_user_project ON context_entries(user_id, project_path);
+CREATE INDEX idx_context_entries_timestamp ON context_entries(timestamp);
+CREATE INDEX idx_context_entries_importance ON context_entries(importance);
+CREATE INDEX idx_context_entries_content ON context_entries(content);
 """
 
 

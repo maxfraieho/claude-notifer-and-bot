@@ -334,7 +334,8 @@ Format as JSON with fields: completeness, deadlocks, error_handling, optimizatio
             # Clean up temp file
             try:
                 os.unlink(temp_file)
-            except:
+            except Exception as e:
+                logger.debug("Failed to clean up temporary file", temp_file=temp_file, error=str(e))
                 pass
 
 

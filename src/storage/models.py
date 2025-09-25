@@ -270,6 +270,55 @@ class UserTokenModel:
 
 
 @dataclass
+class ContextEntryModel:
+    """Context entry data model for persistent conversation context."""
+
+    user_id: int
+    project_path: str
+    content: str
+    timestamp: datetime
+    session_id: str
+    message_type: str  # "user", "assistant", "system", "summary"
+    entry_id: Optional[int] = None
+    importance: int = 2  # 1=high, 2=medium, 3=low
+    metadata: Optional[Dict[str, Any]] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        data = asdict(self)
+        # Convert datetime to ISO format
+        if data["timestamp"]:
+            data["timestamp"] = data["timestamp"].isoformat()
+        # Convert metadata to JSON string if present
+        if data["metadata"]:
+            data["metadata"] = json.dumps(data["metadata"])
+        return data
+
+    @classmethod
+    def from_row(cls, row: aiosqlite.Row) -> "ContextEntryModel":
+        """Create from database row."""
+        data = dict(row)
+
+        # Parse datetime fields
+        if data.get("timestamp"):
+            data["timestamp"] = datetime.fromisoformat(data["timestamp"])
+
+        # Parse JSON fields
+        if data.get("metadata"):
+            try:
+                data["metadata"] = json.loads(data["metadata"])
+            except (json.JSONDecodeError, TypeError):
+                data["metadata"] = {}
+
+        return cls(**data)
+
+    def is_expired(self, max_age_days: int = 30) -> bool:
+        """Check if context entry has expired."""
+        age = datetime.utcnow() - self.timestamp
+        return age.days > max_age_days
+
+
+@dataclass
 class ScheduledTaskModel:
     """Scheduled task data model for automated execution."""
 
@@ -360,4 +409,4 @@ class ScheduledTaskModel:
         self.executed_at = datetime.utcnow()
 
 
-__all__ = ["UserModel", "SessionModel", "ScheduledTaskModel"]
+__all__ = ["UserModel", "SessionModel", "ContextEntryModel", "ScheduledTaskModel"]

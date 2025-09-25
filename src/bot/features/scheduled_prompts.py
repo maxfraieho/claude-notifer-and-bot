@@ -286,7 +286,8 @@ class ScheduledPromptsManager:
                     # Get any remaining output
                     try:
                         child.read_nonblocking(size=1000, timeout=1)
-                    except:
+                    except Exception as e:
+                        logger.debug("Failed to read remaining output from child process", error=str(e))
                         pass
 
                     # Close the session
@@ -563,7 +564,8 @@ class ScheduledPromptsManager:
                 try:
                     dt = datetime.fromisoformat(last_execution.replace('Z', '+00:00'))
                     last_execution = dt.strftime("%d.%m.%Y %H:%M")
-                except:
+                except Exception as e:
+                    logger.debug("Failed to parse last execution timestamp", timestamp=last_execution, error=str(e))
                     pass
             
             # Check if system is active (not in DND and Claude available)

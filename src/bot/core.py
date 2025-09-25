@@ -134,6 +134,8 @@ class ClaudeCodeBot:
             BotCommand("claude_status", "Show Claude CLI availability status"),
             BotCommand("claude_notifications", "Manage Claude availability notifications"),
             BotCommand("claude_history", "Show Claude availability history"),
+            BotCommand("context", "Manage persistent context memory"),
+            BotCommand("menu", "Show main menu with buttons"),
             # Additional commands from testing findings
             BotCommand("version", "Show bot version information"),
             BotCommand("projects", "Show available projects"),
@@ -189,6 +191,9 @@ class ClaudeCodeBot:
             ("claude_status", command.claude_status_command),
             ("claude_notifications", command.claude_notifications_command),
             ("claude_history", command.claude_history_command),
+            # Context memory commands
+            ("context", command.context_status_command),
+            ("menu", command.menu_command),
             # Additional commands from testing findings
             ("version", command.version_handler),
             ("projects", additional_commands.projects_handler),

@@ -276,6 +276,7 @@ class ApplicationContainer:
         from src.claude.session import SessionManager
         from src.claude.monitor import ToolMonitor
         from src.claude.integration import ClaudeProcessManager
+        from src.claude.context_memory import ContextMemoryManager
         from src.claude.facade import ClaudeIntegration
 
         # Session manager
@@ -292,6 +293,31 @@ class ApplicationContainer:
 
         self.container.factory("tool_monitor", create_tool_monitor)
 
+        # Context memory manager
+        def create_context_memory():
+            storage = self.container.get("storage")
+            return ContextMemoryManager(storage)
+
+        self.container.factory("context_memory", create_context_memory)
+
+        # Context commands
+        def create_context_commands():
+            storage = self.container.get("storage")
+            context_memory = self.container.get("context_memory")
+            from src.bot.features.context_commands import ContextCommands
+            return ContextCommands(storage, context_memory)
+
+        self.container.factory("context_commands", create_context_commands)
+
+        # Unified menu system
+        def create_unified_menu():
+            storage = self.container.get("storage")
+            context_memory = self.container.get("context_memory")
+            from src.bot.features.unified_menu import UnifiedMenu
+            return UnifiedMenu(storage, context_memory)
+
+        self.container.factory("unified_menu", create_unified_menu)
+
         # Process manager (for CLI mode)
         if not config.use_sdk:
             self.container.factory("process_manager", ClaudeProcessManager, config)
@@ -301,13 +327,15 @@ class ApplicationContainer:
             process_manager = self.container.get("process_manager") if not config.use_sdk else None
             session_manager = self.container.get("session_manager")
             tool_monitor = self.container.get("tool_monitor")
+            context_memory = self.container.get("context_memory")
 
             return ClaudeIntegration(
                 config=config,
                 process_manager=process_manager,
                 sdk_manager=None,  # SDK disabled for now
                 session_manager=session_manager,
-                tool_monitor=tool_monitor
+                tool_monitor=tool_monitor,
+                context_memory=context_memory
             )
 
         self.container.singleton("claude_integration", create_claude_integration)
@@ -376,6 +404,8 @@ class ApplicationContainer:
                 "storage": self.container.get("storage"),
                 "mcp_manager": self.container.get("mcp_manager"),
                 "mcp_context_handler": self.container.get("mcp_context_handler"),
+                "context_commands": self.container.get("context_commands"),
+                "unified_menu": self.container.get("unified_menu"),
             }
 
             # Add optional components

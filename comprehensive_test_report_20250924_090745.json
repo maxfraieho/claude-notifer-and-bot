@@ -1,0 +1,354 @@
+{
+  "target_bot": "@DevClaude_bot",
+  "test_timestamp": "2025-09-24T09:07:45.737571",
+  "total_tests": 9,
+  "successful_tests": 9,
+  "failed_tests": 0,
+  "warning_tests": 2,
+  "success_rate": 100.0,
+  "average_score": 91.11111111111111,
+  "total_runtime": 51.736873626708984,
+  "test_results": [
+    {
+      "command": "start",
+      "status": "success",
+      "response_text": "🤔 Processing your request...",
+      "response_time": 5.364466428756714,
+      "response_length": 28,
+      "has_keyboard": false,
+      "validation_score": 100,
+      "issues": [
+        "Missing expected feature: welcome",
+        "Missing expected feature: help",
+        "Missing expected feature: commands"
+      ],
+      "recommendations": [
+        "Response validation passed - no issues detected"
+      ],
+      "metadata": {
+        "category": "basic",
+        "expected_features": [
+          "welcome",
+          "help",
+          "commands"
+        ],
+        "found_features": [],
+        "feature_score": 0.0
+      },
+      "timestamp": "2025-09-24T09:07:03.722771"
+    },
+    {
+      "command": "/help",
+      "status": "warning",
+      "response_text": "🤔 Processing your request...",
+      "response_time": 5.320422172546387,
+      "response_length": 28,
+      "has_keyboard": false,
+      "validation_score": 60,
+      "issues": [
+        "Response shorter than expected (28 < 100)",
+        "Missing expected content: ['help', 'commands', 'usage']",
+        "Missing required pattern: /\\w+",
+        "Missing required pattern: command",
+        "Missing expected feature: commands",
+        "Missing expected feature: usage",
+        "Missing expected feature: navigation"
+      ],
+      "recommendations": [
+        "Enhance /help response with more helpful information",
+        "Ensure /help includes all expected information elements"
+      ],
+      "metadata": {
+        "category": "basic",
+        "expected_features": [
+          "commands",
+          "usage",
+          "navigation"
+        ],
+        "found_features": [],
+        "feature_score": 0.0
+      },
+      "timestamp": "2025-09-24T09:07:09.046782"
+    },
+    {
+      "command": "/version",
+      "status": "warning",
+      "response_text": "🚀 Starting claude-sonnet-4-20250514 with 16 tools available",
+      "response_time": 5.211627006530762,
+      "response_length": 59,
+      "has_keyboard": false,
+      "validation_score": 60,
+      "issues": [
+        "Response shorter than expected (59 < 200)",
+        "Missing expected content: ['version', 'release', 'bot']",
+        "Missing required pattern: version.*\\d+\\.\\d+",
+        "Missing required pattern: release.*\\d{4}",
+        "Missing expected feature: version",
+        "Missing expected feature: release",
+        "Missing expected feature: features"
+      ],
+      "recommendations": [
+        "Enhance /version response with more helpful information",
+        "Ensure /version includes all expected information elements"
+      ],
+      "metadata": {
+        "category": "basic",
+        "expected_features": [
+          "version",
+          "release",
+          "features"
+        ],
+        "found_features": [],
+        "feature_score": 0.0
+      },
+      "timestamp": "2025-09-24T09:07:14.262405"
+    },
+    {
+      "command": "/status",
+      "status": "success",
+      "response_text": "📊 Bot Status\n\n📂 Current Directory: /home/vokov/projects\n🤖 Claude Session: ❌ Inactive",
+      "response_time": 5.233397006988525,
+      "response_length": 84,
+      "has_keyboard": false,
+      "validation_score": 100,
+      "issues": [],
+      "recommendations": [
+        "Response validation passed - no issues detected"
+      ],
+      "metadata": {
+        "category": "basic",
+        "expected_features": [
+          "session",
+          "directory"
+        ],
+        "found_features": [
+          "session",
+          "directory"
+        ],
+        "feature_score": 100.0
+      },
+      "timestamp": "2025-09-24T09:07:19.501126"
+    },
+    {
+      "command": "/pwd",
+      "status": "success",
+      "response_text": "📂 Current Directory\n\n/home/vokov/projects",
+      "response_time": 5.197447061538696,
+      "response_length": 41,
+      "has_keyboard": false,
+      "validation_score": 100,
+      "issues": [],
+      "recommendations": [
+        "Response validation passed - no issues detected"
+      ],
+      "metadata": {
+        "category": "navigation",
+        "expected_features": [
+          "directory",
+          "current"
+        ],
+        "found_features": [
+          "directory",
+          "current"
+        ],
+        "feature_score": 100.0
+      },
+      "timestamp": "2025-09-24T09:07:24.699324"
+    },
+    {
+      "command": "/ls",
+      "status": "success",
+      "response_text": "📂 `./`\n\n📁 -img-/\n📁 architect-tools/\n📁 archive/\n📁 attached_assets/\n📁 bot-cli-prompts/\n📁 claude-auth-backup/\n📁 claude-bot/\n📁 claude_config/\n📁 data/\n📁 docs/\n📁 drn/\n📁 perplexity/\n📁 prompts/\n📁 scripts/\n📁 src/\n📁 target_project/\n📁 temp_files/\n📁 testing_venv/\n📁 tests/\n📁 tools/\n📁 venv/\n📄 ACTIONS_COMMAND_FIX_PROMPT.md (5.6KB)\n📄 ARCHITECTURE_v2.1.md (10.7KB)\n📄 CLAUDE.md (10.8KB)\n📄 CLAUDE_AUTH_FIX_LOG.md (4.4KB)\n📄 CLAUDE_AVAILABILITY_MONITORING_SOLUTION.md (11.0KB)\n📄 CLAUDE_VISION_INTEGRATION.md (9.0KB)\n📄 CRITICAL_ISSUES_RESOLUTION_PLAN.md (16.6KB)\n📄 Claude_Architect_Bot_Perplexity_Prompt.md (8.6KB)\n📄 DEBUG_IMG_COMMAND.md (9.1KB)\n📄 DEPLOY.md (9.2KB)\n📄 DEPLOYMENT.md (4.8KB)\n📄 DEPLOYMENT_READY.md (2.7KB)\n📄 DEVCLAUDEBOT_TESTING_REPORT.md (9.3KB)\n📄 DEVELOPMENT.md (4.7KB)\n📄 DND_TASKS_EXECUTION_REPORT.md (8.1KB)\n📄 DRACON_SUBSYSTEM_PROMPT.json (15.7KB)\n📄 DevClaude_bot_analysis_2024-09-23.md (10.5KB)\n📄 Dockerfile (4.1KB)\n📄 IMPLEMENTATION_REPORT.md (11.7KB)\n📄 INTEGRATION_COMPLETE_SUMMARY.md (11.0KB)\n📄 PERPLEXITY_IMPORT_COMPLETE.md (8.1KB)\n📄 PERPLEXITY_IMPORT_STRATEGY.md (5.6KB)\n📄 PROJECT_COMPLETION_SUMMARY.md (12.9KB)\n📄 QUICK_ACTIONS_ANALYSIS.md (6.7KB)\n📄 QUICK_START.md (3.4KB)\n📄 README.md (6.2KB)\n📄 RELEASE_NOTES_v0.2.0.md (9.8KB)\n📄 REPLIT_CLAUDE_AUTH_GUIDE.md (5.8KB)\n📄 SECURITY.md (8.4KB)\n\n_... and 63 more items_",
+      "response_time": 5.196011304855347,
+      "response_length": 1314,
+      "has_keyboard": true,
+      "validation_score": 100,
+      "issues": [
+        "Missing expected feature: directories"
+      ],
+      "recommendations": [
+        "Response validation passed - no issues detected"
+      ],
+      "metadata": {
+        "category": "navigation",
+        "expected_features": [
+          "files",
+          "directories"
+        ],
+        "found_features": [
+          "files"
+        ],
+        "feature_score": 50.0
+      },
+      "timestamp": "2025-09-24T09:07:29.897022"
+    },
+    {
+      "command": "/projects",
+      "status": "success",
+      "response_text": "🏗️ Available Projects\n\n📂 arhitector - .git detected\n📂 claude-notifer-and-bot - .git detected\n\n📍 Current location: /home/vokov/projects\n💡 Use /cd <project-name> to navigate",
+      "response_time": 5.217984437942505,
+      "response_length": 171,
+      "has_keyboard": false,
+      "validation_score": 100,
+      "issues": [
+        "Missing expected feature: directory"
+      ],
+      "recommendations": [
+        "Response validation passed - no issues detected"
+      ],
+      "metadata": {
+        "category": "navigation",
+        "expected_features": [
+          "projects",
+          "directory"
+        ],
+        "found_features": [
+          "projects"
+        ],
+        "feature_score": 50.0
+      },
+      "timestamp": "2025-09-24T09:07:35.115898"
+    },
+    {
+      "command": "/cd",
+      "status": "success",
+      "response_text": "**Usage:** `/cd <directory>`\n\n**Examples:**\n• `/cd mydir` - Enter subdirectory\n• `/cd ..` - Go up one level\n• `/cd /` - Go to root of approved directory\n\n**Tips:**\n• Use `/ls` to see available directories\n• Use `/ls` to see all subdirectories",
+      "response_time": 5.213998317718506,
+      "response_length": 242,
+      "has_keyboard": false,
+      "validation_score": 100,
+      "issues": [],
+      "recommendations": [
+        "Response validation passed - no issues detected"
+      ],
+      "metadata": {
+        "category": "navigation",
+        "expected_features": [
+          "usage",
+          "directory"
+        ],
+        "found_features": [
+          "usage",
+          "directory"
+        ],
+        "feature_score": 100.0
+      },
+      "timestamp": "2025-09-24T09:07:40.330798"
+    },
+    {
+      "command": "/back",
+      "status": "success",
+      "response_text": "⬅️ Navigated Back\n\n📁 From: projects\n📍 To: /home/vokov\n\nContents:\n📁 claude\n📁 projects\n📁 .claude\n📄 .ash_history\n📄 .claude.json\n... and 4 more items",
+      "response_time": 5.318048000335693,
+      "response_length": 145,
+      "has_keyboard": false,
+      "validation_score": 100,
+      "issues": [
+        "Missing expected feature: directory"
+      ],
+      "recommendations": [
+        "Response validation passed - no issues detected"
+      ],
+      "metadata": {
+        "category": "navigation",
+        "expected_features": [
+          "navigated",
+          "directory"
+        ],
+        "found_features": [
+          "navigated"
+        ],
+        "feature_score": 50.0
+      },
+      "timestamp": "2025-09-24T09:07:45.649660"
+    }
+  ],
+  "performance_metrics": {
+    "response_times": [
+      5.364466428756714,
+      5.320422172546387,
+      5.211627006530762,
+      5.233397006988525,
+      5.197447061538696,
+      5.196011304855347,
+      5.217984437942505,
+      5.213998317718506,
+      5.318048000335693
+    ],
+    "response_lengths": [
+      28,
+      28,
+      59,
+      84,
+      41,
+      1314,
+      171,
+      242,
+      145
+    ],
+    "validation_scores": [
+      100,
+      60,
+      60,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "commands_with_keyboards": 1,
+    "category_performance": {
+      "basic": {
+        "total_tests": 4,
+        "successful_tests": 4,
+        "avg_score": 80.0,
+        "scores": [
+          100,
+          60,
+          60,
+          100
+        ]
+      },
+      "navigation": {
+        "total_tests": 5,
+        "successful_tests": 5,
+        "avg_score": 100.0,
+        "scores": [
+          100,
+          100,
+          100,
+          100,
+          100
+        ]
+      }
+    },
+    "avg_response_time": 5.252600193023682,
+    "max_response_time": 5.364466428756714,
+    "avg_response_length": 234.66666666666666,
+    "keyboard_usage_rate": 11.11111111111111
+  },
+  "recommendations": [
+    "Average response time exceeds 5 seconds - consider performance optimization",
+    "Consider adding more interactive keyboard elements to improve UX"
+  ],
+  "summary": {
+    "overall_status": "EXCELLENT",
+    "top_issues": [
+      [
+        "Missing expected feature: commands",
+        2
+      ],
+      [
+        "Missing expected feature: directory",
+        2
+      ],
+      [
+        "Missing expected feature: welcome",
+        1
+      ]
+    ],
+    "best_performing_category": "navigation",
+    "needs_attention": []
+  }
+}
