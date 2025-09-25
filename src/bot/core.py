@@ -361,6 +361,9 @@ class ClaudeCodeBot:
                     drop_pending_updates=True,
                 )
 
+                # Check for restart info and send start menu if needed
+                await self._check_restart_info()
+
                 # Keep running until manually stopped
                 while self.is_running:
                     await asyncio.sleep(1)
@@ -523,3 +526,96 @@ class ClaudeCodeBot:
         except Exception as e:
             logger.error("Health check failed", error=str(e))
             return False
+
+    async def _check_restart_info(self) -> None:
+        """Check if there's restart info to handle after bot startup."""
+        import json
+        import os
+        from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+        from src.localization.wrapper import t
+
+        restart_info_file = "/tmp/claude_bot_restart_info.json"
+
+        try:
+            if os.path.exists(restart_info_file):
+                with open(restart_info_file, 'r') as f:
+                    restart_data = json.load(f)
+
+                # Remove the file first to prevent loops
+                os.remove(restart_info_file)
+
+                if restart_data.get("show_start_menu"):
+                    user_id = restart_data.get("user_id")
+                    chat_id = restart_data.get("chat_id")
+                    message_id = restart_data.get("message_id")
+
+                    if user_id and chat_id:
+                        # Create a mock context for localization
+                        class MockContext:
+                            def __init__(self, bot_data):
+                                self.bot_data = bot_data
+                                self.user_data = {"_telegram_language_code": "uk"}  # Default to Ukrainian
+
+                        context = MockContext(self.app.bot_data)
+
+                        # Create start menu message
+                        welcome_text = await t(context, user_id, "commands.start.welcome", name="User")
+                        restarted_text = await t(context, user_id, "commands.restart.completed")
+
+                        # Build localized menu
+                        keyboard = [
+                            [
+                                InlineKeyboardButton(await t(context, user_id, "buttons.new_session"), callback_data="action:new_session"),
+                                InlineKeyboardButton(await t(context, user_id, "buttons.continue_session"), callback_data="action:continue"),
+                            ],
+                            [
+                                InlineKeyboardButton(await t(context, user_id, "buttons.check_status"), callback_data="action:status"),
+                            ],
+                            [
+                                InlineKeyboardButton(await t(context, user_id, "buttons.context"), callback_data="action:export"),
+                                InlineKeyboardButton(await t(context, user_id, "buttons.settings"), callback_data="action:settings"),
+                            ],
+                            [
+                                InlineKeyboardButton(await t(context, user_id, "buttons.get_help"), callback_data="action:help"),
+                                InlineKeyboardButton(await t(context, user_id, "buttons.language_settings"), callback_data="lang:select"),
+                            ]
+                        ]
+                        reply_markup = InlineKeyboardMarkup(keyboard)
+
+                        # Send start menu message
+                        message = f"✅ {restarted_text}\n\n{welcome_text}"
+
+                        if message_id:
+                            # Edit the restart message
+                            try:
+                                await self.app.bot.edit_message_text(
+                                    chat_id=chat_id,
+                                    message_id=message_id,
+                                    text=message,
+                                    reply_markup=reply_markup
+                                )
+                            except Exception:
+                                # If editing fails, send new message
+                                await self.app.bot.send_message(
+                                    chat_id=chat_id,
+                                    text=message,
+                                    reply_markup=reply_markup
+                                )
+                        else:
+                            # Send new message
+                            await self.app.bot.send_message(
+                                chat_id=chat_id,
+                                text=message,
+                                reply_markup=reply_markup
+                            )
+
+                        logger.info("Sent start menu after restart", user_id=user_id, chat_id=chat_id)
+
+        except Exception as e:
+            logger.error("Error handling restart info", error=str(e))
+            # Clean up the file if there was an error
+            try:
+                if os.path.exists(restart_info_file):
+                    os.remove(restart_info_file)
+            except:
+                pass

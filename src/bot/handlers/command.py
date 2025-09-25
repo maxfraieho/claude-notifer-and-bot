@@ -2281,6 +2281,7 @@ async def restart_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /restart command to restart the bot."""
     import subprocess
     import os
+    import asyncio
 
     user_id = get_user_id(update)
     message = get_effective_message(update)
@@ -2291,32 +2292,54 @@ async def restart_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         # Check if user has admin privileges or is authorized
         auth_manager = context.bot_data.get("auth_manager")
-        if auth_manager and not auth_manager.is_authenticated(user_id):
-            access_denied_text = await t(context, user_id, "commands.restart.access_denied")
-            await message.reply_text(access_denied_text)
-            return
+        if auth_manager:
+            # Try to authenticate if not already authenticated
+            if not auth_manager.is_authenticated(user_id):
+                auth_success = await auth_manager.authenticate_user(user_id)
+                if not auth_success:
+                    access_denied_text = await t(context, user_id, "commands.restart.access_denied")
+                    await message.reply_text(access_denied_text)
+                    return
+            # If we got here, user is authenticated
 
         # Send confirmation message
         restarting_text = await t(context, user_id, "commands.restart.restarting")
         status_msg = await message.reply_text(restarting_text)
 
-        # Run the restart script - find it relative to the bot's working directory
-        import os
+        # Store restart info to show start menu after restart
+        restart_info_file = "/tmp/claude_bot_restart_info.json"
+        restart_data = {
+            "user_id": user_id,
+            "chat_id": message.chat_id,
+            "message_id": status_msg.message_id,
+            "show_start_menu": True
+        }
 
-        # Get the bot's root directory (where main.py is located)
-        bot_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-        script_path = os.path.join(bot_root, "restart-bot.sh")
+        import json
+        with open(restart_info_file, 'w') as f:
+            json.dump(restart_data, f)
 
+        # Use the universal restart script
+        initiated_text = await t(context, user_id, "commands.restart.initiated")
+        await status_msg.edit_text(initiated_text)
+
+        # Give time for message to send
+        await asyncio.sleep(1)
+
+        # Execute the universal restart script that will handle cleanup and restart
+        script_path = os.path.join(os.getcwd(), "bot-restart.sh")
         if os.path.exists(script_path):
-            # Execute restart script in background
-            subprocess.Popen([script_path], cwd=bot_root)
-
-            # The current process will be killed by the script, so this might not send
-            initiated_text = await t(context, user_id, "commands.restart.initiated")
-            await status_msg.edit_text(initiated_text)
+            # Start the restart script as a background process and exit
+            logger.info("Starting restart script", script_path=script_path)
+            subprocess.Popen(["/bin/bash", script_path], start_new_session=True)
+            # Give the restart script a moment to start
+            await asyncio.sleep(0.5)
+            # Exit this process so the restart script can kill it and start fresh
+            os._exit(0)
         else:
-            script_not_found_text = await t(context, user_id, "commands.restart.script_not_found")
-            await status_msg.edit_text(script_not_found_text)
+            # Fallback to simple exit
+            logger.warning("bot-restart.sh not found, using simple exit")
+            os._exit(0)
 
     except Exception as e:
         logger.error("Error in restart command", error=str(e), user_id=user_id)

@@ -1,23 +1,19 @@
-import logging
-from typing import List
+"""Telegram bot authentication middleware."""
 
-logger = logging.getLogger(__name__)
+import logging
+from datetime import datetime
+from typing import Any, Callable, Dict, List
+
+import structlog
+
+logger = structlog.get_logger()
 
 
 def check_user_access(user_id: int, whitelist: List[int]) -> bool:
     """Покращена перевірка доступу користувача"""
     is_allowed = user_id in whitelist
-    logger.info(f"Access check for user {user_id}: {'allowed' if is_allowed else 'denied'}")
+    logger.info("Access check", user_id=user_id, allowed=is_allowed)
     return is_allowed
-
-"""Telegram bot authentication middleware."""
-
-from datetime import datetime
-from typing import Any, Callable, Dict
-
-import structlog
-
-logger = structlog.get_logger()
 
 
 async def auth_middleware(handler: Callable, event: Any, data: Dict[str, Any]) -> Any:
@@ -68,7 +64,16 @@ async def auth_middleware(handler: Callable, event: Any, data: Dict[str, Any]) -
         # Continue to handler
         return await handler(event, data)
 
-    # User not authenticated - attempt authentication
+    # User not authenticated - attempt authentication once per update
+    update_id = str(event.update_id) if hasattr(event, 'update_id') else str(hash(str(event)))
+    processed_updates = data.setdefault('_processed_auth_updates', set())
+
+    if update_id in processed_updates:
+        logger.debug("Authentication already processed for this update", update_id=update_id)
+        return
+
+    processed_updates.add(update_id)
+
     logger.info(
         "Attempting authentication for user", user_id=user_id, username=username
     )
@@ -106,10 +111,14 @@ async def auth_middleware(handler: Callable, event: Any, data: Dict[str, Any]) -
         return await handler(event, data)
 
     else:
-        # Authentication failed
+        # Authentication failed - only send message once per update and not for commands
         logger.warning("Authentication failed", user_id=user_id, username=username)
 
-        if event.effective_message:
+        # Don't send auth error message if this is a command - let command handler deal with it
+        message_text = getattr(event.effective_message, 'text', '') if event.effective_message else ''
+        is_command = message_text.startswith('/') if message_text else False
+
+        if event.effective_message and not is_command:
             await event.effective_message.reply_text(
                 "🔒 **Authentication Required**\n\n"
                 "You are not authorized to use this bot.\n"
