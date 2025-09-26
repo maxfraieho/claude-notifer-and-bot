@@ -77,8 +77,19 @@ class ClaudeCodeBot:
 
         # CRITICAL FIX: Inject dependencies into application.bot_data
         # This ensures dependencies are available in callback handlers
-        self.app.bot_data.update(self.deps)
+        # Force update to ensure auth_manager is available after restart
+        for key, value in self.deps.items():
+            self.app.bot_data[key] = value
+
         self.app.bot_data["settings"] = self.settings
+        # Add approved_directory for context commands compatibility
+        self.app.bot_data["approved_directory"] = str(self.settings.approved_directory)
+
+        # Force refresh of auth_manager to prevent authentication errors after restart
+        auth_manager = self.deps.get("auth_manager")
+        if auth_manager:
+            self.app.bot_data["auth_manager"] = auth_manager
+            logger.info("Auth manager force-injected into bot_data for restart reliability")
 
         # DEBUG: Verify critical dependencies
         if "context_commands" not in self.app.bot_data:

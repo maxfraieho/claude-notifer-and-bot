@@ -30,7 +30,22 @@ class ContextCommands:
     async def handle_context_status(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Show context status and statistics."""
         user_id = update.effective_user.id
-        project_path = str(context.bot_data.get("approved_directory", "/tmp"))
+        settings = context.bot_data.get("settings")
+
+        # DEBUG: Log what's available in bot_data
+        approved_dir_from_bot_data = context.bot_data.get("approved_directory")
+        logger.debug("Context status debug",
+                    approved_dir_from_bot_data=approved_dir_from_bot_data,
+                    settings_available=bool(settings),
+                    settings_approved_dir=getattr(settings, 'approved_directory', None) if settings else None)
+
+        # Use settings.approved_directory as primary source, fallback to hardcoded path
+        if settings and hasattr(settings, 'approved_directory'):
+            project_path = str(settings.approved_directory)
+        else:
+            project_path = "/home/vokov/projects/claude-notifer-and-bot"
+
+        logger.info("Context status using project_path", project_path=project_path)
 
         try:
             # Get context statistics
@@ -90,7 +105,13 @@ class ContextCommands:
     async def handle_context_export(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Export user context to file."""
         user_id = update.effective_user.id
-        project_path = str(context.bot_data.get("approved_directory", "/tmp"))
+        settings = context.bot_data.get("settings")
+
+        # Use settings.approved_directory as primary source, fallback to hardcoded path
+        if settings and hasattr(settings, 'approved_directory'):
+            project_path = str(settings.approved_directory)
+        else:
+            project_path = "/home/vokov/projects/claude-notifer-and-bot"
 
         # Determine if this is from callback or direct command
         is_callback = hasattr(update, 'callback_query') and update.callback_query
@@ -180,7 +201,13 @@ class ContextCommands:
     async def handle_context_import_file(self, update: Update, context: ContextTypes.DEFAULT_TYPE, file_content: str) -> None:
         """Process imported context file."""
         user_id = update.effective_user.id
-        project_path = str(context.bot_data.get("approved_directory", "/tmp"))
+        settings = context.bot_data.get("settings")
+
+        # Use settings.approved_directory as primary source, fallback to hardcoded path
+        if settings and hasattr(settings, 'approved_directory'):
+            project_path = str(settings.approved_directory)
+        else:
+            project_path = "/home/vokov/projects/claude-notifer-and-bot"
 
         try:
             # Parse JSON content
@@ -243,7 +270,13 @@ class ContextCommands:
     async def handle_context_clear(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Clear user context with confirmation."""
         user_id = update.effective_user.id
-        project_path = str(context.bot_data.get("approved_directory", "/tmp"))
+        settings = context.bot_data.get("settings")
+
+        # Use settings.approved_directory as primary source, fallback to hardcoded path
+        if settings and hasattr(settings, 'approved_directory'):
+            project_path = str(settings.approved_directory)
+        else:
+            project_path = "/home/vokov/projects/claude-notifer-and-bot"
 
         # Determine if this is from callback or direct command
         is_callback = hasattr(update, 'callback_query') and update.callback_query
@@ -281,7 +314,13 @@ class ContextCommands:
     async def handle_context_clear_confirm(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Confirm and execute context clearing."""
         user_id = update.effective_user.id
-        project_path = str(context.bot_data.get("approved_directory", "/tmp"))
+        settings = context.bot_data.get("settings")
+
+        # Use settings.approved_directory as primary source, fallback to hardcoded path
+        if settings and hasattr(settings, 'approved_directory'):
+            project_path = str(settings.approved_directory)
+        else:
+            project_path = "/home/vokov/projects/claude-notifer-and-bot"
 
         try:
             # Clear context
@@ -334,7 +373,13 @@ class ContextCommands:
     async def handle_context_search_query(self, update: Update, context: ContextTypes.DEFAULT_TYPE, search_text: str) -> None:
         """Execute context search with user query."""
         user_id = update.effective_user.id
-        project_path = str(context.bot_data.get("approved_directory", "/tmp"))
+        settings = context.bot_data.get("settings")
+
+        # Use settings.approved_directory as primary source, fallback to hardcoded path
+        if settings and hasattr(settings, 'approved_directory'):
+            project_path = str(settings.approved_directory)
+        else:
+            project_path = "/home/vokov/projects/claude-notifer-and-bot"
 
         try:
             # Search context entries
@@ -399,7 +444,13 @@ class ContextCommands:
     async def handle_context_list(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Show recent context entries list."""
         user_id = update.effective_user.id
-        project_path = str(context.bot_data.get("approved_directory", "/tmp"))
+        settings = context.bot_data.get("settings")
+
+        # Use settings.approved_directory as primary source, fallback to hardcoded path
+        if settings and hasattr(settings, 'approved_directory'):
+            project_path = str(settings.approved_directory)
+        else:
+            project_path = "/home/vokov/projects/claude-notifer-and-bot"
 
         # Determine if this is from callback or direct command
         is_callback = hasattr(update, 'callback_query') and update.callback_query
@@ -518,7 +569,13 @@ class ContextCommands:
     async def _export_search_results(self, update: Update, context: ContextTypes.DEFAULT_TYPE, search_text: str) -> None:
         """Export search results to file."""
         user_id = update.effective_user.id
-        project_path = str(context.bot_data.get("approved_directory", "/tmp"))
+        settings = context.bot_data.get("settings")
+
+        # Use settings.approved_directory as primary source, fallback to hardcoded path
+        if settings and hasattr(settings, 'approved_directory'):
+            project_path = str(settings.approved_directory)
+        else:
+            project_path = "/home/vokov/projects/claude-notifer-and-bot"
 
         try:
             # Get search results
@@ -573,7 +630,13 @@ class ContextCommands:
     async def _export_recent_entries(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Export recent context entries to file."""
         user_id = update.effective_user.id
-        project_path = str(context.bot_data.get("approved_directory", "/tmp"))
+        settings = context.bot_data.get("settings")
+
+        # Use settings.approved_directory as primary source, fallback to hardcoded path
+        if settings and hasattr(settings, 'approved_directory'):
+            project_path = str(settings.approved_directory)
+        else:
+            project_path = "/home/vokov/projects/claude-notifer-and-bot"
 
         try:
             # Get recent entries

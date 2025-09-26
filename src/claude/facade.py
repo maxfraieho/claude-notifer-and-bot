@@ -252,6 +252,7 @@ class ClaudeIntegration:
                                project_path=str(working_directory))
 
                     # Save user prompt
+                    logger.debug("About to save user message to context")
                     await self.context_memory.add_message_to_context(
                         user_id=user_id,
                         project_path=str(working_directory),
