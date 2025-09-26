@@ -239,8 +239,18 @@ class ClaudeIntegration:
             response.session_id = final_session_id
 
             # Save conversation to context memory
+            logger.info("Context memory check",
+                       has_context_memory=self.context_memory is not None,
+                       is_error=response.is_error,
+                       user_id=user_id)
+
             if self.context_memory and not response.is_error:
                 try:
+                    logger.info("Saving conversation to context memory",
+                               user_id=user_id,
+                               session_id=final_session_id,
+                               project_path=str(working_directory))
+
                     # Save user prompt
                     await self.context_memory.add_message_to_context(
                         user_id=user_id,
@@ -265,9 +275,9 @@ class ClaudeIntegration:
                         importance=2
                     )
 
-                    logger.debug("Conversation saved to context memory",
-                                user_id=user_id,
-                                session_id=final_session_id)
+                    logger.info("Conversation saved to context memory successfully",
+                               user_id=user_id,
+                               session_id=final_session_id)
 
                 except Exception as e:
                     logger.error("Failed to save conversation to context memory",

@@ -155,6 +155,91 @@ class ContextCommands:
                 parse_mode="Markdown"
             )
 
+    async def handle_context_import(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Handle context import request."""
+        # Determine if this is from callback or direct command
+        is_callback = hasattr(update, 'callback_query') and update.callback_query
+        message = update.callback_query.message if is_callback else update.message
+
+        import_text = (
+            "📥 **Імпорт контексту**\n\n"
+            "Надішліть JSON файл з експортованим контекстом.\n"
+            "Файл має бути створений командою експорту контексту.\n\n"
+            "⚠️ **Увага:** Імпорт додасть нові записи до існуючого контексту."
+        )
+
+        if is_callback:
+            await update.callback_query.answer("📥 Імпорт контексту")
+            await message.reply_text(import_text, parse_mode="Markdown")
+        else:
+            await message.reply_text(import_text, parse_mode="Markdown")
+
+        # Set user state for import
+        context.user_data["awaiting_context_import"] = True
+
+    async def handle_context_import_file(self, update: Update, context: ContextTypes.DEFAULT_TYPE, file_content: str) -> None:
+        """Process imported context file."""
+        user_id = update.effective_user.id
+        project_path = str(context.bot_data.get("approved_directory", "/tmp"))
+
+        try:
+            # Parse JSON content
+            import json
+            context_data = json.loads(file_content)
+
+            # Validate structure
+            if not isinstance(context_data, dict) or "entries" not in context_data:
+                await update.message.reply_text(
+                    "❌ **Неправильний формат файлу**\n\n"
+                    "Файл має бути JSON з експортованим контекстом.",
+                    parse_mode="Markdown"
+                )
+                return
+
+            entries = context_data.get("entries", [])
+            if not entries:
+                await update.message.reply_text(
+                    "📭 **Файл порожній**\n\n"
+                    "У файлі немає записів для імпорту.",
+                    parse_mode="Markdown"
+                )
+                return
+
+            # Import context
+            success = await self.context_memory.import_context(context_data)
+
+            if success:
+                await update.message.reply_text(
+                    f"✅ **Імпорт успішний**\n\n"
+                    f"• Імпортовано записів: {len(entries)}\n"
+                    f"• Проект: `{project_path}`\n"
+                    f"• Дата: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+                    parse_mode="Markdown"
+                )
+                logger.info("Context imported",
+                           user_id=user_id,
+                           entries_count=len(entries))
+            else:
+                await update.message.reply_text(
+                    "❌ **Помилка імпорту**\n\n"
+                    "Не вдалося імпортувати контекст. Спробуйте пізніше.",
+                    parse_mode="Markdown"
+                )
+
+        except json.JSONDecodeError:
+            await update.message.reply_text(
+                "❌ **Неправильний JSON**\n\n"
+                "Файл містить некоректний JSON. Перевірте формат.",
+                parse_mode="Markdown"
+            )
+        except Exception as e:
+            logger.error("Failed to import context", error=str(e))
+            await update.message.reply_text(
+                "❌ **Помилка імпорту контексту**\n\n"
+                "Спробуйте пізніше або зверніться до адміністратора.",
+                parse_mode="Markdown"
+            )
+
     async def handle_context_clear(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Clear user context with confirmation."""
         user_id = update.effective_user.id
@@ -397,6 +482,8 @@ class ContextCommands:
         try:
             if data == "context_export":
                 await self.handle_context_export(update, context)
+            elif data == "context_import":
+                await self.handle_context_import(update, context)
             elif data == "context_clear":
                 await self.handle_context_clear(update, context)
             elif data == "context_clear_confirm":

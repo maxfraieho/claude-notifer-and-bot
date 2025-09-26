@@ -17,6 +17,50 @@ from .command import handle_claude_auth_code
 logger = structlog.get_logger()
 
 
+async def _handle_context_import_document(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle document upload for context import."""
+    document = update.message.document
+
+    # Validate file type
+    if not document.file_name.endswith('.json'):
+        await update.message.reply_text(
+            "❌ **Неправильний тип файлу**\n\n"
+            "Для імпорту контексту потрібен JSON файл.",
+            parse_mode="Markdown"
+        )
+        context.user_data.pop("awaiting_context_import", None)
+        return
+
+    try:
+        # Download file
+        file = await document.get_file()
+        file_bytes = await file.download_as_bytearray()
+        file_content = file_bytes.decode('utf-8')
+
+        # Get context commands instance and handle import
+        container = context.bot_data.get("di_container")
+        if container:
+            context_commands = container.get("context_commands")
+            await context_commands.handle_context_import_file(update, context, file_content)
+        else:
+            await update.message.reply_text(
+                "❌ **Системна помилка**\n\n"
+                "Не вдалося отримати доступ до системи контексту.",
+                parse_mode="Markdown"
+            )
+
+    except Exception as e:
+        logger.error("Failed to process context import document", error=str(e))
+        await update.message.reply_text(
+            "❌ **Помилка обробки файлу**\n\n"
+            "Спробуйте пізніше або зверніться до адміністратора.",
+            parse_mode="Markdown"
+        )
+    finally:
+        # Clear state
+        context.user_data.pop("awaiting_context_import", None)
+
+
 async def _format_progress_update(update_obj) -> Optional[str]:
     """Format progress updates with enhanced context and visual indicators."""
     if update_obj.type == "tool_result":
@@ -1347,6 +1391,11 @@ async def handle_document_message(update: Update, context: ContextTypes.DEFAULT_
 
     user_id = update.effective_user.id
     file_action = context.user_data.get('file_action', {})
+
+    # Check if user is awaiting context import
+    if context.user_data.get("awaiting_context_import"):
+        await _handle_context_import_document(update, context)
+        return
 
     # Check if user is in file editing workflow
     if not file_action or file_action.get('step') != 'waiting_edited_file':

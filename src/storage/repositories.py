@@ -686,6 +686,8 @@ class ContextRepository:
     async def get_context_stats(self, user_id: int, project_path: str) -> Dict[str, any]:
         """Get context statistics for user."""
         async with self.db.get_connection() as conn:
+            logger.info("Getting context stats", user_id=user_id, project_path=project_path)
+
             cursor = await conn.execute(
                 """
                 SELECT
@@ -702,7 +704,9 @@ class ContextRepository:
                 (user_id, project_path),
             )
 
-            return dict(await cursor.fetchone())
+            stats = dict(await cursor.fetchone())
+            logger.info("Context stats retrieved", user_id=user_id, stats=stats)
+            return stats
 
 
 class AnalyticsRepository:

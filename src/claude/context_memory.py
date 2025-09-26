@@ -183,6 +183,12 @@ class ContextMemoryManager:
         importance: int = 2
     ) -> None:
         """Add message to user's context."""
+        logger.info("Adding message to context",
+                   user_id=user_id,
+                   project_path=project_path,
+                   session_id=session_id,
+                   message_type=message_type)
+
         context = await self.get_user_context(user_id, project_path)
 
         entry = ContextEntry(
@@ -195,7 +201,9 @@ class ContextMemoryManager:
         )
 
         context.add_entry(entry)
+        logger.info("Context entry added, now saving to storage", user_id=user_id)
         await self._save_context_to_storage(context)
+        logger.info("Context saved to storage successfully", user_id=user_id)
 
         logger.debug("Added message to context",
                     user_id=user_id,
@@ -480,9 +488,19 @@ class ContextMemoryManager:
     async def _save_context_to_storage(self, context: UserContext) -> None:
         """Save context to persistent storage."""
         try:
+            logger.info("Starting context save to storage",
+                       user_id=context.user_id,
+                       entries_count=len(context.entries))
+
             # Save context entries to database
+            saved_count = 0
             for entry in context.entries:
                 if not hasattr(entry, '_saved'):
+                    logger.info("Saving context entry",
+                               user_id=context.user_id,
+                               message_type=entry.message_type,
+                               content_length=len(entry.content))
+
                     # Create ContextEntryModel and save
                     context_entry_model = ContextEntryModel(
                         user_id=context.user_id,
@@ -498,6 +516,11 @@ class ContextMemoryManager:
                     saved_entry = await self.storage.context.save_context_entry(context_entry_model)
                     # Mark as saved to avoid duplicates
                     entry._saved = True
+                    saved_count += 1
+
+            logger.info("Context saved to storage successfully",
+                       user_id=context.user_id,
+                       saved_entries=saved_count)
 
             logger.debug("Context saved to storage",
                         user_id=context.user_id,
