@@ -352,8 +352,8 @@ async def handle_text_message(
                 FormattedMessage(_format_error_message(str(e)), parse_mode=None)
             ]
 
-        # Delete progress message
-        await progress_msg.delete()
+        # Delete progress message - TEMPORARILY DISABLED FOR DEBUGGING
+        # await progress_msg.delete()
 
         # Send formatted responses (may be multiple messages)
         for i, message in enumerate(formatted_messages):
@@ -441,7 +441,8 @@ async def handle_text_message(
     except Exception as e:
         # Clean up progress message if it exists
         try:
-            await progress_msg.delete()
+            # TEMPORARILY DISABLED: await progress_msg.delete()
+            pass
         except Exception as e:
             logger.debug("Failed to delete progress message during error handling", error=str(e))
             pass
@@ -592,8 +593,8 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 )
                 return
 
-        # Delete progress message
-        await progress_msg.delete()
+        # Delete progress message - TEMPORARILY DISABLED FOR DEBUGGING
+        # await progress_msg.delete()
 
         # Create a new progress message for Claude processing
         claude_progress_msg = await update.message.reply_text(
@@ -642,8 +643,8 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 claude_response.content
             )
 
-            # Delete progress message
-            await claude_progress_msg.delete()
+            # Delete progress message - TEMPORARILY DISABLED FOR DEBUGGING
+            # await claude_progress_msg.delete()
 
             # Send responses
             for i, message in enumerate(formatted_messages):
@@ -675,7 +676,8 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     except Exception as e:
         try:
-            await progress_msg.delete()
+            # TEMPORARILY DISABLED FOR DEBUGGING: await progress_msg.delete()
+            pass
         except:
             pass
 
@@ -750,8 +752,8 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                 photo, update.message.caption
             )
 
-            # Delete progress message
-            await progress_msg.delete()
+            # Delete progress message - TEMPORARILY DISABLED FOR DEBUGGING
+            # await progress_msg.delete()
 
             # Create Claude progress message
             claude_progress_msg = await update.message.reply_text(
@@ -795,8 +797,8 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                     claude_response.content
                 )
 
-                # Delete progress message
-                await claude_progress_msg.delete()
+                # Delete progress message - TEMPORARILY DISABLED FOR DEBUGGING
+                # await claude_progress_msg.delete()
 
                 # Send responses
                 for i, message in enumerate(formatted_messages):
