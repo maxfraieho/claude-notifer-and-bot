@@ -492,8 +492,8 @@ async def _execute_mcp_query(update: Update, context: ContextTypes.DEFAULT_TYPE,
         # Update session ID
         context.user_data["claude_session_id"] = claude_response.session_id
 
-        # Delete processing message
-        await processing_msg.delete()
+        # TEMPORARILY DISABLED: Delete processing message
+        # await processing_msg.delete()  # TEMP: keep messages for context debugging
 
         # Send response
         from ...utils.formatting import ResponseFormatter

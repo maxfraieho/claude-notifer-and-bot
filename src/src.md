@@ -1,6 +1,6 @@
 # Код проєкту: src
 
-**Згенеровано:** 2025-09-25 03:38:34
+**Згенеровано:** 2025-09-26 16:14:28
 **Директорія:** `/home/vokov/projects/claude-notifer-and-bot/src`
 
 ---
@@ -91,7 +91,8 @@
 │   ├── i18n.py
 │   ├── manager.py
 │   ├── storage.py
-│   └── util.py
+│   ├── util.py
+│   └── wrapper.py
 ├── mcp/
 │   ├── __init__.py
 │   ├── claude_integration.py
@@ -124,12 +125,90 @@
 ├── exceptions.py
 ├── main.py
 ├── run_md_service.sh
-└── src.md
+├── src.md
+└── test_restart_localization.py
 ```
 
 ---
 
 ## Файли проєкту
+
+### test_restart_localization.py
+
+**Розмір:** 2,251 байт
+
+```python
+#!/usr/bin/env python3
+
+"""
+Простий тест локалізації перезапуску
+"""
+
+import asyncio
+from localization.i18n import i18n
+
+def test_translation_keys():
+    """Перевіряємо чи існують потрібні ключі в переклади"""
+
+    print("🧪 Тестуємо ключі локалізації...")
+
+    # Ключі які використовуються в restart коді
+    test_keys = [
+        "commands.start.welcome",
+        "commands.restart.completed",
+        "buttons.new_session",
+        "buttons.continue_session",
+        "buttons.check_status",
+        "buttons.context",
+        "buttons.settings",
+        "buttons.get_help",
+        "buttons.language_settings"
+    ]
+
+    results = {}
+    for key in test_keys:
+        try:
+            # Перевіряємо чи повертається переклад
+            uk_text = i18n.get(key, locale="uk")
+            en_text = i18n.get(key, locale="en")
+
+            # Якщо переклад містить сам ключ - це проблема
+            uk_good = key not in uk_text
+            en_good = key not in en_text
+
+            results[key] = {
+                "uk": uk_text,
+                "en": en_text,
+                "uk_ok": uk_good,
+                "en_ok": en_good
+            }
+
+            print(f"{'✅' if uk_good and en_good else '❌'} {key}")
+            print(f"  UK: {uk_text}")
+            print(f"  EN: {en_text}")
+
+        except Exception as e:
+            print(f"❌ {key}: ERROR - {e}")
+            results[key] = {"error": str(e)}
+
+    # Підрахунок результатів
+    good_keys = sum(1 for r in results.values() if isinstance(r, dict) and r.get("uk_ok") and r.get("en_ok"))
+    total_keys = len(test_keys)
+
+    print(f"\n📊 Результат: {good_keys}/{total_keys} ключів працюють правильно")
+
+    if good_keys == total_keys:
+        print("🎉 Всі ключі локалізації працюють!")
+        return True
+    else:
+        print("⚠️ Є проблеми з локалізацією")
+        return False
+
+if __name__ == "__main__":
+    success = test_translation_keys()
+    exit(0 if success else 1)
+
+```
 
 ### __init__.py
 
@@ -1148,9 +1227,137 @@ def get_effective_message(update: Update):
 
 ```
 
+### localization/wrapper.py
+
+**Розмір:** 4,297 байт
+
+```python
+"""
+Localization wrapper helpers.
+Provides async helpers to read user's locale from storage and render translations
+consistently across handlers.
+"""
+import os
+import asyncio
+import structlog
+from typing import Optional
+from collections import OrderedDict
+import time
+
+logger = structlog.get_logger()
+
+DEFAULT_LOCALE = os.getenv("DEFAULT_LOCALE", "uk")
+
+# Thread/async-safe TTL cache for user locales (10 min)
+class TTLCache:
+    def __init__(self, ttl_seconds: int = 600):
+        self._cache = OrderedDict()
+        self._ttl = ttl_seconds
+        self._lock = asyncio.Lock()
+
+    async def get(self, key):
+        async with self._lock:
+            if key in self._cache:
+                value, timestamp = self._cache[key]
+                if time.time() - timestamp < self._ttl:
+                    # Move to end (LRU behavior)
+                    self._cache.move_to_end(key)
+                    return value
+                else:
+                    # Expired - remove
+                    del self._cache[key]
+            return None
+
+    async def set(self, key, value):
+        async with self._lock:
+            self._cache[key] = (value, time.time())
+            # Keep cache size reasonable
+            if len(self._cache) > 1000:
+                # Remove oldest 10% when cache is full
+                for _ in range(100):
+                    if self._cache:
+                        self._cache.popitem(last=False)
+
+    async def clear(self):
+        async with self._lock:
+            self._cache.clear()
+
+# Global cache instance
+_locale_cache = TTLCache(ttl_seconds=600)
+
+async def _clear_cache_periodically():
+    """Periodic cache cleanup task"""
+    while True:
+        await asyncio.sleep(600)  # 10 minutes
+        await _locale_cache.clear()
+
+# Start cache clearing task only when there's a running event loop
+def _start_cache_cleaner():
+    try:
+        loop = asyncio.get_running_loop()
+        if loop:
+            # Check if task is already running
+            if not hasattr(_start_cache_cleaner, '_task_started'):
+                asyncio.create_task(_clear_cache_periodically())
+                _start_cache_cleaner._task_started = True
+    except RuntimeError:
+        # No running event loop, will start when one is available
+        pass
+
+_start_cache_cleaner()
+
+async def get_locale_for_user(context, user_id: int) -> str:
+    """Get locale for user with proper fallback chain and caching"""
+
+    # Check cache first
+    cached_locale = await _locale_cache.get(user_id)
+    if cached_locale:
+        logger.debug("Locale from cache", user_id=user_id, locale=cached_locale, source="cache")
+        return cached_locale
+
+    # Try user language storage (DB/Redis)
+    user_language_storage = context.bot_data.get("user_language_storage")
+    if user_language_storage:
+        try:
+            locale = await user_language_storage.get_user_language(user_id)
+            if locale:
+                await _locale_cache.set(user_id, locale)
+                logger.info("Locale from storage", user_id=user_id, locale=locale, source="db")
+                return locale
+        except Exception as e:
+            logger.warning("Failed to get locale from storage", user_id=user_id, error=str(e), source="db_error")
+
+    # Fallback to Telegram language code
+    try:
+        tg_lang = context.user_data.get("_telegram_language_code")
+        if tg_lang and tg_lang in ["uk", "en"]:  # Only supported languages
+            await _locale_cache.set(user_id, tg_lang)
+            logger.info("Locale from Telegram", user_id=user_id, locale=tg_lang, source="telegram")
+            return tg_lang
+    except Exception:
+        pass
+
+    # Final fallback to DEFAULT_LOCALE
+    logger.info("Locale fallback", user_id=user_id, locale=DEFAULT_LOCALE, source="default")
+    return DEFAULT_LOCALE
+
+from .i18n import i18n
+
+async def t(context, user_id: int, key: str, **kwargs) -> str:
+    """Get localized text for user with formatting support"""
+    locale = await get_locale_for_user(context, user_id)
+    # Use the improved i18n.get() method that handles kwargs and fallbacks
+    return i18n.get(key, locale=locale, **kwargs)
+
+async def send_t(bot, chat_id: int, user_id: int, key: str, **kwargs):
+    text = await t(bot, user_id, key, **kwargs)
+    await bot.send_message(chat_id, text)
+
+```
+
 ### localization/i18n.py
 
-**Розмір:** 2,752 байт
+**Розмір:** 8,835 байт
 
 ```python
 """
@@ -1169,44 +1376,121 @@ class I18n:
 
     def __init__(self, default_locale: str = "uk"):
         self.default_locale = default_locale
-        self.current_locale = default_locale
         self.translations: Dict[str, Dict[str, Any]] = {}
         self.load_translations()
 
     def load_translations(self):
         """Завантажити всі переклади"""
-        locales_dir = Path(__file__).parent.parent / "locales"
+        locales_dir = Path(__file__).parent / "../locales"
 
         if not locales_dir.exists():
-            logger.warning("Папка локалізації не знайдена")
+            logger.warning(f"Папка локалізації не знайдена: {locales_dir.absolute()}")
             return
 
+        loaded_count = 0
         for locale_file in locales_dir.glob("*.json"):
             locale_code = locale_file.stem
             try:
                 with open(locale_file, 'r', encoding='utf-8') as f:
-                    self.translations[locale_code] = json.load(f)
-                logger.info(f"Завантажено переклади для {locale_code}")
+                    data = json.load(f)
+                    self.translations[locale_code] = data
+                    key_count = self._count_keys(data)
+                    logger.info(f"✅ Завантажено переклади для '{locale_code}' ({key_count} ключів)")
+                    loaded_count += 1
+            except json.JSONDecodeError as e:
+                logger.error(f"❌ Помилка JSON в {locale_file}: рядок {e.lineno}, позиція {e.colno}")
             except Exception as e:
-                logger.error(f"Помилка завантаження {locale_file}: {e}")
+                logger.error(f"❌ Помилка завантаження {locale_file}: {e}")
+
+        logger.info(f"📊 Завантажено {loaded_count} файлів локалізації з {len(list(locales_dir.glob('*.json')))} доступних")
 
     def set_locale(self, locale: str):
-        """Встановити поточну локаль"""
+        """Deprecated: do not set global current locale in multi-worker environments.
+        Locale should be passed explicitly to `get()` or managed per-user in storage.
+        This method will only log an informational message for backward compatibility.
+        """
         if locale in self.translations:
-            self.current_locale = locale
-            logger.info(f"Локаль змінено на {locale}")
+            logger.info(f"(deprecated) requested to set locale to {locale}; use per-request locale storage instead")
         else:
             logger.warning(f"Локаль {locale} не знайдено")
 
-    def get(self, key: str, locale: Optional[str] = None) -> str:
-        """Отримати переклад за ключем"""
-        target_locale = locale or self.current_locale
+    def _count_keys(self, data: dict, path: str = "") -> int:
+        """Рекурсивно підраховує кількість ключів перекладу"""
+        count = 0
+        for key, value in data.items():
+            current_path = f"{path}.{key}" if path else key
+            if isinstance(value, dict):
+                count += self._count_keys(value, current_path)
+            else:
+                count += 1
+        return count
 
+    def get_debug_info(self) -> dict:
+        """Повертає детальну інформацію для відлагодження"""
+        info = {
+            "default_locale": self.default_locale,
+            "loaded_locales": list(self.translations.keys()),
+            "key_counts": {},
+            "sample_keys": {}
+        }
+
+        for locale, data in self.translations.items():
+            info["key_counts"][locale] = self._count_keys(data)
+            # Зібрати перші 3 ключі як зразок
+            sample = []
+            for key in self._get_all_keys(data):
+                sample.append(key)
+                if len(sample) >= 3:
+                    break
+            info["sample_keys"][locale] = sample
+
+        return info
+
+    def _get_all_keys(self, data: dict, path: str = "") -> list:
+        """Повертає всі ключі у вигляді dot-notation списку"""
+        keys = []
+        for key, value in data.items():
+            current_path = f"{path}.{key}" if path else key
+            if isinstance(value, dict):
+                keys.extend(self._get_all_keys(value, current_path))
+            else:
+                keys.append(current_path)
+        return keys
+
+    def _get_plural_form_uk(self, count: int) -> str:
+        """Визначає форму множини для української мови"""
+        if count % 10 == 1 and count % 100 != 11:
+            return "one"
+        elif count % 10 in [2, 3, 4] and count % 100 not in [12, 13, 14]:
+            return "few"
+        else:
+            return "many"
+
+    def get(self, key: str, locale: Optional[str] = None, **kwargs) -> str:
+        """Отримати переклад за ключем з підтримкою форматування.
+
+        НІКОЛИ не повертає сирий ключ як «успішний переклад».
+        При відсутності перекладу повертає зрозуміле fallback повідомлення.
+
+        Args:
+            key: Ключ перекладу (підтримує dot notation)
+            locale: Код локалі (None = використати default_locale)
+            **kwargs: Змінні для форматування рядка
+
+        Returns:
+            Переклад з форматуванням або fallback повідомлення
+        """
+        target_locale = locale or self.default_locale
+
+        # Спробувати запрошену локаль
         if target_locale not in self.translations:
+            # Fallback до default_locale
             target_locale = self.default_locale
 
+        # Якщо навіть default_locale відсутня - повернути fallback
         if target_locale not in self.translations:
-            return key
+            logger.error(f"Локаль {target_locale} не завантажена")
+            return f"[missing translation: {key} | locale={locale or 'default'}]"
 
         # Розбираємо ключ типу "commands.start"
         keys = key.split(".")
@@ -1215,27 +1499,67 @@ class I18n:
         try:
             for k in keys:
                 result = result[k]
-            return result
-        except (KeyError, TypeError):
-            logger.warning(f"Переклад не знайдено для ключа {key}")
-            return key
 
-    def t(self, key: str, locale: Optional[str] = None) -> str:
+            # Якщо знайшли переклад
+            if isinstance(result, str):
+                # Спробувати форматування з kwargs
+                if kwargs:
+                    try:
+                        return result.format(**kwargs)
+                    except KeyError as e:
+                        logger.error(f"Відсутня змінна '{e}' для форматування ключа '{key}'")
+                        # Повертаємо неформатований текст як fallback
+                        return result
+                    except Exception as e:
+                        logger.error(f"Помилка форматування ключа '{key}': {e}")
+                        return result
+                else:
+                    return result
+            elif isinstance(result, dict):
+                # Підтримка плюралізації
+                if 'count' in kwargs and target_locale == 'uk':
+                    count = kwargs['count']
+                    plural_form = self._get_plural_form_uk(count)
+                    if plural_form in result:
+                        text = result[plural_form]
+                        try:
+                            return text.format(**kwargs)
+                        except Exception as e:
+                            logger.error(f"Помилка форматування плюральної форми '{key}': {e}")
+                            return text
+                    else:
+                        logger.warning(f"Плюральна форма '{plural_form}' не знайдена для '{key}'")
+                        # Fallback до першої доступної форми
+                        first_form = next(iter(result.values()), str(result))
+                        try:
+                            return first_form.format(**kwargs)
+                        except:
+                            return first_form
+                return str(result)
+            else:
+                return str(result)
+
+        except (KeyError, TypeError):
+            # Ключ не знайдено - НЕ повертаємо сирий ключ!
+            logger.warning(f"Переклад не знайдено для ключа '{key}' в локалі '{target_locale}'")
+            return f"[missing translation: {key} | locale={target_locale}]"
+
+    def t(self, key: str, locale: Optional[str] = None, **kwargs) -> str:
         """Короткий псевдонім для get()"""
-        return self.get(key, locale)
+        return self.get(key, locale, **kwargs)
 
 # Глобальний екземпляр
 i18n = I18n()
 
-def _(key: str) -> str:
+def _(key: str, **kwargs) -> str:
     """Функція для швидкого доступу до перекладів"""
-    return i18n.get(key)
+    return i18n.get(key, **kwargs)
 
 ```
 
 ### localization/translations/uk.json
 
-**Розмір:** 66,937 байт
+**Розмір:** 67,013 байт
 
 ```json
 {
@@ -1390,6 +1714,7 @@ def _(key: str) -> str:
       "description": "Перезапустити бота з очищенням пам'яті та оновленням коду",
       "restarting": "🔄 **Перезапускаю бота...**\n\nЗупиняю всі процеси та запускаю заново...",
       "initiated": "✅ **Перезапуск ініційовано**\n\nПерезапускаюся зараз...",
+      "completed": "**Бот успішно перезапущений!**",
       "access_denied": "🚫 У вас немає прав для перезапуску бота.",
       "script_not_found": "❌ **Скрипт перезапуску не знайдено**\n\nПерезапустіть вручну.",
       "failed": "❌ **Помилка перезапуску**"
@@ -2380,7 +2705,7 @@ def _(key: str) -> str:
 
 ### claude/context_memory.py
 
-**Розмір:** 19,456 байт
+**Розмір:** 20,477 байт
 
 ```python
 """Context memory management for persistent conversation context across sessions.
@@ -2568,6 +2893,12 @@ class ContextMemoryManager:
         importance: int = 2
     ) -> None:
         """Add message to user's context."""
+        logger.info("Adding message to context",
+                   user_id=user_id,
+                   project_path=project_path,
+                   session_id=session_id,
+                   message_type=message_type)
+
         context = await self.get_user_context(user_id, project_path)
 
         entry = ContextEntry(
@@ -2580,7 +2911,9 @@ class ContextMemoryManager:
         )
 
         context.add_entry(entry)
+        logger.info("Context entry added, now saving to storage", user_id=user_id)
         await self._save_context_to_storage(context)
+        logger.info("Context saved to storage successfully", user_id=user_id)
 
         logger.debug("Added message to context",
                     user_id=user_id,
@@ -2865,9 +3198,19 @@ class ContextMemoryManager:
     async def _save_context_to_storage(self, context: UserContext) -> None:
         """Save context to persistent storage."""
         try:
+            logger.info("Starting context save to storage",
+                       user_id=context.user_id,
+                       entries_count=len(context.entries))
+
             # Save context entries to database
+            saved_count = 0
             for entry in context.entries:
                 if not hasattr(entry, '_saved'):
+                    logger.info("Saving context entry",
+                               user_id=context.user_id,
+                               message_type=entry.message_type,
+                               content_length=len(entry.content))
+
                     # Create ContextEntryModel and save
                     context_entry_model = ContextEntryModel(
                         user_id=context.user_id,
@@ -2883,6 +3226,11 @@ class ContextMemoryManager:
                     saved_entry = await self.storage.context.save_context_entry(context_entry_model)
                     # Mark as saved to avoid duplicates
                     entry._saved = True
+                    saved_count += 1
+
+            logger.info("Context saved to storage successfully",
+                       user_id=context.user_id,
+                       saved_entries=saved_count)
 
             logger.debug("Context saved to storage",
                         user_id=context.user_id,
@@ -4022,7 +4370,7 @@ class SessionManager:
 
 ### claude/facade.py
 
-**Розмір:** 35,067 байт
+**Розмір:** 35,616 байт
 
 ```python
 """High-level Claude Code integration facade.
@@ -4266,9 +4614,20 @@ class ClaudeIntegration:
             response.session_id = final_session_id
 
             # Save conversation to context memory
+            logger.info("Context memory check",
+                       has_context_memory=self.context_memory is not None,
+                       is_error=response.is_error,
+                       user_id=user_id)
+
             if self.context_memory and not response.is_error:
                 try:
+                    logger.info("Saving conversation to context memory",
+                               user_id=user_id,
+                               session_id=final_session_id,
+                               project_path=str(working_directory))
+
                     # Save user prompt
+                    logger.debug("About to save user message to context")
                     await self.context_memory.add_message_to_context(
                         user_id=user_id,
                         project_path=str(working_directory),
@@ -4292,9 +4651,9 @@ class ClaudeIntegration:
                         importance=2
                     )
 
-                    logger.debug("Conversation saved to context memory",
-                                user_id=user_id,
-                                session_id=final_session_id)
+                    logger.info("Conversation saved to context memory successfully",
+                               user_id=user_id,
+                               session_id=final_session_id)
 
                 except Exception as e:
                     logger.error("Failed to save conversation to context memory",
@@ -6796,7 +7155,7 @@ def validate_bot_response(command: str, response_text: str,
 
 ### locales/uk.json
 
-**Розмір:** 684 байт
+**Розмір:** 1,066 байт
 
 ```json
 {
@@ -6815,9 +7174,21 @@ def validate_bot_response(command: str, response_text: str,
   },
   "messages": {
     "welcome": "Вітаю! Я Claude Code Bot. Допоможу вам з розробкою.",
-    "session_started": "Сесію розпочато",
+    "session_started": "Сесію розпочано",
     "session_ended": "Сесію завершено",
     "error": "Виникла помилка"
+  },
+  "plurals": {
+    "sessions_found": {
+      "one": "Знайдено {count} сесію",
+      "few": "Знайдено {count} сесії",
+      "many": "Знайдено {count} сесій"
+    },
+    "messages_count": {
+      "one": "{count} повідомлення",
+      "few": "{count} повідомлення",
+      "many": "{count} повідомлень"
+    }
   }
 }
 
@@ -10115,7 +10486,7 @@ class ErrorHandler:
 
 ### storage/repositories.py
 
-**Розмір:** 30,326 байт
+**Розмір:** 30,531 байт
 
 ```python
 """Data access layer using repository pattern.
@@ -10725,11 +11096,11 @@ class ContextRepository:
                 """
                 SELECT * FROM context_entries
                 WHERE user_id = ? AND project_path = ?
-                AND timestamp >= datetime('now', '-{} days')
+                AND timestamp >= datetime('now', '-' || ? || ' days')
                 ORDER BY timestamp DESC, importance ASC
                 LIMIT ?
-                """.format(days),
-                (user_id, project_path, limit),
+                """,
+                (user_id, project_path, days, limit),
             )
             rows = await cursor.fetchall()
             return [ContextEntryModel.from_row(row) for row in rows]
@@ -10768,9 +11139,9 @@ class ContextRepository:
                 """
                 DELETE FROM context_entries
                 WHERE user_id = ? AND project_path = ?
-                AND timestamp < datetime('now', '-{} days')
-                """.format(max_age_days),
-                (user_id, project_path),
+                AND timestamp < datetime('now', '-' || ? || ' days')
+                """,
+                (user_id, project_path, max_age_days),
             )
             await conn.commit()
             deleted_count = cursor.rowcount
@@ -10806,6 +11177,8 @@ class ContextRepository:
     async def get_context_stats(self, user_id: int, project_path: str) -> Dict[str, any]:
         """Get context statistics for user."""
         async with self.db.get_connection() as conn:
+            logger.info("Getting context stats", user_id=user_id, project_path=project_path)
+
             cursor = await conn.execute(
                 """
                 SELECT
@@ -10822,7 +11195,9 @@ class ContextRepository:
                 (user_id, project_path),
             )
 
-            return dict(await cursor.fetchone())
+            stats = dict(await cursor.fetchone())
+            logger.info("Context stats retrieved", user_id=user_id, stats=stats)
+            return stats
 
 
 class AnalyticsRepository:
@@ -12488,7 +12863,7 @@ __all__ = [
 
 ### di/container.py
 
-**Розмір:** 18,112 байт
+**Розмір:** 19,044 байт
 
 ```python
 """
@@ -12795,10 +13170,19 @@ class ApplicationContainer:
 
         # Context commands
         def create_context_commands():
-            storage = self.container.get("storage")
-            context_memory = self.container.get("context_memory")
-            from src.bot.features.context_commands import ContextCommands
-            return ContextCommands(storage, context_memory)
+            logger.info("Creating context_commands dependency")
+            try:
+                storage = self.container.get("storage")
+                logger.info("Storage dependency retrieved successfully")
+                context_memory = self.container.get("context_memory")
+                logger.info("Context_memory dependency retrieved successfully")
+                from src.bot.features.context_commands import ContextCommands
+                result = ContextCommands(storage, context_memory)
+                logger.info("ContextCommands instance created successfully")
+                return result
+            except Exception as e:
+                logger.error("Failed to create context_commands", error=str(e), exc_info=True)
+                raise
 
         self.container.factory("context_commands", create_context_commands)
 
@@ -12930,6 +13314,12 @@ class ApplicationContainer:
                 "claude_integration": self.container.get("claude_integration"),
                 "storage": self.container.get("storage"),
                 "config": self.container.get("config"),
+                # Security components - CRITICAL for auth middleware
+                "auth_manager": self.container.get("auth_manager"),
+                "audit_logger": self.container.get("audit_logger"),
+                "rbac_manager": self.container.get("rbac_manager"),
+                "rate_limiter": self.container.get("rate_limiter"),
+                "security_validator": self.container.get("security_validator"),
             }
 
         self.container.factory("application", create_application)
@@ -13959,7 +14349,7 @@ class FeatureFlags:
 
 ### bot/core.py
 
-**Розмір:** 19,945 байт
+**Розмір:** 26,843 байт
 
 ```python
 """Main Telegram bot class.
@@ -14039,6 +14429,33 @@ class ClaudeCodeBot:
         # Add feature registry to dependencies
         self.deps["features"] = self.feature_registry
 
+        # CRITICAL FIX: Inject dependencies into application.bot_data
+        # This ensures dependencies are available in callback handlers
+        # Force update to ensure auth_manager is available after restart
+        for key, value in self.deps.items():
+            self.app.bot_data[key] = value
+
+        self.app.bot_data["settings"] = self.settings
+        # Add approved_directory for context commands compatibility
+        self.app.bot_data["approved_directory"] = str(self.settings.approved_directory)
+
+        # Force refresh of auth_manager to prevent authentication errors after restart
+        auth_manager = self.deps.get("auth_manager")
+        if auth_manager:
+            self.app.bot_data["auth_manager"] = auth_manager
+            logger.info("Auth manager force-injected into bot_data for restart reliability")
+
+        # DEBUG: Verify critical dependencies
+        if "context_commands" not in self.app.bot_data:
+            logger.error("context_commands not found in bot_data",
+                        available_keys=list(self.app.bot_data.keys()),
+                        deps_keys=list(self.deps.keys()))
+        else:
+            logger.info("context_commands successfully injected into bot_data")
+
+        logger.info("Dependencies injected into application bot_data",
+                   deps=list(self.deps.keys()))
+
         # Set bot commands for menu
         await self._set_bot_commands()
 
@@ -14053,6 +14470,12 @@ class ClaudeCodeBot:
         self.app.add_handler(
             MessageHandler(
                 filters.ALL, self._create_middleware_handler(claude_availability_middleware)
+            ),
+            group=-4,
+        )
+        self.app.add_handler(
+            CallbackQueryHandler(
+                self._create_middleware_handler(claude_availability_middleware)
             ),
             group=-4,
         )
@@ -14140,7 +14563,7 @@ class ClaudeCodeBot:
             ("ls", command.list_files),
             ("cd", command.change_directory),
             ("pwd", command.pwd_handler),
-            ("status", command.status_handler),
+            ("status", command.session_status),
             ("export", command.export_session),
             ("actions", command.actions_handler),
             ("git", command.git_handler),
@@ -14240,10 +14663,18 @@ class ClaudeCodeBot:
         from .middleware.security import security_middleware
 
         # Middleware runs in order of group numbers (lower = earlier)
+        # Apply middleware to ALL update types (messages AND callbacks)
+
         # Security middleware first (validate inputs)
         self.app.add_handler(
             MessageHandler(
                 filters.ALL, self._create_middleware_handler(security_middleware)
+            ),
+            group=-3,
+        )
+        self.app.add_handler(
+            CallbackQueryHandler(
+                self._create_middleware_handler(security_middleware)
             ),
             group=-3,
         )
@@ -14255,11 +14686,23 @@ class ClaudeCodeBot:
             ),
             group=-2,
         )
+        self.app.add_handler(
+            CallbackQueryHandler(
+                self._create_middleware_handler(auth_middleware)
+            ),
+            group=-2,
+        )
 
         # Rate limiting third
         self.app.add_handler(
             MessageHandler(
                 filters.ALL, self._create_middleware_handler(rate_limit_middleware)
+            ),
+            group=-1,
+        )
+        self.app.add_handler(
+            CallbackQueryHandler(
+                self._create_middleware_handler(rate_limit_middleware)
             ),
             group=-1,
         )
@@ -14324,6 +14767,9 @@ class ClaudeCodeBot:
                     allowed_updates=Update.ALL_TYPES,
                     drop_pending_updates=True,
                 )
+
+                # Check for restart info and send start menu if needed
+                await self._check_restart_info()
 
                 # Keep running until manually stopped
                 while self.is_running:
@@ -14487,6 +14933,99 @@ class ClaudeCodeBot:
         except Exception as e:
             logger.error("Health check failed", error=str(e))
             return False
+
+    async def _check_restart_info(self) -> None:
+        """Check if there's restart info to handle after bot startup."""
+        import json
+        import os
+        from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+        from src.localization.wrapper import t
+
+        restart_info_file = "/tmp/claude_bot_restart_info.json"
+
+        try:
+            if os.path.exists(restart_info_file):
+                with open(restart_info_file, 'r') as f:
+                    restart_data = json.load(f)
+
+                # Remove the file first to prevent loops
+                os.remove(restart_info_file)
+
+                if restart_data.get("show_start_menu"):
+                    user_id = restart_data.get("user_id")
+                    chat_id = restart_data.get("chat_id")
+                    message_id = restart_data.get("message_id")
+
+                    if user_id and chat_id:
+                        # Create a mock context for localization
+                        class MockContext:
+                            def __init__(self, bot_data):
+                                self.bot_data = bot_data
+                                self.user_data = {"_telegram_language_code": "uk"}  # Default to Ukrainian
+
+                        context = MockContext(self.app.bot_data)
+
+                        # Create start menu message
+                        welcome_text = await t(context, user_id, "commands.start.welcome", name="User")
+                        restarted_text = await t(context, user_id, "commands.restart.completed")
+
+                        # Build localized menu
+                        keyboard = [
+                            [
+                                InlineKeyboardButton(await t(context, user_id, "buttons.new_session"), callback_data="action:new_session"),
+                                InlineKeyboardButton(await t(context, user_id, "buttons.continue_session"), callback_data="action:continue"),
+                            ],
+                            [
+                                InlineKeyboardButton(await t(context, user_id, "buttons.check_status"), callback_data="action:status"),
+                            ],
+                            [
+                                InlineKeyboardButton(await t(context, user_id, "buttons.context"), callback_data="action:export"),
+                                InlineKeyboardButton(await t(context, user_id, "buttons.settings"), callback_data="action:settings"),
+                            ],
+                            [
+                                InlineKeyboardButton(await t(context, user_id, "buttons.get_help"), callback_data="action:help"),
+                                InlineKeyboardButton(await t(context, user_id, "buttons.language_settings"), callback_data="lang:select"),
+                            ]
+                        ]
+                        reply_markup = InlineKeyboardMarkup(keyboard)
+
+                        # Send start menu message
+                        message = f"✅ {restarted_text}\n\n{welcome_text}"
+
+                        if message_id:
+                            # Edit the restart message
+                            try:
+                                await self.app.bot.edit_message_text(
+                                    chat_id=chat_id,
+                                    message_id=message_id,
+                                    text=message,
+                                    reply_markup=reply_markup
+                                )
+                            except Exception:
+                                # If editing fails, send new message
+                                await self.app.bot.send_message(
+                                    chat_id=chat_id,
+                                    text=message,
+                                    reply_markup=reply_markup
+                                )
+                        else:
+                            # Send new message
+                            await self.app.bot.send_message(
+                                chat_id=chat_id,
+                                text=message,
+                                reply_markup=reply_markup
+                            )
+
+                        logger.info("Sent start menu after restart", user_id=user_id, chat_id=chat_id)
+
+        except Exception as e:
+            logger.error("Error handling restart info", error=str(e))
+            # Clean up the file if there was an error
+            try:
+                if os.path.exists(restart_info_file):
+                    os.remove(restart_info_file)
+            except:
+                pass
 
 ```
 
@@ -15604,7 +16143,7 @@ def get_git_keyboard(user_id: int, context: KeyboardContext) -> InlineKeyboardMa
 
 ### bot/handlers/callback.py
 
-**Розмір:** 141,951 байт
+**Розмір:** 142,009 байт
 
 ```python
 """Handle inline keyboard callbacks."""
@@ -16407,6 +16946,7 @@ async def _handle_context_action(query, context: ContextTypes.DEFAULT_TYPE) -> N
                     self.callback_query = callback_query
                     self.effective_user = callback_query.from_user
                     self.effective_chat = callback_query.message.chat
+                    self.message = callback_query.message
 
             fake_update = FakeUpdate(query)
             await context_commands.handle_context_status(fake_update, context)
@@ -18762,7 +19302,7 @@ def register_callbacks(application):
 
 ### bot/handlers/message.py
 
-**Розмір:** 63,782 байт
+**Розмір:** 66,077 байт
 
 ```python
 """Message handlers for non-command inputs."""
@@ -18782,6 +19322,50 @@ from ...security.validators import SecurityValidator
 from .command import handle_claude_auth_code
 
 logger = structlog.get_logger()
+
+
+async def _handle_context_import_document(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle document upload for context import."""
+    document = update.message.document
+
+    # Validate file type
+    if not document.file_name.endswith('.json'):
+        await update.message.reply_text(
+            "❌ **Неправильний тип файлу**\n\n"
+            "Для імпорту контексту потрібен JSON файл.",
+            parse_mode="Markdown"
+        )
+        context.user_data.pop("awaiting_context_import", None)
+        return
+
+    try:
+        # Download file
+        file = await document.get_file()
+        file_bytes = await file.download_as_bytearray()
+        file_content = file_bytes.decode('utf-8')
+
+        # Get context commands instance and handle import
+        container = context.bot_data.get("di_container")
+        if container:
+            context_commands = container.get("context_commands")
+            await context_commands.handle_context_import_file(update, context, file_content)
+        else:
+            await update.message.reply_text(
+                "❌ **Системна помилка**\n\n"
+                "Не вдалося отримати доступ до системи контексту.",
+                parse_mode="Markdown"
+            )
+
+    except Exception as e:
+        logger.error("Failed to process context import document", error=str(e))
+        await update.message.reply_text(
+            "❌ **Помилка обробки файлу**\n\n"
+            "Спробуйте пізніше або зверніться до адміністратора.",
+            parse_mode="Markdown"
+        )
+    finally:
+        # Clear state
+        context.user_data.pop("awaiting_context_import", None)
 
 
 async def _format_progress_update(update_obj) -> Optional[str]:
@@ -19075,8 +19659,8 @@ async def handle_text_message(
                 FormattedMessage(_format_error_message(str(e)), parse_mode=None)
             ]
 
-        # Delete progress message
-        await progress_msg.delete()
+        # Delete progress message - TEMPORARILY DISABLED FOR DEBUGGING
+        # await progress_msg.delete()
 
         # Send formatted responses (may be multiple messages)
         for i, message in enumerate(formatted_messages):
@@ -19164,7 +19748,8 @@ async def handle_text_message(
     except Exception as e:
         # Clean up progress message if it exists
         try:
-            await progress_msg.delete()
+            # TEMPORARILY DISABLED: await progress_msg.delete()
+            pass
         except Exception as e:
             logger.debug("Failed to delete progress message during error handling", error=str(e))
             pass
@@ -19315,8 +19900,8 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 )
                 return
 
-        # Delete progress message
-        await progress_msg.delete()
+        # Delete progress message - TEMPORARILY DISABLED FOR DEBUGGING
+        # await progress_msg.delete()
 
         # Create a new progress message for Claude processing
         claude_progress_msg = await update.message.reply_text(
@@ -19365,8 +19950,8 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 claude_response.content
             )
 
-            # Delete progress message
-            await claude_progress_msg.delete()
+            # Delete progress message - TEMPORARILY DISABLED FOR DEBUGGING
+            # await claude_progress_msg.delete()
 
             # Send responses
             for i, message in enumerate(formatted_messages):
@@ -19398,7 +19983,8 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     except Exception as e:
         try:
-            await progress_msg.delete()
+            # TEMPORARILY DISABLED FOR DEBUGGING: await progress_msg.delete()
+            pass
         except:
             pass
 
@@ -19473,8 +20059,8 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                 photo, update.message.caption
             )
 
-            # Delete progress message
-            await progress_msg.delete()
+            # Delete progress message - TEMPORARILY DISABLED FOR DEBUGGING
+            # await progress_msg.delete()
 
             # Create Claude progress message
             claude_progress_msg = await update.message.reply_text(
@@ -19518,8 +20104,8 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                     claude_response.content
                 )
 
-                # Delete progress message
-                await claude_progress_msg.delete()
+                # Delete progress message - TEMPORARILY DISABLED FOR DEBUGGING
+                # await claude_progress_msg.delete()
 
                 # Send responses
                 for i, message in enumerate(formatted_messages):
@@ -20115,6 +20701,11 @@ async def handle_document_message(update: Update, context: ContextTypes.DEFAULT_
     user_id = update.effective_user.id
     file_action = context.user_data.get('file_action', {})
 
+    # Check if user is awaiting context import
+    if context.user_data.get("awaiting_context_import"):
+        await _handle_context_import_document(update, context)
+        return
+
     # Check if user is in file editing workflow
     if not file_action or file_action.get('step') != 'waiting_edited_file':
         # User sent document but not in editing workflow - ignore or provide guidance
@@ -20264,7 +20855,7 @@ async def send_unavailable_message(update: Update, status_details: dict) -> None
 
 ### bot/handlers/mcp_commands.py
 
-**Розмір:** 20,314 байт
+**Розмір:** 20,338 байт
 
 ```python
 """MCP Command Handlers for Telegram Bot.
@@ -20761,8 +21352,8 @@ async def _execute_mcp_query(update: Update, context: ContextTypes.DEFAULT_TYPE,
         # Update session ID
         context.user_data["claude_session_id"] = claude_response.session_id
 
-        # Delete processing message
-        await processing_msg.delete()
+        # TEMPORARILY DISABLED: Delete processing message
+        # await processing_msg.delete()
 
         # Send response
         from ...utils.formatting import ResponseFormatter
@@ -20814,7 +21405,7 @@ async def _handle_quick_add(update: Update, context: ContextTypes.DEFAULT_TYPE,
 
 ### bot/handlers/image_command.py
 
-**Розмір:** 23,780 байт
+**Розмір:** 23,825 байт
 
 ```python
 """Main /img command handler for image processing.
@@ -21090,9 +21681,10 @@ class ImageCommandHandler:
                 await self._safe_edit_or_send_error(progress_msg, message, error_text)
                 return
 
-            # Delete progress message safely
+            # TEMPORARILY DISABLED: Delete progress message safely
             try:
-                await progress_msg.delete()
+                # await progress_msg.delete()
+                pass
             except Exception as e:
                 logger.warning("Could not delete progress message", error=str(e))
 
@@ -23048,7 +23640,7 @@ class RBACCommandHandler:
 
 ### bot/handlers/command.py
 
-**Розмір:** 155,855 байт
+**Розмір:** 152,143 байт
 
 ```python
 """Command handlers for bot operations."""
@@ -23410,89 +24002,6 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         )
 
 
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle /help command with localization."""
-    user_id = get_user_id(update)
-    message = get_effective_message(update)
-    
-    if not user_id or not message:
-        return
-    
-    # Get localized help text - try to get combined help or build from components
-    localization = context.bot_data.get("localization")
-    user_language_storage = context.bot_data.get("user_language_storage")
-    
-    if localization and user_language_storage:
-        # Try to get full help text from translations
-        user_lang = await user_language_storage.get_user_language(user_id) 
-        if not user_lang:
-            user_lang = "uk"  # Default to Ukrainian
-        help_data = localization.translations.get(user_lang, {}).get("commands", {}).get("help", {})
-        
-        if help_data:
-            # Build help text from individual components
-            parts = []
-            if "title" in help_data:
-                parts.append(help_data["title"])
-                parts.append("")
-            
-            if "navigation_title" in help_data:
-                parts.append(help_data["navigation_title"])
-                parts.extend([
-                    f"• `/ls` - {help_data.get('ls_desc', 'List files and directories')}",
-                    f"• `/cd <directory>` - {help_data.get('cd_desc', 'Change to directory')}",
-                    f"• `/pwd` - {help_data.get('pwd_desc', 'Show current directory')}",
-                    ""
-                ])
-            
-            if "session_title" in help_data:
-                parts.append(help_data["session_title"])
-                parts.extend([
-                    f"• `/new` - {help_data.get('new_desc', 'Start new Claude session')}",
-                    f"• `/continue [message]` - {help_data.get('continue_desc', 'Continue last session')}",
-                    f"• `/end` - {help_data.get('end_desc', 'End current session')}",
-                    f"• `/status` - {help_data.get('status_desc', 'Show session and usage status')}",
-                    f"• `/export` - {help_data.get('export_desc', 'Export session history')}",
-                    f"• `/actions` - {help_data.get('actions_desc', 'Show context-aware quick actions')}",
-                    f"• `/git` - {help_data.get('git_desc', 'Git repository information')}",
-                    ""
-                ])
-            
-            if "usage_title" in help_data:
-                parts.append(help_data["usage_title"])
-                parts.extend([
-                    f"• {help_data.get('usage_cd', 'cd mydir - Enter directory')}",
-                    f"• {help_data.get('usage_ls', 'ls - See what is in current directory')}",
-                    f"• {help_data.get('usage_code', 'Create a simple Python script - Ask Claude to code')}",
-                    f"• {help_data.get('usage_file', 'Send a file to have Claude review it')}",
-                    ""
-                ])
-            
-            if "tips_title" in help_data:
-                parts.append(help_data["tips_title"])
-                parts.extend([
-                    f"• {help_data.get('tips_specific', 'Use specific, clear requests for best results')}",
-                    f"• {help_data.get('tips_status', 'Check `/status` to monitor your usage')}",
-                    f"• {help_data.get('tips_buttons', 'Use quick action buttons when available')}",
-                ])
-            
-            help_text = "\n".join(parts)
-        else:
-            # Fallback to English
-            help_text = await t(context, user_id, "commands.help.title")
-    else:
-        # Ultimate fallback
-        help_text = (
-            "🤖 **Claude Code Telegram Bot Help**\n\n"
-            "• `/new` - Start new Claude session\n"
-            "• `/help` - Show this help\n"
-            "• `/status` - Show session status\n"
-            "• `/ls` - List files\n"
-            "• `/cd <dir>` - Change directory"
-        )
-
-    await message.reply_text(help_text, parse_mode=None)
-
 
 async def new_session(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /new command."""
@@ -23689,8 +24198,8 @@ async def continue_session(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             if context.user_data:
                 context.user_data["claude_session_id"] = claude_response.session_id
 
-            # Delete status message and send response
-            await status_msg.delete()
+            # TEMPORARILY DISABLED FOR DEBUGGING: Delete status message and send response
+            # await status_msg.delete()
 
             # Format and send Claude's response
             from ..utils.formatting import ResponseFormatter
@@ -23743,10 +24252,11 @@ async def continue_session(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         error_msg = str(e)
         logger.error("Error in continue command", error=error_msg, user_id=user_id)
 
-        # Delete status message if it exists
+        # TEMPORARILY DISABLED FOR DEBUGGING: Delete status message if it exists
         try:
             if 'status_msg' in locals() and status_msg:
-                await status_msg.delete()
+                # await status_msg.delete()
+                pass
         except Exception as e:
             logger.warning("Failed to delete status message", error=str(e))
 
@@ -24501,25 +25011,6 @@ async def add_schedule_command(update: Update, context: ContextTypes.DEFAULT_TYP
 
 # ========== MISSING CRITICAL COMMAND HANDLERS ==========
 
-async def status_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Show bot and session status."""
-    user_id = get_user_id(update)
-    message = get_effective_message(update)
-    
-    if not user_id or not message:
-        return
-    
-    try:
-        status_text = await t(context, user_id, "status.title")
-        current_dir = await t(context, user_id, "status.directory", directory=str(Path.cwd()))
-        claude_active = "🤖 Сесія Claude: ✅ Активна" if context.user_data.get('claude_session_active') else await t(context, user_id, "status.claude_session_inactive")
-        
-        full_status = f"{status_text}\n\n{current_dir}\n{claude_active}"
-        await message.reply_text(full_status)
-        logger.info("Status command executed", user_id=user_id)
-    except Exception as e:
-        await safe_user_error(update, context, "errors.status_failed", e)
-        logger.error("Status handler error", error=str(e), user_id=user_id)
 
 async def help_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Show help information with comprehensive command list."""
@@ -25334,6 +25825,7 @@ async def restart_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /restart command to restart the bot."""
     import subprocess
     import os
+    import asyncio
 
     user_id = get_user_id(update)
     message = get_effective_message(update)
@@ -25344,32 +25836,54 @@ async def restart_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         # Check if user has admin privileges or is authorized
         auth_manager = context.bot_data.get("auth_manager")
-        if auth_manager and not auth_manager.is_authenticated(user_id):
-            access_denied_text = await t(context, user_id, "commands.restart.access_denied")
-            await message.reply_text(access_denied_text)
-            return
+        if auth_manager:
+            # Try to authenticate if not already authenticated
+            if not auth_manager.is_authenticated(user_id):
+                auth_success = await auth_manager.authenticate_user(user_id)
+                if not auth_success:
+                    access_denied_text = await t(context, user_id, "commands.restart.access_denied")
+                    await message.reply_text(access_denied_text)
+                    return
+            # If we got here, user is authenticated
 
         # Send confirmation message
         restarting_text = await t(context, user_id, "commands.restart.restarting")
         status_msg = await message.reply_text(restarting_text)
 
-        # Run the restart script - find it relative to the bot's working directory
-        import os
+        # Store restart info to show start menu after restart
+        restart_info_file = "/tmp/claude_bot_restart_info.json"
+        restart_data = {
+            "user_id": user_id,
+            "chat_id": message.chat_id,
+            "message_id": status_msg.message_id,
+            "show_start_menu": True
+        }
 
-        # Get the bot's root directory (where main.py is located)
-        bot_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-        script_path = os.path.join(bot_root, "restart-bot.sh")
+        import json
+        with open(restart_info_file, 'w') as f:
+            json.dump(restart_data, f)
 
+        # Use the universal restart script
+        initiated_text = await t(context, user_id, "commands.restart.initiated")
+        await status_msg.edit_text(initiated_text)
+
+        # Give time for message to send
+        await asyncio.sleep(1)
+
+        # Execute the universal restart script that will handle cleanup and restart
+        script_path = os.path.join(os.getcwd(), "bot-restart.sh")
         if os.path.exists(script_path):
-            # Execute restart script in background
-            subprocess.Popen([script_path], cwd=bot_root)
-
-            # The current process will be killed by the script, so this might not send
-            initiated_text = await t(context, user_id, "commands.restart.initiated")
-            await status_msg.edit_text(initiated_text)
+            # Start the restart script as a background process and exit
+            logger.info("Starting restart script", script_path=script_path)
+            subprocess.Popen(["/bin/bash", script_path], start_new_session=True)
+            # Give the restart script a moment to start
+            await asyncio.sleep(0.5)
+            # Exit this process so the restart script can kill it and start fresh
+            os._exit(0)
         else:
-            script_not_found_text = await t(context, user_id, "commands.restart.script_not_found")
-            await status_msg.edit_text(script_not_found_text)
+            # Fallback to simple exit
+            logger.warning("bot-restart.sh not found, using simple exit")
+            os._exit(0)
 
     except Exception as e:
         logger.error("Error in restart command", error=str(e), user_id=user_id)
@@ -26604,9 +27118,16 @@ async def context_status_command(update: Update, context: ContextTypes.DEFAULT_T
         # Get context commands handler
         context_commands = context.bot_data.get("context_commands")
         if not context_commands:
+            # DEBUG: Log available bot_data keys
+            available_keys = list(context.bot_data.keys())
+            logger.error("context_commands not found in bot_data",
+                        available_keys=available_keys,
+                        user_id=user_id)
+
             await message.reply_text(
-                "❌ **Система контекстної пам'яті недоступна**\n\n"
-                "Контекстна пам'ять не налаштована або тимчасово недоступна.",
+                f"❌ **Система контекстної пам'яті недоступна**\n\n"
+                f"Контекстна пам'ять не налаштована або тимчасово недоступна.\n"
+                f"DEBUG: Доступні ключі: {', '.join(available_keys[:5])}{'...' if len(available_keys) > 5 else ''}",
                 parse_mode="Markdown"
             )
             return
@@ -31382,7 +31903,7 @@ async def setup_availability_monitor(application: Application, settings: Setting
 
 ### bot/features/context_commands.py
 
-**Розмір:** 21,453 байт
+**Розмір:** 31,792 байт
 
 ```python
 """Context management commands for persistent conversation memory."""
@@ -31417,7 +31938,21 @@ class ContextCommands:
     async def handle_context_status(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Show context status and statistics."""
         user_id = update.effective_user.id
-        project_path = str(context.bot_data.get("approved_directory", "/tmp"))
+        settings = context.bot_data.get("settings")
+
+        # DEBUG: Log what's available in bot_data
+        approved_dir_from_bot_data = context.bot_data.get("approved_directory")
+        logger.debug("Context status debug",
+                    approved_dir_from_bot_data=approved_dir_from_bot_data,
+                    settings_available=bool(settings),
+                    settings_approved_dir=getattr(settings, 'approved_directory', None) if settings else None)
+
+        # Use bot_data.approved_directory as primary source, then settings, then fallback
+        project_path = str(context.bot_data.get("approved_directory",
+            getattr(settings, 'approved_directory', "/home/vokov/projects/claude-notifer-and-bot") if settings
+            else "/home/vokov/projects/claude-notifer-and-bot"))
+
+        logger.info("Context status using project_path", project_path=project_path)
 
         try:
             # Get context statistics
@@ -31477,18 +32012,35 @@ class ContextCommands:
     async def handle_context_export(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Export user context to file."""
         user_id = update.effective_user.id
-        project_path = str(context.bot_data.get("approved_directory", "/tmp"))
+        settings = context.bot_data.get("settings")
+
+        # Use bot_data.approved_directory as primary source, then settings, then fallback
+        project_path = str(context.bot_data.get("approved_directory",
+            getattr(settings, 'approved_directory', "/home/vokov/projects/claude-notifer-and-bot") if settings
+            else "/home/vokov/projects/claude-notifer-and-bot"))
+
+        # Determine if this is from callback or direct command
+        is_callback = hasattr(update, 'callback_query') and update.callback_query
+        message = update.callback_query.message if is_callback else update.message
 
         try:
             # Export context
             context_data = await self.context_memory.export_context(user_id, project_path)
 
             if not context_data.get("entries"):
-                await update.message.reply_text(
-                    "📭 **Контекст порожній**\n\n"
-                    "Немає збереженого контексту для експорту.",
-                    parse_mode="Markdown"
-                )
+                if is_callback:
+                    await update.callback_query.answer("📭 Контекст порожній")
+                    await message.reply_text(
+                        "📭 **Контекст порожній**\n\n"
+                        "Немає збереженого контексту для експорту.",
+                        parse_mode="Markdown"
+                    )
+                else:
+                    await message.reply_text(
+                        "📭 **Контекст порожній**\n\n"
+                        "Немає збереженого контексту для експорту.",
+                        parse_mode="Markdown"
+                    )
                 return
 
             # Format as readable JSON
@@ -31504,7 +32056,10 @@ class ContextCommands:
             file_obj = BytesIO(export_content.encode('utf-8'))
             file_obj.name = filename
 
-            await update.message.reply_document(
+            if is_callback:
+                await update.callback_query.answer("📤 Експортую контекст...")
+
+            await message.reply_document(
                 document=file_obj,
                 caption=(
                     f"📤 **Експорт контексту успішний**\n\n"
@@ -31527,10 +32082,108 @@ class ContextCommands:
                 parse_mode="Markdown"
             )
 
+    async def handle_context_import(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Handle context import request."""
+        # Determine if this is from callback or direct command
+        is_callback = hasattr(update, 'callback_query') and update.callback_query
+        message = update.callback_query.message if is_callback else update.message
+
+        import_text = (
+            "📥 **Імпорт контексту**\n\n"
+            "Надішліть JSON файл з експортованим контекстом.\n"
+            "Файл має бути створений командою експорту контексту.\n\n"
+            "⚠️ **Увага:** Імпорт додасть нові записи до існуючого контексту."
+        )
+
+        if is_callback:
+            await update.callback_query.answer("📥 Імпорт контексту")
+            await message.reply_text(import_text, parse_mode="Markdown")
+        else:
+            await message.reply_text(import_text, parse_mode="Markdown")
+
+        # Set user state for import
+        context.user_data["awaiting_context_import"] = True
+
+    async def handle_context_import_file(self, update: Update, context: ContextTypes.DEFAULT_TYPE, file_content: str) -> None:
+        """Process imported context file."""
+        user_id = update.effective_user.id
+        settings = context.bot_data.get("settings")
+
+        # Use bot_data.approved_directory as primary source, then settings, then fallback
+        project_path = str(context.bot_data.get("approved_directory",
+            getattr(settings, 'approved_directory', "/home/vokov/projects/claude-notifer-and-bot") if settings
+            else "/home/vokov/projects/claude-notifer-and-bot"))
+
+        try:
+            # Parse JSON content
+            import json
+            context_data = json.loads(file_content)
+
+            # Validate structure
+            if not isinstance(context_data, dict) or "entries" not in context_data:
+                await update.message.reply_text(
+                    "❌ **Неправильний формат файлу**\n\n"
+                    "Файл має бути JSON з експортованим контекстом.",
+                    parse_mode="Markdown"
+                )
+                return
+
+            entries = context_data.get("entries", [])
+            if not entries:
+                await update.message.reply_text(
+                    "📭 **Файл порожній**\n\n"
+                    "У файлі немає записів для імпорту.",
+                    parse_mode="Markdown"
+                )
+                return
+
+            # Import context
+            success = await self.context_memory.import_context(context_data)
+
+            if success:
+                await update.message.reply_text(
+                    f"✅ **Імпорт успішний**\n\n"
+                    f"• Імпортовано записів: {len(entries)}\n"
+                    f"• Проект: `{project_path}`\n"
+                    f"• Дата: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+                    parse_mode="Markdown"
+                )
+                logger.info("Context imported",
+                           user_id=user_id,
+                           entries_count=len(entries))
+            else:
+                await update.message.reply_text(
+                    "❌ **Помилка імпорту**\n\n"
+                    "Не вдалося імпортувати контекст. Спробуйте пізніше.",
+                    parse_mode="Markdown"
+                )
+
+        except json.JSONDecodeError:
+            await update.message.reply_text(
+                "❌ **Неправильний JSON**\n\n"
+                "Файл містить некоректний JSON. Перевірте формат.",
+                parse_mode="Markdown"
+            )
+        except Exception as e:
+            logger.error("Failed to import context", error=str(e))
+            await update.message.reply_text(
+                "❌ **Помилка імпорту контексту**\n\n"
+                "Спробуйте пізніше або зверніться до адміністратора.",
+                parse_mode="Markdown"
+            )
+
     async def handle_context_clear(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Clear user context with confirmation."""
         user_id = update.effective_user.id
-        project_path = str(context.bot_data.get("approved_directory", "/tmp"))
+        settings = context.bot_data.get("settings")
+
+        # Use bot_data.approved_directory as primary source, then settings, then fallback
+        project_path = str(context.bot_data.get("approved_directory",
+            getattr(settings, 'approved_directory', "/home/vokov/projects/claude-notifer-and-bot") if settings
+            else "/home/vokov/projects/claude-notifer-and-bot"))
+
+        # Determine if this is from callback or direct command
+        is_callback = hasattr(update, 'callback_query') and update.callback_query
 
         # Create confirmation keyboard
         keyboard = [
@@ -31541,19 +32194,36 @@ class ContextCommands:
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-        await update.message.reply_text(
+        confirmation_text = (
             "⚠️ **Підтвердження очищення контексту**\n\n"
             "Це дія видалить **весь** збережений контекст розмов з Claude CLI.\n"
             "Відновити дані після цього буде **неможливо**.\n\n"
-            "Ви дійсно хочете продовжити?",
-            parse_mode="Markdown",
-            reply_markup=reply_markup
+            "Ви дійсно хочете продовжити?"
         )
+
+        if is_callback:
+            await update.callback_query.answer("⚠️ Підтвердження очищення")
+            await update.callback_query.message.reply_text(
+                confirmation_text,
+                parse_mode="Markdown",
+                reply_markup=reply_markup
+            )
+        else:
+            await update.message.reply_text(
+                confirmation_text,
+                parse_mode="Markdown",
+                reply_markup=reply_markup
+            )
 
     async def handle_context_clear_confirm(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Confirm and execute context clearing."""
         user_id = update.effective_user.id
-        project_path = str(context.bot_data.get("approved_directory", "/tmp"))
+        settings = context.bot_data.get("settings")
+
+        # Use bot_data.approved_directory as primary source, then settings, then fallback
+        project_path = str(context.bot_data.get("approved_directory",
+            getattr(settings, 'approved_directory', "/home/vokov/projects/claude-notifer-and-bot") if settings
+            else "/home/vokov/projects/claude-notifer-and-bot"))
 
         try:
             # Clear context
@@ -31584,12 +32254,21 @@ class ContextCommands:
 
     async def handle_context_search(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Search context entries by content."""
-        await update.message.reply_text(
+        # Determine if this is from callback or direct command
+        is_callback = hasattr(update, 'callback_query') and update.callback_query
+        message = update.callback_query.message if is_callback else update.message
+
+        search_text = (
             "🔍 **Пошук в контексті**\n\n"
             "Надішліть текст для пошуку в збережених розмовах.\n"
-            "Наприклад: `помилка база даних` або `функція логування`",
-            parse_mode="Markdown"
+            "Наприклад: `помилка база даних` або `функція логування`"
         )
+
+        if is_callback:
+            await update.callback_query.answer("🔍 Пошук в контексті")
+            await message.reply_text(search_text, parse_mode="Markdown")
+        else:
+            await message.reply_text(search_text, parse_mode="Markdown")
 
         # Set user state for search
         context.user_data["awaiting_context_search"] = True
@@ -31597,7 +32276,12 @@ class ContextCommands:
     async def handle_context_search_query(self, update: Update, context: ContextTypes.DEFAULT_TYPE, search_text: str) -> None:
         """Execute context search with user query."""
         user_id = update.effective_user.id
-        project_path = str(context.bot_data.get("approved_directory", "/tmp"))
+        settings = context.bot_data.get("settings")
+
+        # Use bot_data.approved_directory as primary source, then settings, then fallback
+        project_path = str(context.bot_data.get("approved_directory",
+            getattr(settings, 'approved_directory', "/home/vokov/projects/claude-notifer-and-bot") if settings
+            else "/home/vokov/projects/claude-notifer-and-bot"))
 
         try:
             # Search context entries
@@ -31662,7 +32346,15 @@ class ContextCommands:
     async def handle_context_list(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Show recent context entries list."""
         user_id = update.effective_user.id
-        project_path = str(context.bot_data.get("approved_directory", "/tmp"))
+        settings = context.bot_data.get("settings")
+
+        # Use bot_data.approved_directory as primary source, then settings, then fallback
+        project_path = str(context.bot_data.get("approved_directory",
+            getattr(settings, 'approved_directory', "/home/vokov/projects/claude-notifer-and-bot") if settings
+            else "/home/vokov/projects/claude-notifer-and-bot"))
+
+        # Determine if this is from callback or direct command
+        is_callback = hasattr(update, 'callback_query') and update.callback_query
 
         try:
             # Get recent context entries
@@ -31674,12 +32366,17 @@ class ContextCommands:
             )
 
             if not entries:
-                await update.message.reply_text(
+                list_text = (
                     "📋 **Список контексту**\n\n"
                     "Немає записів за останні 7 днів.\n"
-                    "Почніть розмову з Claude CLI, щоб створити контекст.",
-                    parse_mode="Markdown"
+                    "Почніть розмову з Claude CLI, щоб створити контекст."
                 )
+
+                if is_callback:
+                    await update.callback_query.answer("📋 Список контексту")
+                    await update.callback_query.edit_message_text(list_text, parse_mode="Markdown")
+                else:
+                    await update.message.reply_text(list_text, parse_mode="Markdown")
                 return
 
             # Format entries list
@@ -31706,19 +32403,32 @@ class ContextCommands:
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
 
-            await update.message.reply_text(
-                "\n".join(list_lines),
-                parse_mode="Markdown",
-                reply_markup=reply_markup
-            )
+            if is_callback:
+                await update.callback_query.answer("📋 Список контексту")
+                await update.callback_query.edit_message_text(
+                    "\n".join(list_lines),
+                    parse_mode="Markdown",
+                    reply_markup=reply_markup
+                )
+            else:
+                await update.message.reply_text(
+                    "\n".join(list_lines),
+                    parse_mode="Markdown",
+                    reply_markup=reply_markup
+                )
 
         except Exception as e:
             logger.error("Failed to list context entries", error=str(e))
-            await update.message.reply_text(
+            error_text = (
                 "❌ **Помилка отримання списку**\n\n"
-                "Спробуйте пізніше або зверніться до адміністратора.",
-                parse_mode="Markdown"
+                "Спробуйте пізніше або зверніться до адміністратора."
             )
+
+            if is_callback:
+                await update.callback_query.answer("❌ Помилка")
+                await update.callback_query.edit_message_text(error_text, parse_mode="Markdown")
+            else:
+                await update.message.reply_text(error_text, parse_mode="Markdown")
 
     async def handle_callback_query(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Handle callback queries from context management buttons."""
@@ -31728,6 +32438,8 @@ class ContextCommands:
         try:
             if data == "context_export":
                 await self.handle_context_export(update, context)
+            elif data == "context_import":
+                await self.handle_context_import(update, context)
             elif data == "context_clear":
                 await self.handle_context_clear(update, context)
             elif data == "context_clear_confirm":
@@ -31762,7 +32474,12 @@ class ContextCommands:
     async def _export_search_results(self, update: Update, context: ContextTypes.DEFAULT_TYPE, search_text: str) -> None:
         """Export search results to file."""
         user_id = update.effective_user.id
-        project_path = str(context.bot_data.get("approved_directory", "/tmp"))
+        settings = context.bot_data.get("settings")
+
+        # Use bot_data.approved_directory as primary source, then settings, then fallback
+        project_path = str(context.bot_data.get("approved_directory",
+            getattr(settings, 'approved_directory', "/home/vokov/projects/claude-notifer-and-bot") if settings
+            else "/home/vokov/projects/claude-notifer-and-bot"))
 
         try:
             # Get search results
@@ -31817,7 +32534,12 @@ class ContextCommands:
     async def _export_recent_entries(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Export recent context entries to file."""
         user_id = update.effective_user.id
-        project_path = str(context.bot_data.get("approved_directory", "/tmp"))
+        settings = context.bot_data.get("settings")
+
+        # Use bot_data.approved_directory as primary source, then settings, then fallback
+        project_path = str(context.bot_data.get("approved_directory",
+            getattr(settings, 'approved_directory', "/home/vokov/projects/claude-notifer-and-bot") if settings
+            else "/home/vokov/projects/claude-notifer-and-bot"))
 
         try:
             # Get recent entries
@@ -36755,7 +37477,7 @@ class TaskScheduler:
 
 ### bot/features/unified_menu.py
 
-**Розмір:** 19,759 байт
+**Розмір:** 20,059 байт
 
 ```python
 """Unified button interface for improved user experience."""
@@ -36890,7 +37612,8 @@ class UnifiedMenu:
         """Show context memory management menu."""
         try:
             user_id = update.effective_user.id
-            project_path = str(context.bot_data.get("approved_directory", "/tmp"))
+            # Використовуємо поточну робочу директорію замість /tmp fallback
+            project_path = str(context.bot_data.get("approved_directory", "/home/vokov/projects/claude-notifer-and-bot"))
 
             # Get context statistics
             user_context = await self.context_memory.get_user_context(user_id, project_path)
@@ -36979,7 +37702,8 @@ class UnifiedMenu:
     async def show_files_menu(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Show file management menu."""
         try:
-            current_dir = str(context.bot_data.get("approved_directory", "/tmp"))
+            settings = context.bot_data.get("settings")
+            current_dir = str(context.bot_data.get("approved_directory", settings.approved_directory if settings else "/home/vokov/projects/claude-notifer-and-bot"))
             dir_name = current_dir.split('/')[-1] if current_dir != "/" else "root"
 
             menu_text = (
@@ -38559,7 +39283,7 @@ __all__ = [
 
 ### bot/integration/enhanced_modules.py
 
-**Розмір:** 7,789 байт
+**Розмір:** 8,464 байт
 
 ```python
 """
@@ -38595,8 +39319,8 @@ class EnhancedModulesIntegration:
         # Ініціалізуємо локалізацію
         self.i18n.load_translations()
 
-        # Встановлюємо українську мову за замовчуванням
-        self.i18n.set_locale("uk")
+        # Локаль тепер управляється per-user в wrapper.py, не глобально
+        # self.i18n.set_locale("uk") - deprecated, видалено
 
         logger.info("Enhanced modules initialized successfully")
 
@@ -38706,12 +39430,21 @@ class EnhancedModulesIntegration:
     async def switch_language(self, language: str, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Перемкнути мову інтерфейсу"""
         if language in ["uk", "en"]:
-            self.i18n.set_locale(language)
+            # Мова тепер зберігається per-user через user_language_storage
+            # Видалено deprecated self.i18n.set_locale(language)
 
-            # Зберігаємо вибір мови в контекст користувача
+            # Зберігаємо вибір мови в контекст користувача та в storage
             if not hasattr(context, 'user_data'):
                 context.user_data = {}
             context.user_data['language'] = language
+
+            # Також зберігаємо в user_language_storage якщо доступно
+            user_language_storage = context.bot_data.get("user_language_storage")
+            if user_language_storage and update.effective_user:
+                try:
+                    await user_language_storage.set_user_language(update.effective_user.id, language)
+                except Exception as e:
+                    logger.warning(f"Failed to save language preference: {e}")
 
             success_message = _('messages.language_changed')
 
@@ -39650,29 +40383,25 @@ __all__ = ["auth_middleware", "rate_limit_middleware", "security_middleware"]
 
 ### bot/middleware/auth.py
 
-**Розмір:** 5,866 байт
+**Розмір:** 6,511 байт
 
 ```python
-import logging
-from typing import List
+"""Telegram bot authentication middleware."""
 
-logger = logging.getLogger(__name__)
+import logging
+from datetime import datetime
+from typing import Any, Callable, Dict, List
+
+import structlog
+
+logger = structlog.get_logger()
 
 
 def check_user_access(user_id: int, whitelist: List[int]) -> bool:
     """Покращена перевірка доступу користувача"""
     is_allowed = user_id in whitelist
-    logger.info(f"Access check for user {user_id}: {'allowed' if is_allowed else 'denied'}")
+    logger.info("Access check", user_id=user_id, allowed=is_allowed)
     return is_allowed
-
-"""Telegram bot authentication middleware."""
-
-from datetime import datetime
-from typing import Any, Callable, Dict
-
-import structlog
-
-logger = structlog.get_logger()
 
 
 async def auth_middleware(handler: Callable, event: Any, data: Dict[str, Any]) -> Any:
@@ -39723,7 +40452,16 @@ async def auth_middleware(handler: Callable, event: Any, data: Dict[str, Any]) -
         # Continue to handler
         return await handler(event, data)
 
-    # User not authenticated - attempt authentication
+    # User not authenticated - attempt authentication once per update
+    update_id = str(event.update_id) if hasattr(event, 'update_id') else str(hash(str(event)))
+    processed_updates = data.setdefault('_processed_auth_updates', set())
+
+    if update_id in processed_updates:
+        logger.debug("Authentication already processed for this update", update_id=update_id)
+        return
+
+    processed_updates.add(update_id)
+
     logger.info(
         "Attempting authentication for user", user_id=user_id, username=username
     )
@@ -39761,10 +40499,14 @@ async def auth_middleware(handler: Callable, event: Any, data: Dict[str, Any]) -
         return await handler(event, data)
 
     else:
-        # Authentication failed
+        # Authentication failed - only send message once per update and not for commands
         logger.warning("Authentication failed", user_id=user_id, username=username)
 
-        if event.effective_message:
+        # Don't send auth error message if this is a command - let command handler deal with it
+        message_text = getattr(event.effective_message, 'text', '') if event.effective_message else ''
+        is_command = message_text.startswith('/') if message_text else False
+
+        if event.effective_message and not is_command:
             await event.effective_message.reply_text(
                 "🔒 **Authentication Required**\n\n"
                 "You are not authorized to use this bot.\n"
@@ -42246,7 +42988,7 @@ server_config_registry = ServerConfigRegistry()
 
 ### utils/constants.py
 
-**Розмір:** 1,760 байт
+**Розмір:** 1,895 байт
 
 ```python
 """Application-wide constants."""
@@ -42256,7 +42998,7 @@ APP_NAME = "Claude Code Telegram Bot"
 APP_DESCRIPTION = "Telegram bot for remote Claude Code access"
 
 # Default limits
-DEFAULT_CLAUDE_TIMEOUT_SECONDS = 300
+DEFAULT_CLAUDE_TIMEOUT_SECONDS = 900  # 15 хвилин для складних завдань
 DEFAULT_CLAUDE_MAX_TURNS = 20
 DEFAULT_CLAUDE_MAX_COST_PER_USER = 10.0
 
@@ -42264,7 +43006,7 @@ DEFAULT_RATE_LIMIT_REQUESTS = 10
 DEFAULT_RATE_LIMIT_WINDOW = 60
 DEFAULT_RATE_LIMIT_BURST = 20
 
-DEFAULT_SESSION_TIMEOUT_HOURS = 24
+DEFAULT_SESSION_TIMEOUT_HOURS = 72  # 3 дні для тривалої роботи над завданнями
 DEFAULT_MAX_SESSIONS_PER_USER = 5
 
 # Message limits
@@ -42343,7 +43085,7 @@ LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 ## Статистика
 
-- **Оброблено файлів:** 113
+- **Оброблено файлів:** 115
 - **Пропущено сервісних файлів:** 1
-- **Загальний розмір:** 1,620,022 байт (1582.1 KB)
-- **Дата створення:** 2025-09-25 03:38:34
+- **Загальний розмір:** 1,653,520 байт (1614.8 KB)
+- **Дата створення:** 2025-09-26 16:14:28

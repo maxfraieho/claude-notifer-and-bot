@@ -75,6 +75,12 @@ class ClaudeCodeBot:
         # Add feature registry to dependencies
         self.deps["features"] = self.feature_registry
 
+        # Initialize idle session manager with telegram app
+        idle_session_manager = self.deps.get("idle_session_manager")
+        if idle_session_manager:
+            idle_session_manager.app = self.app
+            logger.info("Idle session manager initialized with Telegram app")
+
         # CRITICAL FIX: Inject dependencies into application.bot_data
         # This ensures dependencies are available in callback handlers
         # Force update to ensure auth_manager is available after restart
@@ -83,6 +89,9 @@ class ClaudeCodeBot:
 
         self.app.bot_data["settings"] = self.settings
         # Add approved_directory for context commands compatibility
+        logger.info("Setting approved_directory in bot_data",
+                   approved_directory=str(self.settings.approved_directory),
+                   settings_type=type(self.settings).__name__)
         self.app.bot_data["approved_directory"] = str(self.settings.approved_directory)
 
         # Force refresh of auth_manager to prevent authentication errors after restart

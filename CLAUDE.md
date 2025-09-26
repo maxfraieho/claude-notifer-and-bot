@@ -96,9 +96,13 @@ The application follows a layered architecture with clear separation of concerns
 - `loader.py`: Configuration loading and validation
 - `features.py`: Feature flag management
 
-**Enhanced Features** (`src/locales/`, `src/localization/`):
-- `locales/`: Translation files for multiple languages (UA/EN)
-- `localization/i18n.py`: Dynamic localization system
+**Localization System** (`src/localization/`):
+- `i18n.py`: Core localization engine with fallback handling and **kwargs support
+- `wrapper.py`: Thread-safe TTL cache for user locale preferences
+- `storage.py`: User language preference persistence
+- `translations/`: JSON translation files (uk.json, en.json)
+
+**Enhanced Features** (`src/ui/`, `src/utils/`):
 - `ui/navigation.py`: Advanced navigation with breadcrumbs and grouping
 - `ui/progress.py`: Visual progress indicators for long operations
 - `utils/error_handler.py`: Centralized error handling with user-friendly messages
@@ -328,10 +332,142 @@ git push origin $(git branch --show-current)
 - Use direct SSH key specification instead of SSH agent
 - Configure `core.sshCommand` as shown above
 
+## Localization System
+
+### Architecture
+
+The bot includes a robust localization system with the following components:
+
+**Core Components:**
+- `src/localization/i18n.py`: Main localization engine
+- `src/localization/wrapper.py`: Async wrapper with user locale detection
+- `src/localization/storage.py`: User language preference persistence
+- `src/localization/translations/`: JSON translation files
+
+**Supported Languages:**
+- Ukrainian (`uk`) - Default
+- English (`en`)
+
+### Key Features
+
+#### 1. Thread-Safe Caching
+```python
+# TTL Cache with asyncio.Lock for concurrent safety
+class TTLCache:
+    def __init__(self, ttl_seconds: int = 600):
+        self._cache = OrderedDict()  # LRU behavior
+        self._lock = asyncio.Lock()   # Thread safety
+```
+
+#### 2. Smart Fallback Chain
+User locale detection follows this priority:
+1. **Cache** - Previously detected locale (10 min TTL)
+2. **Database** - User's saved language preference
+3. **Telegram** - User's Telegram language code
+4. **Default** - Ukrainian ("uk")
+
+#### 3. Robust Translation Handling
+```python
+# Never returns raw keys - always user-friendly messages
+result = i18n.get("missing.key", locale="uk")
+# Returns: "[missing translation: missing.key | locale=uk]"
+
+# Supports formatting with kwargs
+result = i18n.get("welcome.message", locale="uk", user="John")
+# Returns: "Привіт, John! Ласкаво просимо."
+```
+
+### Usage Examples
+
+#### Basic Translation
+```python
+from src.localization.wrapper import t
+
+# In handler
+async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    text = await t(context, user_id, "commands.start")
+    await update.message.reply_text(text)
+```
+
+#### Translation with Variables
+```python
+# With formatting
+text = await t(context, user_id, "welcome.user", username="John")
+
+# Direct i18n usage
+from src.localization.i18n import i18n
+text = i18n.get("error.message", locale="uk", code=404)
+```
+
+### Adding New Translations
+
+1. **Add to translation files:**
+```json
+// src/localization/translations/uk.json
+{
+  "commands": {
+    "new_command": "Новий текст"
+  }
+}
+
+// src/localization/translations/en.json
+{
+  "commands": {
+    "new_command": "New text"
+  }
+}
+```
+
+2. **Use in code:**
+```python
+text = await t(context, user_id, "commands.new_command")
+```
+
+### Configuration
+
+```bash
+# Environment variables
+DEFAULT_LOCALE=uk  # Default fallback locale
+```
+
+### Recent Improvements (2025-09-26)
+
+✅ **Thread Safety**: TTL cache now uses asyncio.Lock for concurrent access
+✅ **Fallback Handling**: Missing translations return descriptive messages instead of raw keys
+✅ **Formatting Support**: Built-in **kwargs support for string formatting
+✅ **LRU Management**: Automatic cache size management (1000 entries max)
+✅ **Deprecated Methods**: Removed global set_locale() calls for multi-user safety
+
+### Testing Localization
+
+```bash
+# Test basic functionality
+PYTHONPATH=. python -c "
+from src.localization.i18n import i18n
+print(i18n.get('commands.start', locale='uk'))
+print(i18n.get('missing.key', locale='uk'))  # Shows fallback
+"
+
+# Test TTL cache
+PYTHONPATH=. python -c "
+import asyncio
+from src.localization.wrapper import TTLCache
+
+async def test():
+    cache = TTLCache(ttl_seconds=2)
+    await cache.set('test', 'value')
+    print(await cache.get('test'))
+
+asyncio.run(test())
+"
+```
+
 ## Common Development Workflows
 
 1. **Adding new bot commands**: Add handler in `src/bot/handlers/command.py` and register in `src/bot/core.py`
-2. **Adding new middleware**: Create in `src/bot/middleware/` and register in `core.py`  
+2. **Adding new middleware**: Create in `src/bot/middleware/` and register in `core.py`
 3. **Extending Claude integration**: Modify `src/claude/facade.py` for high-level changes
 4. **Adding new security providers**: Implement in `src/security/auth.py`
 5. **Database schema changes**: Modify models in `src/storage/models.py`
+6. **Adding localization**: Add keys to translation JSON files and use `await t()` wrapper

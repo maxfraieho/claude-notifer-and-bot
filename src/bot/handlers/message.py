@@ -282,6 +282,13 @@ async def handle_text_message(
         # Get existing session ID
         session_id = context.user_data.get("claude_session_id")
 
+        # Track session activity if session exists
+        if session_id:
+            idle_session_manager = context.bot_data.get("idle_session_manager")
+            if idle_session_manager:
+                await idle_session_manager.track_session_activity(session_id, user_id)
+                logger.debug("Session activity tracked", session_id=session_id, user_id=user_id)
+
         # Enhanced stream updates handler with progress tracking
         async def stream_handler(update_obj):
             try:
@@ -304,6 +311,13 @@ async def handle_text_message(
 
             # Update session ID
             context.user_data["claude_session_id"] = claude_response.session_id
+
+            # Track session activity for new or continued session
+            idle_session_manager = context.bot_data.get("idle_session_manager")
+            if idle_session_manager and claude_response.session_id:
+                await idle_session_manager.track_session_activity(claude_response.session_id, user_id)
+                logger.debug("Session activity tracked after text command",
+                           session_id=claude_response.session_id, user_id=user_id)
 
             # Check if Claude changed the working directory and update our tracking
             _update_working_directory_from_claude_response(
@@ -353,7 +367,7 @@ async def handle_text_message(
             ]
 
         # Delete progress message - TEMPORARILY DISABLED FOR DEBUGGING
-        # await progress_msg.delete()
+        # await progress_msg.delete()  # TEMP: keep messages for context debugging
 
         # Send formatted responses (may be multiple messages)
         for i, message in enumerate(formatted_messages):
@@ -441,7 +455,7 @@ async def handle_text_message(
     except Exception as e:
         # Clean up progress message if it exists
         try:
-            # TEMPORARILY DISABLED: await progress_msg.delete()
+            # await progress_msg.delete()  # TEMP: keep messages for context debugging
             pass
         except Exception as e:
             logger.debug("Failed to delete progress message during error handling", error=str(e))
@@ -594,7 +608,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 return
 
         # Delete progress message - TEMPORARILY DISABLED FOR DEBUGGING
-        # await progress_msg.delete()
+        # await progress_msg.delete()  # TEMP: keep messages for context debugging
 
         # Create a new progress message for Claude processing
         claude_progress_msg = await update.message.reply_text(
@@ -630,6 +644,13 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             # Update session ID
             context.user_data["claude_session_id"] = claude_response.session_id
 
+            # Track session activity for document processing
+            idle_session_manager = context.bot_data.get("idle_session_manager")
+            if idle_session_manager and claude_response.session_id:
+                await idle_session_manager.track_session_activity(claude_response.session_id, user_id)
+                logger.debug("Session activity tracked after document processing",
+                           session_id=claude_response.session_id, user_id=user_id)
+
             # Check if Claude changed the working directory and update our tracking
             _update_working_directory_from_claude_response(
                 claude_response, context, settings, user_id
@@ -644,7 +665,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             )
 
             # Delete progress message - TEMPORARILY DISABLED FOR DEBUGGING
-            # await claude_progress_msg.delete()
+            # await claude_progress_msg.delete()  # TEMP: keep messages for context debugging
 
             # Send responses
             for i, message in enumerate(formatted_messages):
@@ -676,7 +697,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     except Exception as e:
         try:
-            # TEMPORARILY DISABLED FOR DEBUGGING: await progress_msg.delete()
+            # await progress_msg.delete()  # TEMP: keep messages for context debugging
             pass
         except:
             pass
@@ -753,7 +774,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             )
 
             # Delete progress message - TEMPORARILY DISABLED FOR DEBUGGING
-            # await progress_msg.delete()
+            # await progress_msg.delete()  # TEMP: keep messages for context debugging
 
             # Create Claude progress message
             claude_progress_msg = await update.message.reply_text(
@@ -789,6 +810,13 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                 # Update session ID
                 context.user_data["claude_session_id"] = claude_response.session_id
 
+                # Track session activity for photo processing
+                idle_session_manager = context.bot_data.get("idle_session_manager")
+                if idle_session_manager and claude_response.session_id:
+                    await idle_session_manager.track_session_activity(claude_response.session_id, user_id)
+                    logger.debug("Session activity tracked after photo processing",
+                               session_id=claude_response.session_id, user_id=user_id)
+
                 # Format and send response
                 from ..utils.formatting import ResponseFormatter
 
@@ -798,7 +826,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                 )
 
                 # Delete progress message - TEMPORARILY DISABLED FOR DEBUGGING
-                # await claude_progress_msg.delete()
+                # await claude_progress_msg.delete()  # TEMP: keep messages for context debugging  # TEMP: keep messages for context debugging
 
                 # Send responses
                 for i, message in enumerate(formatted_messages):

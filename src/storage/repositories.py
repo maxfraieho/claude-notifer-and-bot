@@ -600,19 +600,25 @@ class ContextRepository:
         limit: int = 50
     ) -> List[ContextEntryModel]:
         """Get recent context entries for user."""
+        logger.info(f"Getting context entries: user_id={user_id}, project_path={project_path}, days={days}, limit={limit}")
+
         async with self.db.get_connection() as conn:
             cursor = await conn.execute(
                 """
                 SELECT * FROM context_entries
                 WHERE user_id = ? AND project_path = ?
-                AND timestamp >= datetime('now', '-{} days')
+                AND timestamp >= datetime('now', '-' || ? || ' days')
                 ORDER BY timestamp DESC, importance ASC
                 LIMIT ?
-                """.format(days),
-                (user_id, project_path, limit),
+                """,
+                (user_id, project_path, days, limit),
             )
             rows = await cursor.fetchall()
-            return [ContextEntryModel.from_row(row) for row in rows]
+            logger.info(f"Found {len(rows)} raw rows from database")
+
+            entries = [ContextEntryModel.from_row(row) for row in rows]
+            logger.info(f"Successfully converted to {len(entries)} ContextEntryModel objects")
+            return entries
 
     async def search_context_entries(
         self,
@@ -648,9 +654,9 @@ class ContextRepository:
                 """
                 DELETE FROM context_entries
                 WHERE user_id = ? AND project_path = ?
-                AND timestamp < datetime('now', '-{} days')
-                """.format(max_age_days),
-                (user_id, project_path),
+                AND timestamp < datetime('now', '-' || ? || ' days')
+                """,
+                (user_id, project_path, max_age_days),
             )
             await conn.commit()
             deleted_count = cursor.rowcount

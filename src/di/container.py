@@ -277,6 +277,7 @@ class ApplicationContainer:
         from src.claude.monitor import ToolMonitor
         from src.claude.integration import ClaudeProcessManager
         from src.claude.context_memory import ContextMemoryManager
+        from src.claude.session_idle_manager import IdleSessionManager
         from src.claude.facade import ClaudeIntegration
 
         # Session manager
@@ -330,6 +331,16 @@ class ApplicationContainer:
         # Process manager (for CLI mode)
         if not config.use_sdk:
             self.container.factory("process_manager", ClaudeProcessManager, config)
+
+        # Idle session manager - requires bot application to be created later
+        def create_idle_session_manager():
+            # This will be set later when telegram app is available
+            from telegram.ext import Application
+            telegram_app = None  # Will be set by bot when ready
+            idle_timeout_minutes = getattr(config, 'session_idle_timeout_minutes', 5)
+            return IdleSessionManager(telegram_app, idle_timeout_minutes)
+
+        self.container.singleton("idle_session_manager", create_idle_session_manager)
 
         # Claude integration facade
         def create_claude_integration():
@@ -415,6 +426,7 @@ class ApplicationContainer:
                 "mcp_context_handler": self.container.get("mcp_context_handler"),
                 "context_commands": self.container.get("context_commands"),
                 "unified_menu": self.container.get("unified_menu"),
+                "idle_session_manager": self.container.get("idle_session_manager"),
             }
 
             # Add optional components
@@ -446,6 +458,12 @@ class ApplicationContainer:
                 "claude_integration": self.container.get("claude_integration"),
                 "storage": self.container.get("storage"),
                 "config": self.container.get("config"),
+                # Security components - CRITICAL for auth middleware
+                "auth_manager": self.container.get("auth_manager"),
+                "audit_logger": self.container.get("audit_logger"),
+                "rbac_manager": self.container.get("rbac_manager"),
+                "rate_limiter": self.container.get("rate_limiter"),
+                "security_validator": self.container.get("security_validator"),
             }
 
         self.container.factory("application", create_application)

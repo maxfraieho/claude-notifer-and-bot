@@ -31,8 +31,8 @@ class EnhancedModulesIntegration:
         # Ініціалізуємо локалізацію
         self.i18n.load_translations()
 
-        # Встановлюємо українську мову за замовчуванням
-        self.i18n.set_locale("uk")
+        # Локаль тепер управляється per-user в wrapper.py, не глобально
+        # self.i18n.set_locale("uk") - deprecated, видалено
 
         logger.info("Enhanced modules initialized successfully")
 
@@ -142,12 +142,21 @@ class EnhancedModulesIntegration:
     async def switch_language(self, language: str, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Перемкнути мову інтерфейсу"""
         if language in ["uk", "en"]:
-            self.i18n.set_locale(language)
+            # Мова тепер зберігається per-user через user_language_storage
+            # Видалено deprecated self.i18n.set_locale(language)
 
-            # Зберігаємо вибір мови в контекст користувача
+            # Зберігаємо вибір мови в контекст користувача та в storage
             if not hasattr(context, 'user_data'):
                 context.user_data = {}
             context.user_data['language'] = language
+
+            # Також зберігаємо в user_language_storage якщо доступно
+            user_language_storage = context.bot_data.get("user_language_storage")
+            if user_language_storage and update.effective_user:
+                try:
+                    await user_language_storage.set_user_language(update.effective_user.id, language)
+                except Exception as e:
+                    logger.warning(f"Failed to save language preference: {e}")
 
             success_message = _('messages.language_changed')
 

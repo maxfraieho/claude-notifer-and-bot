@@ -48,6 +48,12 @@ async def handle_callback_query(
         else:
             action, param = data, None
 
+        # Import idle session handlers
+        from .idle_session_callbacks import (
+            handle_session_continue_callback,
+            handle_session_close_callback
+        )
+
         # Route to appropriate handler
         handlers = {
             "cd": handle_cd_callback,
@@ -68,6 +74,8 @@ async def handle_callback_query(
             "explain": handle_explain_callback,
             "refresh": handle_refresh_callback,
             "claude_status": handle_claude_status_callback,
+            "session_continue": handle_session_continue_callback,
+            "session_close": handle_session_close_callback,
         }
 
         # Check for MCP callbacks first
@@ -80,9 +88,19 @@ async def handle_callback_query(
         if data.startswith("context_"):
             context_commands = context.bot_data.get("context_commands")
             if context_commands:
-                await context_commands.handle_callback_query(update, context)
+                try:
+                    logger.debug("Processing context callback", callback_data=data, user_id=user_id)
+                    await context_commands.handle_callback_query(update, context)
+                except Exception as context_error:
+                    logger.error("Error in context_commands.handle_callback_query",
+                               callback_data=data, user_id=user_id, error=str(context_error),
+                               error_type=type(context_error).__name__)
+                    await query.edit_message_text(
+                        "❌ Помилка отримання списку\nСпробуйте пізніше або зверніться до адміністратора."
+                    )
             else:
-                logger.warning("Context commands not available")
+                logger.warning("Context commands not available in bot_data",
+                             available_deps=list(context.bot_data.keys()))
                 await query.edit_message_text(
                     "❌ Система контекстної пам'яті недоступна"
                 )

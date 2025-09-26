@@ -180,7 +180,13 @@
     "cleared": "🔄 Session cleared",
     "save_complete": "💾 Code saved",
     "continued": "🔄 Session continued",
-    "no_active_session": "❌ No active session"
+    "no_active_session": "❌ No active session",
+    "idle": {
+      "title": "🕒 Idle Session",
+      "message": "Your Claude session has been idle for {timeout_minutes} minutes.\n\nWould you like to continue working or close the session?",
+      "continue": "✅ Continue",
+      "close": "❌ Close Session"
+    }
   },
   "actions": {
     "title": "⚡ Quick Actions"

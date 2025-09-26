@@ -553,8 +553,8 @@ async def continue_session(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             if context.user_data:
                 context.user_data["claude_session_id"] = claude_response.session_id
 
-            # Delete status message and send response
-            await status_msg.delete()
+            # TEMPORARILY DISABLED FOR DEBUGGING: Delete status message and send response
+            # await status_msg.delete()  # TEMP: keep messages for context debugging
 
             # Format and send Claude's response
             from ..utils.formatting import ResponseFormatter
@@ -607,10 +607,11 @@ async def continue_session(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         error_msg = str(e)
         logger.error("Error in continue command", error=error_msg, user_id=user_id)
 
-        # Delete status message if it exists
+        # TEMPORARILY DISABLED FOR DEBUGGING: Delete status message if it exists
         try:
             if 'status_msg' in locals() and status_msg:
-                await status_msg.delete()
+                # await status_msg.delete()  # TEMP: keep messages for context debugging  # TEMP: keep messages for context debugging
+                pass
         except Exception as e:
             logger.warning("Failed to delete status message", error=str(e))
 

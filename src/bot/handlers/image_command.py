@@ -271,9 +271,10 @@ class ImageCommandHandler:
                 await self._safe_edit_or_send_error(progress_msg, message, error_text)
                 return
 
-            # Delete progress message safely
+            # TEMPORARILY DISABLED: Delete progress message safely
             try:
-                await progress_msg.delete()
+                # await progress_msg.delete()  # TEMP: keep messages for context debugging
+                pass
             except Exception as e:
                 logger.warning("Could not delete progress message", error=str(e))
 

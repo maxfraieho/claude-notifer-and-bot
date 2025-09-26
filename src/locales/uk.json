@@ -14,8 +14,20 @@
   },
   "messages": {
     "welcome": "Вітаю! Я Claude Code Bot. Допоможу вам з розробкою.",
-    "session_started": "Сесію розпочато",
+    "session_started": "Сесію розпочано",
     "session_ended": "Сесію завершено",
     "error": "Виникла помилка"
+  },
+  "plurals": {
+    "sessions_found": {
+      "one": "Знайдено {count} сесію",
+      "few": "Знайдено {count} сесії",
+      "many": "Знайдено {count} сесій"
+    },
+    "messages_count": {
+      "one": "{count} повідомлення",
+      "few": "{count} повідомлення",
+      "many": "{count} повідомлень"
+    }
   }
 }

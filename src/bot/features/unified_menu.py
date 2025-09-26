@@ -130,7 +130,8 @@ class UnifiedMenu:
         """Show context memory management menu."""
         try:
             user_id = update.effective_user.id
-            project_path = str(context.bot_data.get("approved_directory", "/tmp"))
+            # Використовуємо поточну робочу директорію замість /tmp fallback
+            project_path = str(context.bot_data.get("approved_directory", "/home/vokov/projects/claude-notifer-and-bot"))
 
             # Get context statistics
             user_context = await self.context_memory.get_user_context(user_id, project_path)
@@ -219,7 +220,8 @@ class UnifiedMenu:
     async def show_files_menu(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Show file management menu."""
         try:
-            current_dir = str(context.bot_data.get("approved_directory", "/tmp"))
+            settings = context.bot_data.get("settings")
+            current_dir = str(context.bot_data.get("approved_directory", settings.approved_directory if settings else "/home/vokov/projects/claude-notifer-and-bot"))
             dir_name = current_dir.split('/')[-1] if current_dir != "/" else "root"
 
             menu_text = (

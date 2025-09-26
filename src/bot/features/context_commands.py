@@ -39,11 +39,10 @@ class ContextCommands:
                     settings_available=bool(settings),
                     settings_approved_dir=getattr(settings, 'approved_directory', None) if settings else None)
 
-        # Use settings.approved_directory as primary source, fallback to hardcoded path
-        if settings and hasattr(settings, 'approved_directory'):
-            project_path = str(settings.approved_directory)
-        else:
-            project_path = "/home/vokov/projects/claude-notifer-and-bot"
+        # Use bot_data.approved_directory as primary source, then settings, then fallback
+        project_path = str(context.bot_data.get("approved_directory",
+            getattr(settings, 'approved_directory', "/home/vokov/projects/claude-notifer-and-bot") if settings
+            else "/home/vokov/projects/claude-notifer-and-bot"))
 
         logger.info("Context status using project_path", project_path=project_path)
 
@@ -107,11 +106,10 @@ class ContextCommands:
         user_id = update.effective_user.id
         settings = context.bot_data.get("settings")
 
-        # Use settings.approved_directory as primary source, fallback to hardcoded path
-        if settings and hasattr(settings, 'approved_directory'):
-            project_path = str(settings.approved_directory)
-        else:
-            project_path = "/home/vokov/projects/claude-notifer-and-bot"
+        # Use bot_data.approved_directory as primary source, then settings, then fallback
+        project_path = str(context.bot_data.get("approved_directory",
+            getattr(settings, 'approved_directory', "/home/vokov/projects/claude-notifer-and-bot") if settings
+            else "/home/vokov/projects/claude-notifer-and-bot"))
 
         # Determine if this is from callback or direct command
         is_callback = hasattr(update, 'callback_query') and update.callback_query
@@ -203,11 +201,10 @@ class ContextCommands:
         user_id = update.effective_user.id
         settings = context.bot_data.get("settings")
 
-        # Use settings.approved_directory as primary source, fallback to hardcoded path
-        if settings and hasattr(settings, 'approved_directory'):
-            project_path = str(settings.approved_directory)
-        else:
-            project_path = "/home/vokov/projects/claude-notifer-and-bot"
+        # Use bot_data.approved_directory as primary source, then settings, then fallback
+        project_path = str(context.bot_data.get("approved_directory",
+            getattr(settings, 'approved_directory', "/home/vokov/projects/claude-notifer-and-bot") if settings
+            else "/home/vokov/projects/claude-notifer-and-bot"))
 
         try:
             # Parse JSON content
@@ -272,11 +269,10 @@ class ContextCommands:
         user_id = update.effective_user.id
         settings = context.bot_data.get("settings")
 
-        # Use settings.approved_directory as primary source, fallback to hardcoded path
-        if settings and hasattr(settings, 'approved_directory'):
-            project_path = str(settings.approved_directory)
-        else:
-            project_path = "/home/vokov/projects/claude-notifer-and-bot"
+        # Use bot_data.approved_directory as primary source, then settings, then fallback
+        project_path = str(context.bot_data.get("approved_directory",
+            getattr(settings, 'approved_directory', "/home/vokov/projects/claude-notifer-and-bot") if settings
+            else "/home/vokov/projects/claude-notifer-and-bot"))
 
         # Determine if this is from callback or direct command
         is_callback = hasattr(update, 'callback_query') and update.callback_query
@@ -316,11 +312,10 @@ class ContextCommands:
         user_id = update.effective_user.id
         settings = context.bot_data.get("settings")
 
-        # Use settings.approved_directory as primary source, fallback to hardcoded path
-        if settings and hasattr(settings, 'approved_directory'):
-            project_path = str(settings.approved_directory)
-        else:
-            project_path = "/home/vokov/projects/claude-notifer-and-bot"
+        # Use bot_data.approved_directory as primary source, then settings, then fallback
+        project_path = str(context.bot_data.get("approved_directory",
+            getattr(settings, 'approved_directory', "/home/vokov/projects/claude-notifer-and-bot") if settings
+            else "/home/vokov/projects/claude-notifer-and-bot"))
 
         try:
             # Clear context
@@ -375,11 +370,10 @@ class ContextCommands:
         user_id = update.effective_user.id
         settings = context.bot_data.get("settings")
 
-        # Use settings.approved_directory as primary source, fallback to hardcoded path
-        if settings and hasattr(settings, 'approved_directory'):
-            project_path = str(settings.approved_directory)
-        else:
-            project_path = "/home/vokov/projects/claude-notifer-and-bot"
+        # Use bot_data.approved_directory as primary source, then settings, then fallback
+        project_path = str(context.bot_data.get("approved_directory",
+            getattr(settings, 'approved_directory', "/home/vokov/projects/claude-notifer-and-bot") if settings
+            else "/home/vokov/projects/claude-notifer-and-bot"))
 
         try:
             # Search context entries
@@ -446,17 +440,17 @@ class ContextCommands:
         user_id = update.effective_user.id
         settings = context.bot_data.get("settings")
 
-        # Use settings.approved_directory as primary source, fallback to hardcoded path
-        if settings and hasattr(settings, 'approved_directory'):
-            project_path = str(settings.approved_directory)
-        else:
-            project_path = "/home/vokov/projects/claude-notifer-and-bot"
+        # Use bot_data.approved_directory as primary source, then settings, then fallback
+        project_path = str(context.bot_data.get("approved_directory",
+            getattr(settings, 'approved_directory', "/home/vokov/projects/claude-notifer-and-bot") if settings
+            else "/home/vokov/projects/claude-notifer-and-bot"))
 
         # Determine if this is from callback or direct command
         is_callback = hasattr(update, 'callback_query') and update.callback_query
-        message = update.callback_query.message if is_callback else update.message
 
         try:
+            logger.info(f"Trying to get context entries for user {user_id}, project_path: {project_path}")
+
             # Get recent context entries
             entries = await self.storage.context.get_recent_context_entries(
                 user_id=user_id,
@@ -464,6 +458,8 @@ class ContextCommands:
                 days=7,
                 limit=10
             )
+
+            logger.info(f"Retrieved {len(entries) if entries else 0} context entries")
 
             if not entries:
                 list_text = (
@@ -474,9 +470,9 @@ class ContextCommands:
 
                 if is_callback:
                     await update.callback_query.answer("📋 Список контексту")
-                    await message.reply_text(list_text, parse_mode="Markdown")
+                    await update.callback_query.edit_message_text(list_text, parse_mode="Markdown")
                 else:
-                    await message.reply_text(list_text, parse_mode="Markdown")
+                    await update.message.reply_text(list_text, parse_mode="Markdown")
                 return
 
             # Format entries list
@@ -505,25 +501,31 @@ class ContextCommands:
 
             if is_callback:
                 await update.callback_query.answer("📋 Список контексту")
-                await message.reply_text(
+                await update.callback_query.edit_message_text(
                     "\n".join(list_lines),
                     parse_mode="Markdown",
                     reply_markup=reply_markup
                 )
             else:
-                await message.reply_text(
+                await update.message.reply_text(
                     "\n".join(list_lines),
                     parse_mode="Markdown",
                     reply_markup=reply_markup
                 )
 
         except Exception as e:
-            logger.error("Failed to list context entries", error=str(e))
-            await update.message.reply_text(
+            logger.error(f"Failed to list context entries for user {user_id}, project_path: {project_path}",
+                        error=str(e), exception=e, exc_info=True)
+            error_text = (
                 "❌ **Помилка отримання списку**\n\n"
-                "Спробуйте пізніше або зверніться до адміністратора.",
-                parse_mode="Markdown"
+                "Спробуйте пізніше або зверніться до адміністратора."
             )
+
+            if is_callback:
+                await update.callback_query.answer("❌ Помилка")
+                await update.callback_query.edit_message_text(error_text, parse_mode="Markdown")
+            else:
+                await update.message.reply_text(error_text, parse_mode="Markdown")
 
     async def handle_callback_query(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Handle callback queries from context management buttons."""
@@ -571,11 +573,10 @@ class ContextCommands:
         user_id = update.effective_user.id
         settings = context.bot_data.get("settings")
 
-        # Use settings.approved_directory as primary source, fallback to hardcoded path
-        if settings and hasattr(settings, 'approved_directory'):
-            project_path = str(settings.approved_directory)
-        else:
-            project_path = "/home/vokov/projects/claude-notifer-and-bot"
+        # Use bot_data.approved_directory as primary source, then settings, then fallback
+        project_path = str(context.bot_data.get("approved_directory",
+            getattr(settings, 'approved_directory', "/home/vokov/projects/claude-notifer-and-bot") if settings
+            else "/home/vokov/projects/claude-notifer-and-bot"))
 
         try:
             # Get search results
@@ -632,11 +633,10 @@ class ContextCommands:
         user_id = update.effective_user.id
         settings = context.bot_data.get("settings")
 
-        # Use settings.approved_directory as primary source, fallback to hardcoded path
-        if settings and hasattr(settings, 'approved_directory'):
-            project_path = str(settings.approved_directory)
-        else:
-            project_path = "/home/vokov/projects/claude-notifer-and-bot"
+        # Use bot_data.approved_directory as primary source, then settings, then fallback
+        project_path = str(context.bot_data.get("approved_directory",
+            getattr(settings, 'approved_directory', "/home/vokov/projects/claude-notifer-and-bot") if settings
+            else "/home/vokov/projects/claude-notifer-and-bot"))
 
         try:
             # Get recent entries
