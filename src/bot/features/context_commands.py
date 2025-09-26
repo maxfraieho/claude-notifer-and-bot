@@ -92,16 +92,28 @@ class ContextCommands:
         user_id = update.effective_user.id
         project_path = str(context.bot_data.get("approved_directory", "/tmp"))
 
+        # Determine if this is from callback or direct command
+        is_callback = hasattr(update, 'callback_query') and update.callback_query
+        message = update.callback_query.message if is_callback else update.message
+
         try:
             # Export context
             context_data = await self.context_memory.export_context(user_id, project_path)
 
             if not context_data.get("entries"):
-                await update.message.reply_text(
-                    "📭 **Контекст порожній**\n\n"
-                    "Немає збереженого контексту для експорту.",
-                    parse_mode="Markdown"
-                )
+                if is_callback:
+                    await update.callback_query.answer("📭 Контекст порожній")
+                    await message.reply_text(
+                        "📭 **Контекст порожній**\n\n"
+                        "Немає збереженого контексту для експорту.",
+                        parse_mode="Markdown"
+                    )
+                else:
+                    await message.reply_text(
+                        "📭 **Контекст порожній**\n\n"
+                        "Немає збереженого контексту для експорту.",
+                        parse_mode="Markdown"
+                    )
                 return
 
             # Format as readable JSON
@@ -117,7 +129,10 @@ class ContextCommands:
             file_obj = BytesIO(export_content.encode('utf-8'))
             file_obj.name = filename
 
-            await update.message.reply_document(
+            if is_callback:
+                await update.callback_query.answer("📤 Експортую контекст...")
+
+            await message.reply_document(
                 document=file_obj,
                 caption=(
                     f"📤 **Експорт контексту успішний**\n\n"
@@ -145,6 +160,9 @@ class ContextCommands:
         user_id = update.effective_user.id
         project_path = str(context.bot_data.get("approved_directory", "/tmp"))
 
+        # Determine if this is from callback or direct command
+        is_callback = hasattr(update, 'callback_query') and update.callback_query
+
         # Create confirmation keyboard
         keyboard = [
             [
@@ -154,14 +172,26 @@ class ContextCommands:
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-        await update.message.reply_text(
+        confirmation_text = (
             "⚠️ **Підтвердження очищення контексту**\n\n"
             "Це дія видалить **весь** збережений контекст розмов з Claude CLI.\n"
             "Відновити дані після цього буде **неможливо**.\n\n"
-            "Ви дійсно хочете продовжити?",
-            parse_mode="Markdown",
-            reply_markup=reply_markup
+            "Ви дійсно хочете продовжити?"
         )
+
+        if is_callback:
+            await update.callback_query.answer("⚠️ Підтвердження очищення")
+            await update.callback_query.message.reply_text(
+                confirmation_text,
+                parse_mode="Markdown",
+                reply_markup=reply_markup
+            )
+        else:
+            await update.message.reply_text(
+                confirmation_text,
+                parse_mode="Markdown",
+                reply_markup=reply_markup
+            )
 
     async def handle_context_clear_confirm(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Confirm and execute context clearing."""
@@ -197,12 +227,21 @@ class ContextCommands:
 
     async def handle_context_search(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Search context entries by content."""
-        await update.message.reply_text(
+        # Determine if this is from callback or direct command
+        is_callback = hasattr(update, 'callback_query') and update.callback_query
+        message = update.callback_query.message if is_callback else update.message
+
+        search_text = (
             "🔍 **Пошук в контексті**\n\n"
             "Надішліть текст для пошуку в збережених розмовах.\n"
-            "Наприклад: `помилка база даних` або `функція логування`",
-            parse_mode="Markdown"
+            "Наприклад: `помилка база даних` або `функція логування`"
         )
+
+        if is_callback:
+            await update.callback_query.answer("🔍 Пошук в контексті")
+            await message.reply_text(search_text, parse_mode="Markdown")
+        else:
+            await message.reply_text(search_text, parse_mode="Markdown")
 
         # Set user state for search
         context.user_data["awaiting_context_search"] = True
@@ -277,6 +316,10 @@ class ContextCommands:
         user_id = update.effective_user.id
         project_path = str(context.bot_data.get("approved_directory", "/tmp"))
 
+        # Determine if this is from callback or direct command
+        is_callback = hasattr(update, 'callback_query') and update.callback_query
+        message = update.callback_query.message if is_callback else update.message
+
         try:
             # Get recent context entries
             entries = await self.storage.context.get_recent_context_entries(
@@ -287,12 +330,17 @@ class ContextCommands:
             )
 
             if not entries:
-                await update.message.reply_text(
+                list_text = (
                     "📋 **Список контексту**\n\n"
                     "Немає записів за останні 7 днів.\n"
-                    "Почніть розмову з Claude CLI, щоб створити контекст.",
-                    parse_mode="Markdown"
+                    "Почніть розмову з Claude CLI, щоб створити контекст."
                 )
+
+                if is_callback:
+                    await update.callback_query.answer("📋 Список контексту")
+                    await message.reply_text(list_text, parse_mode="Markdown")
+                else:
+                    await message.reply_text(list_text, parse_mode="Markdown")
                 return
 
             # Format entries list
@@ -319,11 +367,19 @@ class ContextCommands:
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
 
-            await update.message.reply_text(
-                "\n".join(list_lines),
-                parse_mode="Markdown",
-                reply_markup=reply_markup
-            )
+            if is_callback:
+                await update.callback_query.answer("📋 Список контексту")
+                await message.reply_text(
+                    "\n".join(list_lines),
+                    parse_mode="Markdown",
+                    reply_markup=reply_markup
+                )
+            else:
+                await message.reply_text(
+                    "\n".join(list_lines),
+                    parse_mode="Markdown",
+                    reply_markup=reply_markup
+                )
 
         except Exception as e:
             logger.error("Failed to list context entries", error=str(e))

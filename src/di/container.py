@@ -302,10 +302,19 @@ class ApplicationContainer:
 
         # Context commands
         def create_context_commands():
-            storage = self.container.get("storage")
-            context_memory = self.container.get("context_memory")
-            from src.bot.features.context_commands import ContextCommands
-            return ContextCommands(storage, context_memory)
+            logger.info("Creating context_commands dependency")
+            try:
+                storage = self.container.get("storage")
+                logger.info("Storage dependency retrieved successfully")
+                context_memory = self.container.get("context_memory")
+                logger.info("Context_memory dependency retrieved successfully")
+                from src.bot.features.context_commands import ContextCommands
+                result = ContextCommands(storage, context_memory)
+                logger.info("ContextCommands instance created successfully")
+                return result
+            except Exception as e:
+                logger.error("Failed to create context_commands", error=str(e), exc_info=True)
+                raise
 
         self.container.factory("context_commands", create_context_commands)
 

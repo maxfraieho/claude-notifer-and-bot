@@ -357,89 +357,6 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         )
 
 
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle /help command with localization."""
-    user_id = get_user_id(update)
-    message = get_effective_message(update)
-    
-    if not user_id or not message:
-        return
-    
-    # Get localized help text - try to get combined help or build from components
-    localization = context.bot_data.get("localization")
-    user_language_storage = context.bot_data.get("user_language_storage")
-    
-    if localization and user_language_storage:
-        # Try to get full help text from translations
-        user_lang = await user_language_storage.get_user_language(user_id) 
-        if not user_lang:
-            user_lang = "uk"  # Default to Ukrainian
-        help_data = localization.translations.get(user_lang, {}).get("commands", {}).get("help", {})
-        
-        if help_data:
-            # Build help text from individual components
-            parts = []
-            if "title" in help_data:
-                parts.append(help_data["title"])
-                parts.append("")
-            
-            if "navigation_title" in help_data:
-                parts.append(help_data["navigation_title"])
-                parts.extend([
-                    f"• `/ls` - {help_data.get('ls_desc', 'List files and directories')}",
-                    f"• `/cd <directory>` - {help_data.get('cd_desc', 'Change to directory')}",
-                    f"• `/pwd` - {help_data.get('pwd_desc', 'Show current directory')}",
-                    ""
-                ])
-            
-            if "session_title" in help_data:
-                parts.append(help_data["session_title"])
-                parts.extend([
-                    f"• `/new` - {help_data.get('new_desc', 'Start new Claude session')}",
-                    f"• `/continue [message]` - {help_data.get('continue_desc', 'Continue last session')}",
-                    f"• `/end` - {help_data.get('end_desc', 'End current session')}",
-                    f"• `/status` - {help_data.get('status_desc', 'Show session and usage status')}",
-                    f"• `/export` - {help_data.get('export_desc', 'Export session history')}",
-                    f"• `/actions` - {help_data.get('actions_desc', 'Show context-aware quick actions')}",
-                    f"• `/git` - {help_data.get('git_desc', 'Git repository information')}",
-                    ""
-                ])
-            
-            if "usage_title" in help_data:
-                parts.append(help_data["usage_title"])
-                parts.extend([
-                    f"• {help_data.get('usage_cd', 'cd mydir - Enter directory')}",
-                    f"• {help_data.get('usage_ls', 'ls - See what is in current directory')}",
-                    f"• {help_data.get('usage_code', 'Create a simple Python script - Ask Claude to code')}",
-                    f"• {help_data.get('usage_file', 'Send a file to have Claude review it')}",
-                    ""
-                ])
-            
-            if "tips_title" in help_data:
-                parts.append(help_data["tips_title"])
-                parts.extend([
-                    f"• {help_data.get('tips_specific', 'Use specific, clear requests for best results')}",
-                    f"• {help_data.get('tips_status', 'Check `/status` to monitor your usage')}",
-                    f"• {help_data.get('tips_buttons', 'Use quick action buttons when available')}",
-                ])
-            
-            help_text = "\n".join(parts)
-        else:
-            # Fallback to English
-            help_text = await t(context, user_id, "commands.help.title")
-    else:
-        # Ultimate fallback
-        help_text = (
-            "🤖 **Claude Code Telegram Bot Help**\n\n"
-            "• `/new` - Start new Claude session\n"
-            "• `/help` - Show this help\n"
-            "• `/status` - Show session status\n"
-            "• `/ls` - List files\n"
-            "• `/cd <dir>` - Change directory"
-        )
-
-    await message.reply_text(help_text, parse_mode=None)
-
 
 async def new_session(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /new command."""
@@ -1448,25 +1365,6 @@ async def add_schedule_command(update: Update, context: ContextTypes.DEFAULT_TYP
 
 # ========== MISSING CRITICAL COMMAND HANDLERS ==========
 
-async def status_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Show bot and session status."""
-    user_id = get_user_id(update)
-    message = get_effective_message(update)
-    
-    if not user_id or not message:
-        return
-    
-    try:
-        status_text = await t(context, user_id, "status.title")
-        current_dir = await t(context, user_id, "status.directory", directory=str(Path.cwd()))
-        claude_active = "🤖 Сесія Claude: ✅ Активна" if context.user_data.get('claude_session_active') else await t(context, user_id, "status.claude_session_inactive")
-        
-        full_status = f"{status_text}\n\n{current_dir}\n{claude_active}"
-        await message.reply_text(full_status)
-        logger.info("Status command executed", user_id=user_id)
-    except Exception as e:
-        await safe_user_error(update, context, "errors.status_failed", e)
-        logger.error("Status handler error", error=str(e), user_id=user_id)
 
 async def help_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Show help information with comprehensive command list."""
@@ -3574,9 +3472,16 @@ async def context_status_command(update: Update, context: ContextTypes.DEFAULT_T
         # Get context commands handler
         context_commands = context.bot_data.get("context_commands")
         if not context_commands:
+            # DEBUG: Log available bot_data keys
+            available_keys = list(context.bot_data.keys())
+            logger.error("context_commands not found in bot_data",
+                        available_keys=available_keys,
+                        user_id=user_id)
+
             await message.reply_text(
-                "❌ **Система контекстної пам'яті недоступна**\n\n"
-                "Контекстна пам'ять не налаштована або тимчасово недоступна.",
+                f"❌ **Система контекстної пам'яті недоступна**\n\n"
+                f"Контекстна пам'ять не налаштована або тимчасово недоступна.\n"
+                f"DEBUG: Доступні ключі: {', '.join(available_keys[:5])}{'...' if len(available_keys) > 5 else ''}",
                 parse_mode="Markdown"
             )
             return

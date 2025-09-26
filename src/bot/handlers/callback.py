@@ -798,6 +798,7 @@ async def _handle_context_action(query, context: ContextTypes.DEFAULT_TYPE) -> N
                     self.callback_query = callback_query
                     self.effective_user = callback_query.from_user
                     self.effective_chat = callback_query.message.chat
+                    self.message = callback_query.message
 
             fake_update = FakeUpdate(query)
             await context_commands.handle_context_status(fake_update, context)

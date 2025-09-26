@@ -75,6 +75,22 @@ class ClaudeCodeBot:
         # Add feature registry to dependencies
         self.deps["features"] = self.feature_registry
 
+        # CRITICAL FIX: Inject dependencies into application.bot_data
+        # This ensures dependencies are available in callback handlers
+        self.app.bot_data.update(self.deps)
+        self.app.bot_data["settings"] = self.settings
+
+        # DEBUG: Verify critical dependencies
+        if "context_commands" not in self.app.bot_data:
+            logger.error("context_commands not found in bot_data",
+                        available_keys=list(self.app.bot_data.keys()),
+                        deps_keys=list(self.deps.keys()))
+        else:
+            logger.info("context_commands successfully injected into bot_data")
+
+        logger.info("Dependencies injected into application bot_data",
+                   deps=list(self.deps.keys()))
+
         # Set bot commands for menu
         await self._set_bot_commands()
 
@@ -89,6 +105,12 @@ class ClaudeCodeBot:
         self.app.add_handler(
             MessageHandler(
                 filters.ALL, self._create_middleware_handler(claude_availability_middleware)
+            ),
+            group=-4,
+        )
+        self.app.add_handler(
+            CallbackQueryHandler(
+                self._create_middleware_handler(claude_availability_middleware)
             ),
             group=-4,
         )
@@ -176,7 +198,7 @@ class ClaudeCodeBot:
             ("ls", command.list_files),
             ("cd", command.change_directory),
             ("pwd", command.pwd_handler),
-            ("status", command.status_handler),
+            ("status", command.session_status),
             ("export", command.export_session),
             ("actions", command.actions_handler),
             ("git", command.git_handler),
@@ -276,10 +298,18 @@ class ClaudeCodeBot:
         from .middleware.security import security_middleware
 
         # Middleware runs in order of group numbers (lower = earlier)
+        # Apply middleware to ALL update types (messages AND callbacks)
+
         # Security middleware first (validate inputs)
         self.app.add_handler(
             MessageHandler(
                 filters.ALL, self._create_middleware_handler(security_middleware)
+            ),
+            group=-3,
+        )
+        self.app.add_handler(
+            CallbackQueryHandler(
+                self._create_middleware_handler(security_middleware)
             ),
             group=-3,
         )
@@ -291,11 +321,23 @@ class ClaudeCodeBot:
             ),
             group=-2,
         )
+        self.app.add_handler(
+            CallbackQueryHandler(
+                self._create_middleware_handler(auth_middleware)
+            ),
+            group=-2,
+        )
 
         # Rate limiting third
         self.app.add_handler(
             MessageHandler(
                 filters.ALL, self._create_middleware_handler(rate_limit_middleware)
+            ),
+            group=-1,
+        )
+        self.app.add_handler(
+            CallbackQueryHandler(
+                self._create_middleware_handler(rate_limit_middleware)
             ),
             group=-1,
         )

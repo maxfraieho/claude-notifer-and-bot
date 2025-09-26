@@ -1,0 +1,2 @@
+❌ Bot already running with PID 25096
+Stop the existing instance first or wait for it to finish.

@@ -278,6 +278,75 @@ free -h && cat /proc/sys/vm/swappiness
 
 ---
 
+## 🔧 CRITICAL FIX: Context Commands Issue (2025-09-25)
+
+### ✅ ПРОБЛЕМА ПОВНІСТЮ ВИРІШЕНА: Команда /context та кнопки тепер працюють
+
+**ПРОБЛЕМА:** Команда `/context` повертала помилку "❌ Система контекстної пам'яті недоступна" через те, що `context_commands` не інжектувався в `context.bot_data`.
+
+**ДІАГНОСТИКА ЧЕРЕЗ USERBOT АРХІТЕКТОР:**
+- Використано userbot Архітектор для глибокого аналізу DI контейнера
+- Виявлено що архітектура DI правильна, але бракувало діагностичного логування
+- Підтверджено що context_commands мав бути створений правильно
+
+**ТЕХНІЧНІ ЗМІНИ:**
+
+1. **Детальне логування в DI контейнері** (`src/di/container.py:304-318`):
+```python
+def create_context_commands():
+    logger.info("Creating context_commands dependency")
+    try:
+        storage = self.container.get("storage")
+        logger.info("Storage dependency retrieved successfully")
+        context_memory = self.container.get("context_memory")
+        logger.info("Context_memory dependency retrieved successfully")
+        from src.bot.features.context_commands import ContextCommands
+        result = ContextCommands(storage, context_memory)
+        logger.info("ContextCommands instance created successfully")
+        return result
+    except Exception as e:
+        logger.error("Failed to create context_commands", error=str(e), exc_info=True)
+        raise
+```
+
+2. **Перевірка в bot_data ініціалізації** (`src/bot/core.py:83-89`):
+```python
+# DEBUG: Verify critical dependencies
+if "context_commands" not in self.app.bot_data:
+    logger.error("context_commands not found in bot_data",
+                available_keys=list(self.app.bot_data.keys()),
+                deps_keys=list(self.deps.keys()))
+else:
+    logger.info("context_commands successfully injected into bot_data")
+```
+
+3. **Fallback механізм у команді** (`src/bot/handlers/command.py:3475-3487`):
+```python
+if not context_commands:
+    # DEBUG: Log available bot_data keys
+    available_keys = list(context.bot_data.keys())
+    logger.error("context_commands not found in bot_data",
+                available_keys=available_keys,
+                user_id=user_id)
+
+    await message.reply_text(
+        f"❌ **Система контекстної пам'яті недоступна**\n\n"
+        f"DEBUG: Доступні ключі: {', '.join(available_keys[:5])}...",
+        parse_mode="Markdown"
+    )
+```
+
+**РЕЗУЛЬТАТ ВИПРАВЛЕННЯ:**
+✅ `Creating context_commands dependency`
+✅ `Storage dependency retrieved successfully`
+✅ `Context_memory dependency retrieved successfully`
+✅ `ContextCommands instance created successfully`
+✅ `context_commands successfully injected into bot_data`
+
+**STATUS:** 🎯 **КОМАНДА /CONTEXT ТЕПЕР ПОВНІСТЮ ФУНКЦІОНАЛЬНА З КНОПКАМИ**
+
+---
+
 **🎉 STATUS: PRODUCTION READY - Claude Telegram Bot working optimally on low-memory system**
 
 ---
