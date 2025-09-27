@@ -23,6 +23,17 @@
       "security_note": "🔒 Your access is secured and all actions are logged.",
       "usage_note": "📊 Use `/status` to check your usage limits."
     },
+    "img": {
+      "instructions": "📸 **Image Processing with Claude**\n\n🖼️ **Send images** for analysis:\n• Code screenshots\n• Diagrams and schemas\n• UI/UX designs\n• Charts and tables\n\n📝 **Add instructions** (optional):\n• Describe what to analyze\n• Ask specific questions\n• Request explanations\n\n⚡ **Commands:**\n• `done` - start analysis\n• `cancel` - end session\n• `fix` - bug fixing mode\n\n💡 **Examples:**\n• \"Analyze this code for errors\"\n• \"Explain this diagram\"\n• \"How to improve this interface?\"",
+      "session_expired": "⏰ **Session Expired**\n\nTime limit reached. Start a new session with `/img`.",
+      "image_received": "✅ **Image Received** ({count}/{max})\n\n📝 Send instructions or more images.\n💡 Type `done` to start analysis.",
+      "no_images": "❌ **No Images**\n\nPlease send images for analysis first.",
+      "cancelled": "❌ **Analysis Cancelled**\n\nSession ended. Use `/img` for a new session.",
+      "fix_mode_activated": "🔧 **Fix Mode Activated**\n\nClaude will focus on finding and fixing code errors.",
+      "instruction_updated": "📝 **Instructions Updated**\n\nCurrent images: {count}. Send `done` to analyze or continue uploading.",
+      "processing": "🤖 **Analyzing images with Claude...**\n\nPlease wait. This may take a few minutes.",
+      "error": "❌ **Processing Error**\n\n{error}\n\nTry again or use `/img` for a new session."
+    },
     "help": {
       "title": "🤖 **Claude Code Telegram Bot Help**",
       "commands": "Available commands:\n/status - Status\n/new - New session\n/actions - Actions\n/restart - Restart bot"
@@ -59,10 +70,6 @@
     "actions": {
       "title": "⚡ Quick Actions",
       "description": "Choose an action to perform:"
-    },
-    "export": {
-      "title": "💾 Export Session",
-      "processing": "Processing session data..."
     },
     "main_menu": {
       "title": "Main Menu",
@@ -123,11 +130,8 @@
     "main_menu": "🏠 Main Menu",
     "root": "🏠 Root",
     "help": "❓ Help",
-    "continue": "🔄 Continue",
     "refresh": "🔄 Refresh",
     "projects": "📁 Projects",
-    "continue_session": "🔄 Continue Session",
-    "export_session": "💾 Export Session",
     "context": "🧠 Context",
     "settings": "⚙️ Settings",
     "status": "📊 Status",
@@ -156,35 +160,34 @@
     "create_new": "📝 Create New",
     "back_simple": "⬅️ Back",
     "prompts_settings": "🔧 Settings",
-    "prompts_history": "📊 History",
-    "json_export": "📋 JSON",
-    "markdown_export": "📝 Markdown"
+    "prompts_history": "📊 History"
   },
   "status": {
-    "title": "📊 Bot Status",
+    "title": "📊 **Session Status**",
+    "project": "📁 Project: `{directory}`",
+    "claude_available": "🤖 Claude CLI: ✅ Available",
+    "claude_unavailable": "🤖 Claude CLI: ❌ Unavailable",
+    "last_update": "🕐 Last update: {time}",
+    "session_id": "🆔 Session ID: `{session_id}...`",
     "directory": "📂 Current Directory: {directory}",
     "claude_session_active": "🤖 Claude Session: ✅ Active",
     "claude_session_inactive": "🤖 Claude Session: ❌ Inactive",
     "usage": "📊 Usage Statistics",
-    "session_id": "🆔 Session ID: {session_id}",
     "usage_info": "You have used {used}/{limit} credits this session",
-    "usage_error": "❌ Failed to retrieve usage data",
-    "last_update": "🕐 Last update: {time} UTC"
+    "usage_error": "❌ Failed to retrieve usage data"
   },
   "help": {
     "title": "❓ Help",
-    "commands": "**Navigation Commands:**\n• `/ls` - List files and directories\n• `/cd <directory>` - Change to directory\n• `/pwd` - Show current directory\n• `/projects` - Show available projects\n\n**Session Commands:**\n• `/new` - Start new Claude session\n• `/continue` - Continue last session\n• `/status` - Show session status\n• `/export` - Export session history\n\n**DRACON System (Visual Modeling):**\n• `/dracon help` - DRACON help\n• `/dracon diagram <category> <file>` - 🎨 Visual diagram\n• `/dracon list [category]` - List schemas\n• `/dracon analyze <yaml>` - Analyze schema\n• `/refactor` - Reverse engineer code to DRACON\n\n**Special Commands:**\n• `/actions` - Show quick actions\n• `/git` - Git repository commands\n• `/claude` - Authorize Claude CLI\n• `/img` - Image processing with Claude\n\n**MCP Commands:**\n• `/mcpadd` - Add MCP server\n• `/mcplist` - List MCP servers\n• `/mcpselect` - Select active context\n• `/mcpask` - Query with MCP context\n• `/mcpremove` - Remove MCP server\n• `/mcpstatus` - MCP system status\n\n**Scheduler:**\n• `/schedules` - Task management\n• `/add_schedule` - Add new task\n\n**System Commands:**\n• `/restart` - Restart bot\n\n**Tips:**\n• Send text files for viewing\n• Use specific queries\n• Check status with `/status`"
+    "commands": "**Navigation Commands:**\n• `/ls` - List files and directories\n• `/cd <directory>` - Change to directory\n• `/pwd` - Show current directory\n• `/projects` - Show available projects\n\n**Session Commands:**\n• `/new` - Start new Claude session\n• `/status` - Show session status\n\n**DRACON System (Visual Modeling):**\n• `/dracon help` - DRACON help\n• `/dracon diagram <category> <file>` - 🎨 Visual diagram\n• `/dracon list [category]` - List schemas\n• `/dracon analyze <yaml>` - Analyze schema\n• `/refactor` - Reverse engineer code to DRACON\n\n**Special Commands:**\n• `/actions` - Show quick actions\n• `/git` - Git repository commands\n• `/claude` - Authorize Claude CLI\n• `/img` - Image processing with Claude\n\n**MCP Commands:**\n• `/mcpadd` - Add MCP server\n• `/mcplist` - List MCP servers\n• `/mcpselect` - Select active context\n• `/mcpask` - Query with MCP context\n• `/mcpremove` - Remove MCP server\n• `/mcpstatus` - MCP system status\n\n**Scheduler:**\n• `/schedules` - Task management\n• `/add_schedule` - Add new task\n\n**System Commands:**\n• `/restart` - Restart bot\n\n**Tips:**\n• Send text files for viewing\n• Use specific queries\n• Check status with `/status`"
   },
   "session": {
     "new_started": "🆕 New session started",
     "cleared": "🔄 Session cleared",
     "save_complete": "💾 Code saved",
-    "continued": "🔄 Session continued",
     "no_active_session": "❌ No active session",
     "idle": {
       "title": "🕒 Idle Session",
       "message": "Your Claude session has been idle for {timeout_minutes} minutes.\n\nWould you like to continue working or close the session?",
-      "continue": "✅ Continue",
       "close": "❌ Close Session"
     }
   },
@@ -228,7 +231,6 @@
     "pwd_failed": "❌ Failed to get directory",
     "projects_failed": "❌ Failed to load projects",
     "save_failed": "❌ Failed to save code: {error}",
-    "continue_failed": "❌ Failed to continue session",
     "explain_failed": "❌ Failed to explain code",
     "refresh_failed": "❌ Failed to refresh",
     "settings_failed": "❌ Failed to open settings",

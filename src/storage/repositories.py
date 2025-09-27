@@ -112,6 +112,49 @@ class UserRepository:
             rows = await cursor.fetchall()
             return [UserModel.from_row(row) for row in rows]
 
+    async def get_user_settings(self, user_id: int) -> Optional[Dict]:
+        """Get user settings as JSON dictionary."""
+        async with self.db.get_connection() as conn:
+            cursor = await conn.execute(
+                "SELECT settings FROM users WHERE user_id = ?", (user_id,)
+            )
+            row = await cursor.fetchone()
+            if row and row[0]:
+                try:
+                    return json.loads(row[0])
+                except (json.JSONDecodeError, TypeError):
+                    logger.warning("Invalid JSON in user settings", user_id=user_id)
+                    return {}
+            return {}
+
+    async def update_user_setting(self, user_id: int, setting_key: str, setting_value) -> None:
+        """Update a specific user setting."""
+        async with self.db.get_connection() as conn:
+            # Get current settings
+            cursor = await conn.execute(
+                "SELECT settings FROM users WHERE user_id = ?", (user_id,)
+            )
+            row = await cursor.fetchone()
+
+            current_settings = {}
+            if row and row[0]:
+                try:
+                    current_settings = json.loads(row[0])
+                except (json.JSONDecodeError, TypeError):
+                    current_settings = {}
+
+            # Update the specific setting
+            current_settings[setting_key] = setting_value
+
+            # Save back to database
+            await conn.execute(
+                "UPDATE users SET settings = ? WHERE user_id = ?",
+                (json.dumps(current_settings), user_id)
+            )
+            await conn.commit()
+
+            logger.info("Updated user setting", user_id=user_id, setting_key=setting_key, setting_value=setting_value)
+
 
 class SessionRepository:
     """Session data access."""

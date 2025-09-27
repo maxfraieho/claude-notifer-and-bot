@@ -65,17 +65,16 @@ async def handle_callback_query(
             "followup": handle_followup_callback,
             "conversation": handle_conversation_callback,
             "git": handle_git_callback,
-            "export": handle_export_callback,
             "lang": handle_language_callback,
             "schedule": handle_schedule_callback,
             "prompts_settings": handle_prompts_settings_callback,
             "save_code": handle_save_code_callback,
-            "continue": handle_continue_callback,
             "explain": handle_explain_callback,
             "refresh": handle_refresh_callback,
             "claude_status": handle_claude_status_callback,
             "session_continue": handle_session_continue_callback,
             "session_close": handle_session_close_callback,
+            "settings": handle_settings_callback,
         }
 
         # Check for MCP callbacks first
@@ -250,7 +249,6 @@ async def handle_action_callback(
         "full_help": _handle_full_help_action,
         "new_session": _handle_new_session_action,
         "new": _handle_new_session_action,  # alias for new_session
-        "continue": _handle_continue_action,
         "end_session": _handle_end_session_action,
         "status": _handle_status_action,
         "ls": _handle_ls_action,
@@ -411,17 +409,18 @@ async def _handle_new_session_action(query, context: ContextTypes.DEFAULT_TYPE) 
 
 async def _handle_end_session_action(query, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle end session action."""
+    user_id = query.from_user.id
     settings: Settings = context.bot_data["settings"]
 
     # Check if there's an active session
     claude_session_id = context.user_data.get("claude_session_id")
 
     if not claude_session_id:
-        no_active_session_text = await t(context, user_id, "commands_extended.export.no_active_session_title")
-        no_active_session_message = await t(context, user_id, "commands_extended.export.no_active_session_message")
-        what_you_can_do_text = await t(context, user_id, "commands_extended.export.what_you_can_do_title")
-        start_new_session_text = await t(context, user_id, "commands_extended.export.start_new_session")
-        check_status_text = await t(context, user_id, "commands_extended.export.check_status")
+        no_active_session_text = await t(context, user_id, "commands_extended.end_session.no_active_session_title")
+        no_active_session_message = await t(context, user_id, "commands_extended.end_session.no_active_session_message")
+        what_you_can_do_text = await t(context, user_id, "commands_extended.end_session.what_you_can_do_title")
+        start_new_session_text = await t(context, user_id, "commands_extended.end_session.start_new_session")
+        check_status_text = await t(context, user_id, "commands_extended.end_session.check_status")
 
         new_session_btn = await get_localized_text(context, user_id, "buttons.new_session")
         status_btn = await get_localized_text(context, user_id, "buttons.status")
@@ -472,109 +471,6 @@ async def _handle_end_session_action(query, context: ContextTypes.DEFAULT_TYPE) 
     await _handle_main_menu_action(query, context)
 
 
-async def _handle_continue_action(query, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle continue session action."""
-    user_id = query.from_user.id
-    settings: Settings = context.bot_data["settings"]
-    claude_integration: ClaudeIntegration = context.bot_data.get("claude_integration")
-
-    current_dir = context.user_data.get(
-        "current_directory", settings.approved_directory
-    )
-
-    try:
-        if not claude_integration:
-            await query.edit_message_text(
-                "❌ **Claude Integration Not Available**\n\n"
-                "Claude integration is not properly configured."
-            )
-            return
-
-        # Check if there's an existing session in user context
-        claude_session_id = context.user_data.get("claude_session_id")
-
-        if claude_session_id:
-            # Continue with the existing session (no prompt = use --continue)
-            await query.edit_message_text(
-                f"🔄 **Continuing Session**\n\n"
-                f"Session ID: `{claude_session_id[:8]}...`\n"
-                f"Directory: `{current_dir.relative_to(settings.approved_directory)}/`\n\n"
-                f"Continuing where you left off...",
-                parse_mode=None,
-            )
-
-            claude_response = await claude_integration.run_command(
-                prompt="",  # Empty prompt triggers --continue
-                working_directory=current_dir,
-                user_id=user_id,
-                session_id=claude_session_id,
-            )
-        else:
-            # No session in context, try to find the most recent session
-            await query.edit_message_text(
-                "🔍 **Looking for Recent Session**\n\n"
-                "Searching for your most recent session in this directory...",
-                parse_mode=None,
-            )
-
-            claude_response = await claude_integration.continue_session(
-                user_id=user_id,
-                working_directory=current_dir,
-                prompt=None,  # No prompt = use --continue
-            )
-
-        if claude_response:
-            # Update session ID in context
-            context.user_data["claude_session_id"] = claude_response.session_id
-
-            # Send Claude's response
-            await query.message.reply_text(
-                f"✅ **Session Continued**\n\n"
-                f"{claude_response.content[:500]}{'...' if len(claude_response.content) > 500 else ''}",
-                parse_mode=None,
-            )
-        else:
-            # No session found to continue
-            await query.edit_message_text(
-                "❌ **No Session Found**\n\n"
-                f"No recent Claude session found in this directory.\n"
-                f"Directory: `{current_dir.relative_to(settings.approved_directory)}/`\n\n"
-                f"**What you can do:**\n"
-                f"• Use the button below to start a fresh session\n"
-                f"• Check your session status\n"
-                f"• Navigate to a different directory",
-                parse_mode=None,
-                reply_markup=InlineKeyboardMarkup(
-                    [
-                        [
-                            InlineKeyboardButton(
-                                "🆕 New Session", callback_data="action:new_session"
-                            ),
-                            InlineKeyboardButton(
-                                "📊 Status", callback_data="action:status"
-                            ),
-                        ]
-                    ]
-                ),
-            )
-
-    except Exception as e:
-        logger.error("Error in continue action", error=str(e), user_id=user_id)
-        await query.edit_message_text(
-            f"❌ **Error Continuing Session**\n\n"
-            f"An error occurred: `{str(e)}`\n\n"
-            f"Try starting a new session instead.",
-            parse_mode=None,
-            reply_markup=InlineKeyboardMarkup(
-                [
-                    [
-                        InlineKeyboardButton(
-                            "🆕 New Session", callback_data="action:new_session"
-                        )
-                    ]
-                ]
-            ),
-        )
 
 
 async def _handle_status_action(query, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -620,7 +516,6 @@ async def _handle_status_action(query, context: ContextTypes.DEFAULT_TYPE) -> No
     if claude_session_id:
         keyboard.append(
             [
-                InlineKeyboardButton("🔄 Continue", callback_data="action:continue"),
                 InlineKeyboardButton(
                     "🛑 End Session", callback_data="action:end_session"
                 ),
@@ -1239,79 +1134,6 @@ async def handle_git_callback(
             error_msg.format(error=escaped_error)
         )
 
-
-async def handle_export_callback(
-    query, export_format: str, context: ContextTypes.DEFAULT_TYPE
-) -> None:
-    """Handle export format selection callbacks."""
-    user_id = query.from_user.id
-    features = context.bot_data.get("features")
-
-    if export_format == "cancel":
-        await query.edit_message_text(
-            await t(context, user_id, "buttons.cancelled")
-        )
-        return
-
-    session_exporter = features.get_session_export() if features else None
-    if not session_exporter:
-        await query.edit_message_text(
-            "❌ **Export Unavailable**\n\n" "Session export service is not available."
-        )
-        return
-
-    # Get current session
-    claude_session_id = context.user_data.get("claude_session_id")
-    if not claude_session_id:
-        await query.edit_message_text(
-            "❌ **No Active Session**\n\n" "There's no active session to export."
-        )
-        return
-
-    try:
-        # Show processing message
-        await query.edit_message_text(
-            f"📤 **Exporting Session**\n\n"
-            f"Generating {export_format.upper()} export...",
-            parse_mode=None,
-        )
-
-        # Export session
-        exported_session = await session_exporter.export_session(
-            claude_session_id, export_format
-        )
-
-        # Send the exported file
-        from io import BytesIO
-
-        file_bytes = BytesIO(exported_session.content.encode("utf-8"))
-        file_bytes.name = exported_session.filename
-
-        await query.message.reply_document(
-            document=file_bytes,
-            filename=exported_session.filename,
-            caption=(
-                f"📤 **Session Export Complete**\n\n"
-                f"Format: {exported_session.format.upper()}\n"
-                f"Size: {exported_session.size_bytes:,} bytes\n"
-                f"Created: {exported_session.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
-            ),
-            parse_mode=None,
-        )
-
-        # Update the original message
-        await query.edit_message_text(
-            f"✅ **Export Complete**\n\n"
-            f"Your session has been exported as {exported_session.filename}.\n"
-            f"Check the file above for your complete conversation history.",
-            parse_mode=None,
-        )
-
-    except Exception as e:
-        logger.error(
-            "Export failed", error=str(e), user_id=user_id, format=export_format
-        )
-        await query.edit_message_text(f"❌ **Export Failed**\n\n{str(e)}")
 
 
 async def handle_language_callback(query, param: str, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -2265,22 +2087,57 @@ async def handle_schedule_callback(query, param: str, context: ContextTypes.DEFA
 async def _handle_settings_action(query, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle settings action."""
     user_id = query.from_user.id
-    
+
     try:
-        # Create settings keyboard
+        # Get current user settings (we'll create a system for this)
+        storage = context.bot_data.get("storage")
+        user_settings = {}
+
+        if storage:
+            # Get user's message preservation setting (default: False - delete messages)
+            user_settings = await storage.users.get_user_settings(user_id) or {}
+
+        preserve_messages = user_settings.get("preserve_messages", False)
+        preserve_icon = "✅" if preserve_messages else "❌"
+        preserve_status = "Увімкнено" if preserve_messages else "Вимкнено"
+
+        # Create settings keyboard with real options
         keyboard = [
             [
-                InlineKeyboardButton(await t(context, user_id, "buttons.help"), callback_data="action:help"),
-                InlineKeyboardButton("🔙 " + await t(context, user_id, "buttons.back"), callback_data="action:quick_actions")
+                InlineKeyboardButton(
+                    f"{preserve_icon} Зберігати повідомлення: {preserve_status}",
+                    callback_data=f"settings:toggle_preserve_messages:{not preserve_messages}"
+                )
+            ],
+            [
+                InlineKeyboardButton("🌐 Мова інтерфейсу", callback_data="lang:select"),
+                InlineKeyboardButton("📊 Контекст", callback_data="action:context")
+            ],
+            [
+                InlineKeyboardButton("ℹ️ Довідка", callback_data="action:help"),
+                InlineKeyboardButton("🔙 Назад", callback_data="action:main_menu")
             ]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        
+
         settings_text = await t(context, user_id, "commands.settings.title")
-        description_text = await t(context, user_id, "commands.settings.description")
-        
+
+        # Create detailed settings message
+        message_text = f"""⚙️ **{settings_text}**
+
+🗨️ **Збереження повідомлень**: {preserve_status}
+{preserve_icon} Повідомлення Claude {"зберігаються" if preserve_messages else "автоматично видаляються"} через кілька секунд
+
+📱 **Інші налаштування**:
+• Мова інтерфейсу
+• Контекстна пам'ять
+• Довідка та підтримка
+
+👆 _Натисніть на опцію для зміни налаштувань_"""
+
         await query.edit_message_text(
-            f"⚙️ **{settings_text}**\n\n{description_text}",
+            message_text,
+            parse_mode="Markdown",
             reply_markup=reply_markup
         )
     except Exception as e:
@@ -2299,7 +2156,6 @@ async def _handle_main_menu_action(query, context: ContextTypes.DEFAULT_TYPE) ->
         keyboard = [
             [
                 InlineKeyboardButton(await t(context, user_id, "buttons.new_session"), callback_data="action:new_session"),
-                InlineKeyboardButton(await t(context, user_id, "buttons.continue_session"), callback_data="action:continue")
             ],
             [
                 InlineKeyboardButton(await t(context, user_id, "buttons.status"), callback_data="action:status")
@@ -2438,34 +2294,6 @@ async def handle_save_code_callback(query, param: str, context: ContextTypes.DEF
     except Exception as e:
         await query.edit_message_text(await t(context, query.from_user.id, "errors.save_failed", error=str(e)))
 
-async def handle_continue_callback(query, param: str, context: ContextTypes.DEFAULT_TYPE):
-    """Handle 'Continue Session' button - allows user to ask follow-up questions."""
-    await query.answer()
-    try:
-        user_id = query.from_user.id
-
-        # Remove buttons and prepare for continuation
-        continue_text = await t(
-            context, user_id, "buttons.continue_prompt",
-            fallback="✅ **Готовий до продовження!**\n\n"
-                     "Надішліть ваше питання або запит:\n"
-                     "• Додаткові уточнення щодо проблеми\n"
-                     "• Запит на впровадження змін\n"
-                     "• Питання про рішення\n"
-                     "• Інші побажання\n\n"
-                     "_Очікую ваше повідомлення..._"
-        )
-
-        await query.edit_message_text(continue_text)
-
-        # Set flag that user wants to continue conversation
-        if not context.user_data:
-            context.user_data = {}
-        context.user_data['awaiting_continuation'] = True
-
-    except Exception as e:
-        error_text = await t(context, query.from_user.id, "errors.continue_failed", fallback="❌ Помилка продовження діалогу")
-        await query.edit_message_text(error_text)
 
 async def handle_explain_callback(query, param: str, context: ContextTypes.DEFAULT_TYPE):
     """Handle 'Explain' button - asks Claude to explain the previous response."""
@@ -2523,7 +2351,6 @@ async def handle_explain_callback(query, param: str, context: ContextTypes.DEFAU
             # Create new Continue button for further questions
             from telegram import InlineKeyboardButton, InlineKeyboardMarkup
             keyboard = InlineKeyboardMarkup([
-                [InlineKeyboardButton("🔄 Продовжити діалог", callback_data="continue")]
             ])
 
             await query.edit_message_text(explanation_text, reply_markup=keyboard, parse_mode='Markdown')
@@ -3149,6 +2976,44 @@ async def handle_claude_status_callback(query, param: str, context: ContextTypes
                 [InlineKeyboardButton("🔄 Спробувати ще раз", callback_data="claude_status:check")]
             ])
         )
+
+
+async def handle_settings_callback(query, param: str, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle settings-related callbacks."""
+    user_id = query.from_user.id
+
+    try:
+        if param.startswith("toggle_preserve_messages:"):
+            # Extract new value from callback data
+            _, new_value_str = param.split(":", 1)
+            new_value = new_value_str.lower() == "true"
+
+            # Update user settings
+            storage = context.bot_data.get("storage")
+            if storage:
+                await storage.users.update_user_setting(user_id, "preserve_messages", new_value)
+
+                # Update bot_data to affect current session
+                if "user_settings" not in context.bot_data:
+                    context.bot_data["user_settings"] = {}
+                if user_id not in context.bot_data["user_settings"]:
+                    context.bot_data["user_settings"][user_id] = {}
+
+                context.bot_data["user_settings"][user_id]["preserve_messages"] = new_value
+
+                # Show confirmation and refresh settings menu
+                await query.answer(f"✅ Збереження повідомлень {'увімкнено' if new_value else 'вимкнено'}")
+
+                # Refresh the settings menu
+                await _handle_settings_action(query, context)
+            else:
+                await query.answer("❌ Помилка збереження налаштувань")
+        else:
+            await query.answer("❌ Невідома дія налаштувань")
+
+    except Exception as e:
+        logger.error("Settings callback failed", error=str(e), user_id=user_id, param=param)
+        await query.answer("❌ Помилка обробки налаштувань")
 
 
 # Registration function for callbacks

@@ -337,7 +337,7 @@ class ApplicationContainer:
             # This will be set later when telegram app is available
             from telegram.ext import Application
             telegram_app = None  # Will be set by bot when ready
-            idle_timeout_minutes = getattr(config, 'session_idle_timeout_minutes', 5)
+            idle_timeout_minutes = getattr(config, 'session_idle_timeout_minutes', 120)  # 2 години замість 5 хвилин
             return IdleSessionManager(telegram_app, idle_timeout_minutes)
 
         self.container.singleton("idle_session_manager", create_idle_session_manager)

@@ -366,8 +366,9 @@ async def handle_text_message(
                 FormattedMessage(_format_error_message(str(e)), parse_mode=None)
             ]
 
-        # Delete progress message - TEMPORARILY DISABLED FOR DEBUGGING
-        # await progress_msg.delete()  # TEMP: keep messages for context debugging
+        # Delete progress message respecting user preferences
+        from ..utils.message_utils import safe_delete_message
+        await safe_delete_message(progress_msg, context, user_id)
 
         # Send formatted responses (may be multiple messages)
         for i, message in enumerate(formatted_messages):
@@ -455,8 +456,8 @@ async def handle_text_message(
     except Exception as e:
         # Clean up progress message if it exists
         try:
-            # await progress_msg.delete()  # TEMP: keep messages for context debugging
-            pass
+            from ..utils.message_utils import safe_delete_message
+            await safe_delete_message(progress_msg, context, user_id)
         except Exception as e:
             logger.debug("Failed to delete progress message during error handling", error=str(e))
             pass

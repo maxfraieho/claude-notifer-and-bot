@@ -4,7 +4,18 @@
     "help": "📚 Help",
     "status": "📊 Status",
     "continue": "🔄 Continue",
-    "new_session": "🆕 New Session"
+    "new_session": "🆕 New Session",
+    "img": {
+      "instructions": "📸 **Image Processing with Claude**\n\n🖼️ **Send images** for analysis:\n• Code screenshots\n• Diagrams and schemas\n• UI/UX designs\n• Charts and tables\n\n📝 **Add instructions** (optional):\n• Describe what to analyze\n• Ask specific questions\n• Request explanations\n\n⚡ **Commands:**\n• `done` - start analysis\n• `cancel` - end session\n• `fix` - bug fixing mode\n\n💡 **Examples:**\n• \"Analyze this code for errors\"\n• \"Explain this diagram\"\n• \"How to improve this interface?\"",
+      "session_expired": "⏰ **Session Expired**\n\nTime limit reached. Start a new session with `/img`.",
+      "image_received": "✅ **Image Received** ({count}/{max})\n\n📝 Send instructions or more images.\n💡 Type `done` to start analysis.",
+      "no_images": "❌ **No Images**\n\nPlease send images for analysis first.",
+      "cancelled": "❌ **Analysis Cancelled**\n\nSession ended. Use `/img` for a new session.",
+      "fix_mode_activated": "🔧 **Bug Fixing Mode Activated**\n\nClaude will focus on finding and fixing code errors.",
+      "instruction_updated": "📝 **Instructions Updated**\n\nCurrent images: {count}. Send `done` to analyze or continue uploading.",
+      "processing": "🤖 **Analyzing images with Claude...**\n\nPlease wait. This may take a few minutes.",
+      "error": "❌ **Processing Error**\n\n{error}\n\nTry again or use `/img` for a new session."
+    }
   },
   "buttons": {
     "continue": "🔄 Continue",

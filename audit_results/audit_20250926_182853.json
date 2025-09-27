@@ -1,0 +1,3666 @@
+{
+  "timestamp": "20250926_182853",
+  "focus_area": null,
+  "total_issues": 522,
+  "critical_count": 0,
+  "high_count": 0,
+  "medium_count": 522,
+  "low_count": 0,
+  "issues": [
+    {
+      "severity": "MEDIUM",
+      "category": "CALLBACK_NO_ANSWER",
+      "description": "[ГРУПА: 12 схожих] Callback _check_callback_errors не викликає query.answer()",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/manual_audit.py",
+      "line_number": 331
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "CALLBACK_NO_ANSWER",
+      "description": "[ГРУПА: 12 схожих] Callback _check_callback_handlers не викликає query.answer()",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/tools/smart_audit_v6_ultimate_plus.py",
+      "line_number": 131
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "CALLBACK_NO_ANSWER",
+      "description": "[ГРУПА: 12 схожих] Callback _check_button_callback_consistency не викликає query.answer()",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/tools/smart_audit_v6_ultimate_plus.py",
+      "line_number": 325
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "CALLBACK_NO_ANSWER",
+      "description": "[ГРУПА: 12 схожих] Callback _audit_callback_coverage не викликає query.answer()",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/tools/smart_audit_v6_ultimate_plus.py",
+      "line_number": 365
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "CALLBACK_NO_ANSWER",
+      "description": "[ГРУПА: 12 схожих] Callback analyze_callback_handlers не викликає query.answer()",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/tools/smart_audit_v2.py",
+      "line_number": 128
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "CALLBACK_NO_ANSWER",
+      "description": "[ГРУПА: 12 схожих] Callback audit_callback_handlers не викликає query.answer()",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/tools/smart_audit_v5_ultimate.py",
+      "line_number": 98
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "CALLBACK_NO_ANSWER",
+      "description": "[ГРУПА: 12 схожих] Callback register_callbacks не викликає query.answer()",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/bot/handlers/callback.py",
+      "line_number": 3155
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "CALLBACK_NO_ANSWER",
+      "description": "[ГРУПА: 12 схожих] Callback _check_callback_handlers не викликає query.answer()",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/bot/features/intelligent_auditor.py",
+      "line_number": 161
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "CALLBACK_NO_ANSWER",
+      "description": "[ГРУПА: 12 схожих] Callback _audit_callback_coverage не викликає query.answer()",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/bot/features/intelligent_auditor.py",
+      "line_number": 417
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "CALLBACK_NO_ANSWER",
+      "description": "[ГРУПА: 12 схожих] Callback _check_button_callback_consistency не викликає query.answer()",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/bot/features/intelligent_auditor.py",
+      "line_number": 456
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "CALLBACK_NO_ANSWER",
+      "description": "[ГРУПА: 12 схожих] Callback _extract_callback_data не викликає query.answer()",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/bot/features/dracon_reverse_engineer.py",
+      "line_number": 231
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "CALLBACK_NO_ANSWER",
+      "description": "[ГРУПА: 12 схожих] Callback _extract_callbacks не викликає query.answer()",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/bot/features/dracon_enhanced.py",
+      "line_number": 221
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція fix_uk_json занадто велика (122 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/fix_uk_json.py",
+      "line_number": 7
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція generate_report занадто велика (92 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/tools/audit_project.py",
+      "line_number": 95
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція generate_report занадто велика (68 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/tools/smart_audit_v6_ultimate_plus.py",
+      "line_number": 461
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція _analyze_handler_file занадто велика (56 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/tools/smart_audit_v2.py",
+      "line_number": 59
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція generate_smart_report занадто велика (81 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/tools/smart_audit_v2.py",
+      "line_number": 269
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція __init__ занадто велика (92 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/tools/smart_audit_v4_ua.py",
+      "line_number": 29
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція _find_localization_and_ux_issues занадто велика (77 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/tools/smart_audit_v4_ua.py",
+      "line_number": 236
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція _analyze_buttons занадто велика (64 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/tools/smart_audit_v4_ua.py",
+      "line_number": 315
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція test_integration_points занадто велика (71 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/tools/smart_audit_v4_ua.py",
+      "line_number": 477
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція generate_report занадто велика (99 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/tools/smart_audit_v4_ua.py",
+      "line_number": 550
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція __init__ занадто велика (77 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/tools/smart_audit_v3_ua.py",
+      "line_number": 28
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція generate_report занадто велика (62 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/tools/smart_audit_v3_ua.py",
+      "line_number": 281
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція option_2_convert_drakon занадто велика (57 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/tools/md_to_embeddings_service_v4.py",
+      "line_number": 104
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція option_3_create_md занадто велика (135 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/tools/md_to_embeddings_service_v4.py",
+      "line_number": 163
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція option_4_copy_md занадто велика (93 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/tools/md_to_embeddings_service_v4.py",
+      "line_number": 300
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція create_codetomd_file занадто велика (58 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/tools/md_to_embeddings_service_v4.py",
+      "line_number": 443
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція create_drakon_converter_file занадто велика (53 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/tools/md_to_embeddings_service_v4.py",
+      "line_number": 503
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція main занадто велика (54 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/tools/md_to_embeddings_service_v4.py",
+      "line_number": 606
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція __init__ занадто велика (51 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/tools/smart_audit_v5_ultimate.py",
+      "line_number": 28
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція generate_report занадто велика (74 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/tools/smart_audit_v5_ultimate.py",
+      "line_number": 288
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція test_translation_keys занадто велика (55 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/test_restart_localization.py",
+      "line_number": 10
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція option_2_convert_drakon занадто велика (57 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/md_to_embeddings_service_v4.py",
+      "line_number": 104
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція option_3_create_md занадто велика (135 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/md_to_embeddings_service_v4.py",
+      "line_number": 163
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція option_4_copy_md занадто велика (93 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/md_to_embeddings_service_v4.py",
+      "line_number": 300
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція create_codetomd_file занадто велика (58 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/md_to_embeddings_service_v4.py",
+      "line_number": 443
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція create_drakon_converter_file занадто велика (53 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/md_to_embeddings_service_v4.py",
+      "line_number": 503
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція main занадто велика (54 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/md_to_embeddings_service_v4.py",
+      "line_number": 606
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція check_hardcoded_ui_elements занадто велика (54 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/tests/quick_localization_check.py",
+      "line_number": 13
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція test_no_silent_failures_in_production_code занадто велика (53 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/tests/test_critical_fixes.py",
+      "line_number": 32
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція _get_admin_instructions занадто велика (59 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/archive/redit_analysis/redit/src/claude/facade.py",
+      "line_number": 400
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція validate_path занадто велика (79 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/archive/redit_analysis/redit/src/security/validators.py",
+      "line_number": 156
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція validate_filename занадто велика (58 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/archive/redit_analysis/redit/src/security/validators.py",
+      "line_number": 245
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція load_config занадто велика (59 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/archive/redit_analysis/redit/src/config/loader.py",
+      "line_number": 18
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція _update_working_directory_from_claude_response занадто велика (57 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/archive/redit_analysis/redit/src/bot/handlers/message.py",
+      "line_number": 823
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція generate_follow_up_suggestions занадто велика (158 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/archive/redit_analysis/redit/src/bot/features/conversation_mode.py",
+      "line_number": 102
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція _create_default_actions занадто велика (83 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/archive/redit_analysis/redit/src/bot/features/quick_actions.py",
+      "line_number": 39
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція _initialize_features занадто велика (54 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/archive/redit_analysis/redit/src/bot/features/registry.py",
+      "line_number": 35
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція parse_limit_message занадто велика (61 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/archive/redit_analysis/redit/src/bot/features/availability_monitor.py",
+      "line_number": 70
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція __init__ занадто велика (81 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/archive/redit_analysis/redit/src/bot/features/file_handler.py",
+      "line_number": 50
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція format_status занадто велика (51 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/archive/redit_analysis/redit/src/bot/features/git_integration.py",
+      "line_number": 337
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція _identify_sections занадто велика (64 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/archive/redit_analysis/redit/src/bot/utils/formatting.py",
+      "line_number": 193
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція _split_message занадто велика (77 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/archive/redit_analysis/redit/src/bot/utils/formatting.py",
+      "line_number": 496
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція _get_admin_instructions занадто велика (59 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/archive/replit_analysis/replit/src/claude/facade.py",
+      "line_number": 400
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція validate_path занадто велика (79 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/archive/replit_analysis/replit/src/security/validators.py",
+      "line_number": 156
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція validate_filename занадто велика (58 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/archive/replit_analysis/replit/src/security/validators.py",
+      "line_number": 245
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція load_config занадто велика (59 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/archive/replit_analysis/replit/src/config/loader.py",
+      "line_number": 18
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція _register_handlers занадто велика (52 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/archive/replit_analysis/replit/src/bot/core.py",
+      "line_number": 111
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція _update_working_directory_from_claude_response занадто велика (57 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/archive/replit_analysis/replit/src/bot/handlers/message.py",
+      "line_number": 872
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція generate_follow_up_suggestions занадто велика (158 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/archive/replit_analysis/replit/src/bot/features/conversation_mode.py",
+      "line_number": 102
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція _create_default_actions занадто велика (83 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/archive/replit_analysis/replit/src/bot/features/quick_actions.py",
+      "line_number": 39
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція _initialize_features занадто велика (54 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/archive/replit_analysis/replit/src/bot/features/registry.py",
+      "line_number": 35
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція _init_files занадто велика (54 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/archive/replit_analysis/replit/src/bot/features/scheduled_prompts.py",
+      "line_number": 35
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція parse_limit_message занадто велика (60 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/archive/replit_analysis/replit/src/bot/features/availability_monitor.py",
+      "line_number": 72
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція __init__ занадто велика (81 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/archive/replit_analysis/replit/src/bot/features/file_handler.py",
+      "line_number": 50
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція format_status занадто велика (51 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/archive/replit_analysis/replit/src/bot/features/git_integration.py",
+      "line_number": 337
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція _identify_sections занадто велика (64 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/archive/replit_analysis/replit/src/bot/utils/formatting.py",
+      "line_number": 193
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція _split_message занадто велика (77 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/archive/replit_analysis/replit/src/bot/utils/formatting.py",
+      "line_number": 496
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція get занадто велика (76 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/localization/i18n.py",
+      "line_number": 107
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція _get_admin_instructions занадто велика (59 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/claude/facade.py",
+      "line_number": 778
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція _parse_result занадто велика (56 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/claude/integration.py",
+      "line_number": 520
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція _generate_comprehensive_report занадто велика (51 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/testing/comprehensive_tester.py",
+      "line_number": 371
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція validate_response занадто велика (56 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/testing/response_validator.py",
+      "line_number": 112
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція validate_path занадто велика (79 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/security/validators.py",
+      "line_number": 165
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція validate_filename занадто велика (58 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/security/validators.py",
+      "line_number": 254
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція _initialize_default_roles занадто велика (84 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/security/rbac.py",
+      "line_number": 120
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція handle_errors занадто велика (107 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/errors/decorators.py",
+      "line_number": 18
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція retry_on_failure занадто велика (75 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/errors/decorators.py",
+      "line_number": 128
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція log_errors занадто велика (71 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/errors/decorators.py",
+      "line_number": 256
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція circuit_breaker занадто велика (56 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/errors/decorators.py",
+      "line_number": 330
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція decorator занадто велика (86 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/errors/decorators.py",
+      "line_number": 37
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція decorator занадто велика (54 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/errors/decorators.py",
+      "line_number": 147
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція decorator занадто велика (54 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/errors/decorators.py",
+      "line_number": 271
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція _get_migrations занадто велика (159 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/storage/database.py",
+      "line_number": 220
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція load_config занадто велика (59 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/config/loader.py",
+      "line_number": 18
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція _register_handlers занадто велика (90 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/bot/core.py",
+      "line_number": 207
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція _add_middleware занадто велика (51 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/bot/core.py",
+      "line_number": 314
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція require_permission занадто велика (78 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/bot/decorators.py",
+      "line_number": 68
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція decorator занадто велика (66 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/bot/decorators.py",
+      "line_number": 79
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція _init_keyboard_templates занадто велика (86 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/bot/ui/enhanced_keyboards.py",
+      "line_number": 68
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція _update_working_directory_from_claude_response занадто велика (57 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/bot/handlers/message.py",
+      "line_number": 986
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція analyze_claude_error занадто велика (51 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/bot/handlers/command.py",
+      "line_number": 1673
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція generate_follow_up_suggestions занадто велика (158 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/bot/features/conversation_mode.py",
+      "line_number": 102
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція _create_default_actions занадто велика (134 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/bot/features/quick_actions.py",
+      "line_number": 39
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція _initialize_features занадто велика (54 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/bot/features/registry.py",
+      "line_number": 35
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція _init_files занадто велика (65 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/bot/features/scheduled_prompts.py",
+      "line_number": 35
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція run_interactive_claude занадто велика (97 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/bot/features/scheduled_prompts.py",
+      "line_number": 206
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція parse_limit_message занадто велика (63 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/bot/features/availability_monitor.py",
+      "line_number": 72
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція parse_yaml_dict занадто велика (61 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/bot/features/dracon_parser.py",
+      "line_number": 139
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція _parse_node занадто велика (74 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/bot/features/dracon_parser.py",
+      "line_number": 249
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція _parse_edge занадто велика (69 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/bot/features/dracon_parser.py",
+      "line_number": 325
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція __init__ занадто велика (81 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/bot/features/file_handler.py",
+      "line_number": 50
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція verify_graph_closure занадто велика (61 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/bot/features/dracon_yaml.py",
+      "line_number": 241
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція check_reachability занадто велика (57 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/bot/features/dracon_yaml.py",
+      "line_number": 304
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція demonstrate_dracon_system занадто велика (201 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/bot/features/demo_dracon_system.py",
+      "line_number": 21
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція _create_directory_readme занадто велика (116 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/bot/features/dracon_storage.py",
+      "line_number": 69
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція format_status занадто велика (51 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/bot/features/git_integration.py",
+      "line_number": 337
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція _identify_sections занадто велика (64 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/bot/utils/formatting.py",
+      "line_number": 193
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LARGE_FUNCTION",
+      "description": "[ГРУПА: 98 схожих] Функція _split_message занадто велика (77 рядків)",
+      "file_path": "/home/vokov/projects/claude-notifer-and-bot/src/bot/utils/formatting.py",
+      "line_number": 496
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.buttons.clear_context",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.list.status_inactive",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.quick_actions.install.name",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.buttons.list_servers",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: availability.reset_time_actual",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: claude_status.notification_disabled",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.new_session.button_start_coding",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.claude.token_expired",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.setup.postgres.connection_help",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: export.export_session_progress",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.img.image_processing_disabled",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: auth.authentication_required",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.list.status_active",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: progress.working_default",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_command.error_continuing_session",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.list.title",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.quick_actions.optimize.name",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.cd.access_denied",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.errors.add_failed",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_extended.file_upload_rejected",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.ask.no_context",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: system_errors.unexpected_error",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.add.wizard.title",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: security.rate_limit_exceeded",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.quick_actions.refactor.name",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.new_session.title",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: messages.error_occurred",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: system_errors.operation_timeout",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.cd.not_a_directory",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: security.unauthorized_access",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.manage.error_details",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.status.queries_count",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: error_messages.file_upload_rejected",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.manage.server_info",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.quick_actions.format.name",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_extended.error_processing_image",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: claude_status.estimated_recovery",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: system_errors.auth_required",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: buttons.continue_prompt",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: progress.using_tools",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: error_messages.send_response_failed",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_message.file_truncated_notice",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.projects.no_projects_message",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: error_messages.processing_file_error",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.pwd.relative",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.buttons.confirm_remove",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.remove.no_servers",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.quick_actions.find_files.name",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.setup.filesystem.path_prompt",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: messages.processing",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.quick_actions.document.name",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_command.error_loading_projects",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.help.usage_ls",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.buttons.cancel",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_extended.unknown_action",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.cd.directory_changed",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_extended.error_continuing_session",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.cd.examples_title",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.claude.step1",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_extended.access_denied",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.setup.github.token_prompt",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: messages.action_failed",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_extended.no_session_found",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.help.file_ops_modify",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.projects.available_projects_title",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.manage.last_check",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: notifications.daily_reset",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: claude_status.auth_expired",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.quick_actions.title",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.select.failed",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_command.export_failed",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.remove.select_server",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.remove.confirm",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_extended.error_loading_projects",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.cd.usage_title",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.export.button_json",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: quick_actions.no_actions",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: scheduled_prompts.error_system_toggle",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.continue_session.searching_message",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: security.auth_required",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.img.fix_mode_activated",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.help.usage_file",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.add.select_type",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_message.claude_integration_not_available",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_message.session_not_found",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: error_messages.claude_integration_not_available",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.setup.validation.required",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.ask.execution_error",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: quick_actions.build.name",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.buttons.remove_server",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.export.not_available_title",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: progress.processing_file_basic",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: error_messages.file_format_not_supported",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.claude.title",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.add.wizard.invalid_input",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_message.claude_code_error",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.export.button_markdown",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.cd.example_up_level",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.quick_actions.test.name",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.claude.error_server",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: security.security_violation",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.select.success",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_command.error_changing_directory",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: availability.downtime_duration",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.status.connected",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.export.button_cancel",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.add.wizard.enter_value",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.ask.processing",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_command.no_actions_available",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: claude_status.network_error",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors.quick_actions_unavailable",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_command.git_integration_disabled",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.add.wizard.step",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: quick_actions.start.name",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.projects.no_projects_title",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_extended.claude_integration_not_available",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: availability.cli_unavailable",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: session.example_debug_code",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.help.session_title",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: quick_actions.unavailable",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.claude.starting",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.help.navigation_title",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: error_messages.file_too_large",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: messages_extended.failed_send_response",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.setup.validation.invalid_path",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: messages.language_select",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.export.button_html",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: session.example_upload_file",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.help.tips_status",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_extended.error_listing_directory",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: files.export_complete_details",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_extended.export_unavailable",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: security.operation_timeout",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: files.processing_file",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.add.quick_not_supported",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.export.what_you_can_do_title",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_command.claude_integration_unavailable",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.status.servers_summary",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.export.planned_save_state",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: messages.what_next",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.help.file_ops_send",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: explain.no_response",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.status.no_context",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.continue_session.processing_message",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: progress.claude_working",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: processing.thinking",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_command.no_session_found",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: explain.failed",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.continue_session.directory",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.select.choose_context",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.status.button_start_session",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: claude_status.uptime",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.select.context_cleared",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.buttons.disable_server",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.list.last_used",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.projects.click_to_navigate",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: system_errors.configuration_error",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.continue_session.session_id",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.quick_actions.security.name",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_extended.error_processing",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.errors.select_failed",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: buttons.continue_dialog",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.claude.session_expired",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.status.button_refresh",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_extended.no_conversation_found",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.quick_actions.ls.name",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: callback_errors.action_not_implemented",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.quick_actions.git_status.name",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.ls.button_go_to_root",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: claude_status.history_24h",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_command.directory_not_found",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.claude.already_waiting",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: export.session_export_complete",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: buttons.confirmed",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: messages.language_not_available",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.setup.filesystem.path_help",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: files.processing_file_with_type",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.buttons.add_first_server",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: error_messages.rate_limit_reached",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: availability.cli_available",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.errors.remove_failed",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.pwd.absolute",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.errors.callback_failed",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.quick_actions.grep.name",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.help.security_title",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.select.no_enabled_servers",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: progress.working_with_content",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_extended.git_integration_unavailable",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: system_errors.rate_limit_exceeded",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.cd.directory_not_found",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.status.session_active",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.cd.example_subdirectory",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.help.usage_title",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.export.ready_to_export",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.cd.tip_projects",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: progress.processing_file_claude",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.continue_session.continuing_message",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.setup.validation.invalid_connection",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: notifications.availability_issue",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: session.help_message",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.help.usage_cd",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.status.button_continue",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.help.git_desc",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.export.planned_export_history",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.export.continue_existing_session",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.errors.system_not_available",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.status.usage_stats",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: claude_status.notifications_settings",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: claude_status.downtime",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_command.not_git_repository",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: buttons.change_project",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: help.title",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: claude_status.unknown_error",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_command.access_denied",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.errors.list_failed",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.restart.completed",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: notifications.update_available",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.list.no_servers",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.help.security_path",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.setup.postgres.name_prompt",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_command.quick_actions_disabled",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.export.planned_create_backups",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.pwd.title",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.help.actions_desc",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: claude_status.check_again",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: buttons.start_coding",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_message.processing_image",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.setup.validation.invalid_token",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.claude.error_invalid_code",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_extended.unknown_action_type",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.claude.step4",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_message.review_file_default",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.export.planned_features_title",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.help.export_desc",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.manage.test_success",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: session.continue_ready",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: session.example_explain_file",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_extended.git_integration_disabled",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_command.git_integration_unavailable",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.manage.disable_success",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.help.status_desc",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.new_session.button_help",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_extended.timeout_error",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.export.not_available_message",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.quick_actions.lint.name",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.add.wizard.success",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.status.session_none",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_message.request_timeout",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: progress.tool_fallback",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: session.ready_to_code",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: files.export_session",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.export.start_new_session",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: claude_status.last_check",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.help.cd_desc",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.claude.success",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.claude.error_process",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.help.continue_desc",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: messages.working",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.errors.ask_failed",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: buttons.cancelled",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.errors.status_failed",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.help.file_ops_title",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.buttons.test_connection",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.status.avg_response",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.claude.cancelled",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.list.status_error",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.manage.title",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.claude.processing",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_extended.error_processing_message",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.status.button_new_session",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_extended.not_a_directory",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: progress.error_generic",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.new_session.ready_message",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.remove.failed",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.pwd.button_list_files",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.ls.button_projects",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.export.choose_format",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.status.title",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.help.pwd_desc",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.cd.tip_ls",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_extended.error_processing_file",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: auth.authentication_required_command",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.claude.step2",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.help.tips_buttons",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: files.available_projects",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: messages_extended.what_next",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.buttons.add_server",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.manage.test_failed",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_extended.localization_not_available",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: scheduled_prompts.error_loading_history",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_command.quick_actions_unavailable",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.status.checking",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.ls.button_go_up",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.projects.button_refresh",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: availability.reset_time_expected",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.claude.error_rate_limit",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.claude.timeout",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: scheduled_prompts.history_empty",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.status.total_cost",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.status.button_export",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.cd.example_root",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: progress.unknown_tool",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.ls.button_refresh",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.pwd.button_projects",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.claude.connectivity_issue",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.claude.step3",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.export.planned_share_conversations",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: system_errors.security_violation",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_command.no_projects_found",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_extended.claude_code_error",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: progress.processing_request",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.export.check_status",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.buttons.enable_server",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.quick_actions.pwd.name",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: messages.claude_unavailable",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_extended.quick_actions_disabled",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: processing.generating_response",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: progress.step_progress",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_extended.directory_not_found",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: security.configuration_error",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.export.export_title",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: claude_status.current_status",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_extended.export_failed",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.setup.github.name_prompt",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: help.commands",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.help.security_validation",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: quick_actions.find_todos.name",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.claude.verified",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.setup.postgres.connection_prompt",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.projects.button_go_to_root",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: claude_status.checking",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.setup.filesystem.name_prompt",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: notifications.quota_warning",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.buttons.system_status",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.status.active_context",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: session.ended",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: session.send_message_prompt",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.manage.enable_success",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.help.security_rate",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.settings.title",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_extended.no_active_session",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: messages.executing_action",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors.session_start_failed",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.projects.error_loading",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.export.no_active_session_message",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: error_messages.session_not_found",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.continue_session.continuing",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: messages.action_completed",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: claude_status.available",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.continue_session.looking_for_session",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: claude_status.unavailable",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.help.ls_desc",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: session.examples_title",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.help.file_ops_security",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_extended.failed_to_send_response",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: processing.working_on_request",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_extended.file_too_large",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_message.analyzing_image",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: auth.session_unavailable",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.help.tips_title",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.status.success_rate",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: progress.tool_completed",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.help.usage_code",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: claude_status.recovery_prediction",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.help.tips_specific",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: session.example_create_script",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.help.end_desc",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: progress.tool_failed",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.setup.github.token_help",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_extended.error_changing_directory",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_command.error_listing_directory",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.claude.waiting",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.ls.empty_directory",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.ask.context_error",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_message.file_format_not_supported",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.settings.description",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: error_messages.processing_message_error",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_extended.rate_limit_reached",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.list.status_disabled",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.help.security_usage",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: callback_errors.unknown_action",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.remove.success",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: progress.processing_file_with_type",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.claude.error_network",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.ask.no_query",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.buttons.refresh_status",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: auth.admin_access_required",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_extended.git_error",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.claude.error_generic",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: error_messages.claude_code_error",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.add.wizard.failed",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.export.no_active_session_title",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: progress.starting_model",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_command.not_a_directory",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.new_session.button_change_project",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: claude_status.notification_enabled",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: errors_message.rate_limit_reached",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: claude_status.title",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.buttons.select_context",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.cd.tips_title",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.claude.error_quota",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: export.export_complete",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.new_session.working_directory",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.ls.more_items",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: scheduled_prompts.error_loading_tasks",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: error_messages.request_timeout",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands.help.new_desc",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.status.usage_unable_retrieve",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: claude_status.rate_limited",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: mcp.add.invalid_type",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: commands_extended.new_session.button_quick_actions",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "MISSING_TRANSLATION",
+      "description": "[ГРУПА: 412 схожих] Відсутній англійський переклад: buttons.quick_actions",
+      "file_path": "src/localization/translations/en.json",
+      "line_number": 0
+    }
+  ],
+  "report_text": "🔍 **ІНТЕЛЕКТУАЛЬНИЙ АУДИТ БОТА**\n📊 **Загалом проблем:** 522\n\n**Розподіл за серйозністю:**\n🟡 MEDIUM: 522\n\n💡 **РЕКОМЕНДАЦІЇ:**\n• 📊 Розглянути впровадження CI/CD з автоматичними перевірками\n"
+}

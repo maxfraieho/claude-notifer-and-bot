@@ -156,12 +156,10 @@ class ClaudeCodeBot:
             BotCommand("start", "Start bot and show help"),
             BotCommand("help", "Show available commands"),
             BotCommand("new", "Start new Claude session"),
-            BotCommand("continue", "Continue last session"),
             BotCommand("ls", "List files in current directory"),
             BotCommand("cd", "Change directory"),
             BotCommand("pwd", "Show current directory"),
             BotCommand("status", "Show session status"),
-            BotCommand("export", "Export current session"),
             BotCommand("actions", "Show quick actions"),
             BotCommand("git", "Git repository commands"),
             BotCommand("login", "Authenticate Claude CLI"),
@@ -213,13 +211,11 @@ class ClaudeCodeBot:
             ("start", command.start_command),
             ("help", command.help_handler),
             ("new", command.new_handler),
-            ("continue", command.continue_session),
             ("end", command.end_session),
             ("ls", command.list_files),
             ("cd", command.change_directory),
             ("pwd", command.pwd_handler),
             ("status", command.session_status),
-            ("export", command.export_session),
             ("actions", command.actions_handler),
             ("git", command.git_handler),
             ("login", command.login_command),
@@ -628,13 +624,11 @@ class ClaudeCodeBot:
                         keyboard = [
                             [
                                 InlineKeyboardButton(await t(context, user_id, "buttons.new_session"), callback_data="action:new_session"),
-                                InlineKeyboardButton(await t(context, user_id, "buttons.continue_session"), callback_data="action:continue"),
                             ],
                             [
                                 InlineKeyboardButton(await t(context, user_id, "buttons.check_status"), callback_data="action:status"),
                             ],
                             [
-                                InlineKeyboardButton(await t(context, user_id, "buttons.context"), callback_data="action:export"),
                                 InlineKeyboardButton(await t(context, user_id, "buttons.settings"), callback_data="action:settings"),
                             ],
                             [

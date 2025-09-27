@@ -28,13 +28,17 @@ kill_processes() {
         # Try graceful shutdown first
         echo "⏹️  Attempting graceful shutdown..."
         echo "$pids" | xargs -r kill -TERM 2>/dev/null || true
-        sleep 2
+
+        # Wait longer for graceful shutdown
+        echo "⏳ Waiting for graceful shutdown..."
+        sleep 5
 
         # Check if any processes are still running
         local remaining=$(pgrep -f "$pattern" 2>/dev/null || true)
         if [ -n "$remaining" ]; then
             echo "💀 Force killing remaining processes: $remaining"
             echo "$remaining" | xargs -r kill -9 2>/dev/null || true
+            sleep 1
         fi
 
         echo "✅ Cleaned up $description"
@@ -131,8 +135,23 @@ start_bot() {
     echo "🔧 Environment configured for memory optimization"
     echo "🔄 Starting bot..."
 
-    # Run with poetry in optimized mode
-    exec poetry run python -O -m src.main --debug
+    # Run with poetry in optimized mode in background
+    nohup poetry run python -O -m src.main --debug > /tmp/claude_bot.log 2>&1 &
+    local bot_pid=$!
+
+    echo "🤖 Bot started with PID: $bot_pid"
+    echo "📋 Log file: /tmp/claude_bot.log"
+
+    # Wait a moment to check if bot started successfully
+    sleep 3
+    if kill -0 "$bot_pid" 2>/dev/null; then
+        echo "✅ Bot is running successfully"
+        echo "📝 Use 'tail -f /tmp/claude_bot.log' to see logs"
+        echo "🛑 Use 'kill $bot_pid' to stop the bot"
+    else
+        echo "❌ Bot failed to start"
+        return 1
+    fi
 }
 
 # Main execution flow
@@ -155,8 +174,23 @@ main() {
     echo "⏳ Waiting for system cleanup..."
     sleep 3
 
-    # Step 6: Start the bot
+    # Step 6: Final verification before starting
+    echo "🔍 Final verification before starting..."
+    local final_check=$(pgrep -f "python.*src\.main" 2>/dev/null || true)
+    if [ -n "$final_check" ]; then
+        echo "❌ Critical: Bot processes still running: $final_check"
+        echo "🔨 Emergency cleanup..."
+        echo "$final_check" | xargs -r kill -9 2>/dev/null || true
+        sleep 2
+    fi
+
+    # Step 7: Start the bot
     start_bot
+
+    # If we get here, the bot has exited
+    echo ""
+    echo "🏁 Bot process completed"
+    echo "$(date): Bot restart script finished"
 }
 
 # Handle script termination

@@ -435,207 +435,6 @@ async def new_session(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     )
 
 
-async def continue_session(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle /continue command with optional prompt."""
-    user_id = get_user_id(update)
-    message = get_effective_message(update)
-    
-    if not user_id or not message:
-        return
-        
-    settings = context.bot_data.get("settings")
-    if not settings:
-        await message.reply_text(await t(context, user_id, "errors.settings_not_available"))
-        return
-    settings_typed = cast(Settings, settings)
-    
-    claude_integration = context.bot_data.get("claude_integration")
-    audit_logger = context.bot_data.get("audit_logger")
-
-    # Parse optional prompt from command arguments
-    prompt = " ".join(context.args) if context.args else None
-
-    current_dir = context.user_data.get(
-        "current_directory", settings_typed.approved_directory
-    ) if context.user_data else settings_typed.approved_directory
-
-    status_msg = None
-    try:
-        if not claude_integration:
-            # Get localized error message
-            localization = context.bot_data.get("localization")
-            user_language_storage = context.bot_data.get("user_language_storage")
-            
-            if localization and user_language_storage:
-                error_msg = await t(context, user_id, "errors.claude_not_available")
-            else:
-                error_msg = "❌ **Claude Integration Not Available**\n\nClaude integration is not properly configured."
-            
-            await message.reply_text(error_msg)
-            return
-
-        # Check if there's an existing session in user context
-        claude_session_id = context.user_data.get("claude_session_id") if context.user_data else None
-
-        if claude_session_id:
-            # We have a session in context, continue it directly
-            # Get localized continuation messages
-            localization = context.bot_data.get("localization")
-            user_language_storage = context.bot_data.get("user_language_storage")
-            
-            if localization and user_language_storage:
-                continuing_title = await t(context, user_id, "commands_extended.continue_session.continuing")
-                session_id_msg = await t(context, user_id, "commands_extended.continue_session.session_id", session_id=claude_session_id[:8])
-                directory_msg = await t(context, user_id, "commands_extended.continue_session.directory", relative_path=str(current_dir.relative_to(settings_typed.approved_directory)))
-                
-                if prompt:
-                    process_msg = await t(context, user_id, "commands_extended.continue_session.processing_message")
-                else:
-                    process_msg = await t(context, user_id, "commands_extended.continue_session.continuing_message")
-                
-                status_text = f"{continuing_title}\n\n{session_id_msg}\n{directory_msg}\n\n{process_msg}"
-            else:
-                status_text = (
-                    f"🔄 **Continuing Session**\n\n"
-                    f"Session ID: `{claude_session_id[:8]}...`\n"
-                    f"Directory: `{current_dir.relative_to(settings_typed.approved_directory)}/`\n\n"
-                    f"{'Processing your message...' if prompt else 'Continuing where you left off...'}"
-                )
-            
-            status_msg = await message.reply_text(
-                status_text,
-                parse_mode=None,
-            )
-
-            # Continue with the existing session
-            if claude_integration:
-                claude_integration_typed = cast(ClaudeIntegration, claude_integration)
-                claude_response = await claude_integration_typed.run_command(
-                    prompt=prompt or "",
-                    working_directory=current_dir,
-                    user_id=user_id,
-                    session_id=claude_session_id,
-                )
-            else:
-                claude_response = None
-        else:
-            # No session in context, try to find the most recent session
-            # Get localized session search messages
-            localization = context.bot_data.get("localization")
-            user_language_storage = context.bot_data.get("user_language_storage")
-            if localization and user_language_storage:
-                looking_title = await t(context, user_id, "commands_extended.continue_session.looking_for_session")
-                searching_msg = await t(context, user_id, "commands_extended.continue_session.searching_message")
-                search_text = f"{looking_title}\n\n{searching_msg}"
-            else:
-                search_text = (
-                    "🔍 **Looking for Recent Session**\n\n"
-                    "Searching for your most recent session in this directory..."
-                )
-            
-            status_msg = await message.reply_text(
-                search_text,
-                parse_mode=None,
-            )
-
-            if claude_integration:
-                claude_integration_typed = cast(ClaudeIntegration, claude_integration)
-                claude_response = await claude_integration_typed.continue_session(
-                    user_id=user_id,
-                    working_directory=current_dir,
-                    prompt=prompt,
-                )
-            else:
-                claude_response = None
-
-        if claude_response:
-            # Update session ID in context
-            if context.user_data:
-                context.user_data["claude_session_id"] = claude_response.session_id
-
-            # TEMPORARILY DISABLED FOR DEBUGGING: Delete status message and send response
-            # await status_msg.delete()  # TEMP: keep messages for context debugging
-
-            # Format and send Claude's response
-            from ..utils.formatting import ResponseFormatter
-
-            formatter = ResponseFormatter(settings_typed)
-            formatted_messages = formatter.format_claude_response(str(claude_response))
-
-            for msg in formatted_messages:
-                await message.reply_text(
-                    msg.text,
-                    parse_mode=None,
-                )
-
-            # Log successful continue
-            if audit_logger:
-                audit_logger_typed = cast(AuditLogger, audit_logger)
-                await audit_logger_typed.log_command(
-                    user_id=user_id,
-                    command="continue",
-                    args=context.args or [],
-                    success=True,
-                )
-
-        else:
-            # No session found to continue
-            await status_msg.edit_text(
-                "❌ **No Session Found**\n\n"
-                f"No recent Claude session found in this directory.\n"
-                f"Directory: `{current_dir.relative_to(settings_typed.approved_directory)}/`\n\n"
-                f"**What you can do:**\n"
-                f"• Use `/new` to start a fresh session\n"
-                f"• Use `/status` to check your sessions\n"
-                f"• Navigate to a different directory with `/cd`",
-                parse_mode=None,
-                reply_markup=InlineKeyboardMarkup(
-                    [
-                        [
-                            InlineKeyboardButton(
-                                "🆕 New Session", callback_data="action:new_session"
-                            ),
-                            InlineKeyboardButton(
-                                "📊 Status", callback_data="action:status"
-                            ),
-                        ]
-                    ]
-                ),
-            )
-
-    except Exception as e:
-        error_msg = str(e)
-        logger.error("Error in continue command", error=error_msg, user_id=user_id)
-
-        # TEMPORARILY DISABLED FOR DEBUGGING: Delete status message if it exists
-        try:
-            if 'status_msg' in locals() and status_msg:
-                # await status_msg.delete()  # TEMP: keep messages for context debugging  # TEMP: keep messages for context debugging
-                pass
-        except Exception as e:
-            logger.warning("Failed to delete status message", error=str(e))
-
-        # Send error response
-        await message.reply_text(
-            f"❌ **Error Continuing Session**\n\n"
-            f"An error occurred while trying to continue your session:\n\n"
-            f"`{error_msg}`\n\n"
-            f"**Suggestions:**\n"
-            f"• Try starting a new session with `/new`\n"
-            f"• Check your session status with `/status`\n"
-            f"• Contact support if the issue persists",
-            parse_mode=None,
-        )
-
-        # Log failed continue
-        if audit_logger:
-            audit_logger_typed = cast(AuditLogger, audit_logger)
-            await audit_logger_typed.log_command(
-                user_id=user_id,
-                command="continue",
-                args=context.args or [],
-                success=False,
-            )
 
 
 async def list_files(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -921,58 +720,49 @@ async def session_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     ) if context.user_data else settings_typed.approved_directory
     relative_path = current_dir.relative_to(settings_typed.approved_directory)
 
-    # Get rate limiter info if available
-    rate_limiter = context.bot_data.get("rate_limiter")
-    usage_info = ""
-    if rate_limiter:
-        try:
-            user_status = rate_limiter.get_user_status(user_id)
-            cost_usage = user_status.get("cost_usage", {})
-            current_cost = cost_usage.get("current", 0.0)
-            cost_limit = cost_usage.get("limit", settings_typed.claude_max_cost_per_user)
-            cost_percentage = (current_cost / cost_limit) * 100 if cost_limit > 0 else 0
+    # Check Claude CLI availability using simple check
+    claude_available = await check_claude_availability()
 
-            usage_info = f"💰 Usage: ${current_cost:.2f} / ${cost_limit:.2f} ({cost_percentage:.0f}%)\n"
-        except Exception:
-            usage_info = "💰 Usage: _Unable to retrieve_\n"
+    # Get localized strings
+    status_title = await t(context, user_id, "status.title")
+    project_label = await t(context, user_id, "status.project", directory=str(current_dir))
+    claude_status_key = "status.claude_available" if claude_available else "status.claude_unavailable"
+    claude_status_text = await t(context, user_id, claude_status_key)
+    last_update_text = await t(context, user_id, "status.last_update", time=message.date.strftime('%H:%M:%S UTC') if message.date else 'Unknown')
 
-    # Format status message
+    # Format status message (removed usage info, improved directory display)
     status_lines = [
-        "📊 **Session Status**",
+        status_title,
         "",
-        f"📂 Directory: `{relative_path}/`",
-        f"🤖 Claude Session: {'✅ Active' if claude_session_id else '❌ None'}",
-        usage_info.rstrip(),
-        f"🕐 Last Update: {message.date.strftime('%H:%M:%S UTC') if message.date else 'Unknown'}",
+        project_label,
+        claude_status_text,
+        last_update_text,
     ]
 
     if claude_session_id:
-        status_lines.append(f"🆔 Session ID: `{claude_session_id[:8]}...`")
+        session_id_text = await t(context, user_id, "status.session_id", session_id=claude_session_id[:8])
+        status_lines.append(session_id_text)
 
     # Add action buttons
     keyboard = []
     if claude_session_id:
         keyboard.append(
             [
-                InlineKeyboardButton("🔄 Continue", callback_data="action:continue"),
-                InlineKeyboardButton(
-                    "🆕 New Session", callback_data="action:new_session"
-                ),
+                InlineKeyboardButton("🔄 Продовжити", callback_data="action:continue"),
+                InlineKeyboardButton("🆕 Нова Сесія", callback_data="action:new_session"),
             ]
         )
     else:
         keyboard.append(
             [
-                InlineKeyboardButton(
-                    "🆕 Start Session", callback_data="action:new_session"
-                )
+                InlineKeyboardButton("🆕 Почати Сесію", callback_data="action:new_session")
             ]
         )
 
     keyboard.append(
         [
-            InlineKeyboardButton("📤 Export", callback_data="action:export"),
-            InlineKeyboardButton("🔄 Refresh", callback_data="action:refresh_status"),
+            InlineKeyboardButton("🧠 Контекст", callback_data="action:context"),
+            InlineKeyboardButton("🔄 Оновити", callback_data="action:refresh_status"),
         ]
     )
 
@@ -983,65 +773,6 @@ async def session_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     )
 
 
-async def export_session(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle /export command."""
-    user_id = get_user_id(update)
-    message = get_effective_message(update)
-    
-    if not user_id or not message:
-        return
-        
-    features = context.bot_data.get("features")
-
-    # Check if session export is available
-    session_exporter = features.get_session_export() if features else None
-
-    if not session_exporter:
-        await message.reply_text(
-            "📤 **Export Session**\n\n"
-            "Session export functionality is not available.\n\n"
-            "**Planned features:**\n"
-            "• Export conversation history\n"
-            "• Save session state\n"
-            "• Share conversations\n"
-            "• Create session backups"
-        )
-        return
-
-    # Get current session
-    claude_session_id = context.user_data.get("claude_session_id") if context.user_data else None
-
-    if not claude_session_id:
-        await message.reply_text(
-            "❌ **No Active Session**\n\n"
-            "There's no active Claude session to export.\n\n"
-            "**What you can do:**\n"
-            "• Start a new session with `/new`\n"
-            "• Continue an existing session with `/continue`\n"
-            "• Check your status with `/status`"
-        )
-        return
-
-    # Create export format selection keyboard
-    keyboard = [
-        [
-            InlineKeyboardButton("📝 Markdown", callback_data="export:markdown"),
-            InlineKeyboardButton("🌐 HTML", callback_data="export:html"),
-        ],
-        [
-            InlineKeyboardButton("📋 JSON", callback_data="export:json"),
-            InlineKeyboardButton("❌ Cancel", callback_data="export:cancel"),
-        ],
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    await message.reply_text(
-        "📤 **Export Session**\n\n"
-        f"Ready to export session: `{claude_session_id[:8]}...`\n\n"
-        "**Choose export format:**",
-        parse_mode=None,
-        reply_markup=reply_markup,
-    )
 
 
 async def end_session(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -1410,9 +1141,7 @@ async def help_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 **Команди сесії:**
 • `/new` - Почати нову сесію Claude
-• `/continue` - Продовжити останню сесію
 • `/status` - Показати статус сесії
-• `/export` - Експорт історії сесії
 
 **DRACON система (Візуальне моделювання):**
 • `/dracon help` - Довідка по DRACON
@@ -1870,6 +1599,24 @@ async def submit_auth_code_to_claude(child: pexpect.spawn, auth_code: str) -> Tu
         logger.error("Error submitting auth code", error=str(e))
         safe_terminate_process(child)
         return False, f"Error during authentication: {str(e)}"
+
+
+async def check_claude_availability() -> bool:
+    """Перевірити доступність Claude CLI простою командою."""
+    try:
+        # Виконати просту команду Claude CLI
+        process = await asyncio.create_subprocess_exec(
+            "claude", "--version",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=10.0)
+
+        # Якщо команда завершилась успішно - Claude доступний
+        return process.returncode == 0
+    except Exception:
+        # Якщо будь-яка помилка - Claude недоступний
+        return False
 
 
 async def check_claude_auth_status() -> Tuple[bool, str]:
