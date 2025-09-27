@@ -17,6 +17,17 @@
       "error": "❌ **Processing Error**\n\n{error}\n\nTry again or use `/img` for a new session."
     }
   },
+  "status": {
+    "title": "📊 **Session Status**",
+    "project": "📁 Project: `{directory}`",
+    "claude_available": "🤖 Claude CLI: ✅ Available",
+    "claude_unavailable": "🤖 Claude CLI: ❌ Unavailable",
+    "last_update": "🕐 Last update: {time}",
+    "session_id": "🆔 Session ID: `{session_id}...`"
+  },
+  "errors": {
+    "settings_not_available": "❌ Bot settings not available"
+  },
   "buttons": {
     "continue": "🔄 Continue",
     "cancel": "❌ Cancel",
